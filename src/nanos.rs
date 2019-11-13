@@ -12,7 +12,7 @@ pub(crate) struct Nanos(u64);
 
 impl From<Duration> for Nanos {
     fn from(d: Duration) -> Self {
-        // This can panic:
+        // This will panic:
         Nanos(
             d.as_nanos()
                 .try_into()
@@ -24,24 +24,6 @@ impl From<Duration> for Nanos {
 impl Into<Duration> for Nanos {
     fn into(self) -> Duration {
         Duration::from_nanos(self.0)
-    }
-}
-
-impl Add<Duration> for Nanos {
-    type Output = Nanos;
-
-    fn add(self, rhs: Duration) -> Self::Output {
-        let rhs: Nanos = rhs.into();
-        Nanos(rhs.0 + self.0)
-    }
-}
-
-impl Sub<Duration> for Nanos {
-    type Output = Nanos;
-
-    fn sub(self, rhs: Duration) -> Self::Output {
-        let rhs: Nanos = rhs.into();
-        Nanos(rhs.0 - self.0)
     }
 }
 

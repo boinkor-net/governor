@@ -11,7 +11,7 @@ use nanos::Nanos;
 pub struct Tat(AtomicU64);
 
 impl Tat {
-    fn measure_and_replace<F, E>(&self, f: F) -> Result<(), E>
+    fn measure_and_replace_1<F, E>(&self, f: F) -> Result<(), E>
     where
         F: Fn(Nanos) -> Result<Nanos, E>,
     {
@@ -66,7 +66,7 @@ impl<P: clock::Reference> GCRA<P> {
         let t0: Nanos = self.start.duration_since(t0).into();
         let tau = self.tau;
         let t = self.t;
-        state.measure_and_replace(|tat| {
+        state.measure_and_replace_1(|tat| {
             // the "theoretical arrival time" of the next cell:
             let tat = tat;
             if t0 < tat.saturating_sub(tau) {
