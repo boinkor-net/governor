@@ -3,7 +3,7 @@ use crate::nanos::Nanos;
 use crate::{clock, NegativeMultiDecision, Quota};
 
 #[derive(Debug)]
-pub struct Tat(AtomicU64);
+pub(crate) struct Tat(AtomicU64);
 
 impl Tat {
     fn new(tat: Nanos) -> Tat {
@@ -48,7 +48,7 @@ impl<'a, P: clock::Reference> fmt::Display for NotUntil<'a, P> {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct GCRA<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
+pub(crate) struct GCRA<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
     // The "weight" of a single packet in units of time.
     t: Nanos,
 
@@ -72,7 +72,7 @@ impl<P: clock::Reference> GCRA<P> {
         Tat::new(tat)
     }
 
-    pub fn test_and_update(&self, state: &Tat, t0: P) -> Result<(), NotUntil<P>> {
+    pub(crate) fn test_and_update(&self, state: &Tat, t0: P) -> Result<(), NotUntil<P>> {
         let t0: Nanos = t0.duration_since(self.start).into();
         let tau = self.tau;
         let t = self.t;
@@ -90,7 +90,7 @@ impl<P: clock::Reference> GCRA<P> {
     /// As this method is an extension of GCRA (using multiplication),
     /// it is likely not as fast (and not as obviously "right") as the
     /// single-cell variant.
-    pub fn test_n_all_and_update(
+    pub(crate) fn test_n_all_and_update(
         &self,
         n: NonZeroU32,
         state: &Tat,
