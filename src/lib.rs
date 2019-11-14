@@ -1,9 +1,13 @@
-mod clock;
-pub use clock::*;
+pub mod clock;
 mod nanos;
 
 mod gcra;
-pub use gcra::*;
+
+mod quota;
+pub use quota::Quota;
+
+pub mod state;
+pub use state::direct::DirectRateLimiter;
 
 #[cfg(not(feature = "std"))]
 extern crate alloc;
@@ -26,7 +30,7 @@ mod lib {
     pub use self::core::default::Default;
     pub use self::core::fmt::Debug;
     pub use self::core::marker::{Copy, PhantomData, Send, Sized, Sync};
-    pub use self::core::num::NonZeroU32;
+    pub use self::core::num::{NonZeroU128, NonZeroU32};
     pub use self::core::ops::{Add, Sub};
     pub use self::core::sync::atomic::{AtomicU64, Ordering};
     pub use self::core::time::Duration;

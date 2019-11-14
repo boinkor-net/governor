@@ -1,11 +1,15 @@
-use crate::clock;
 use crate::lib::*;
 use crate::nanos::Nanos;
+use crate::{clock, Quota};
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Tat(AtomicU64);
 
 impl Tat {
+    fn new(tat: Nanos) -> Tat {
+        Tat(AtomicU64::new(tat.into()))
+    }
+
     fn measure_and_replace<F, E>(&self, f: F) -> Result<(), E>
     where
         F: Fn(Nanos) -> Result<Nanos, E>,
@@ -57,6 +61,17 @@ pub struct GCRA<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Ins
 }
 
 impl<P: clock::Reference> GCRA<P> {
+    pub(crate) fn new(start: P, quota: Quota) -> Self {
+        let tau: Nanos = quota.per.into();
+        let t: Nanos = (quota.per / quota.max_burst.get()).into();
+        GCRA { tau, t, start }
+    }
+
+    pub(crate) fn new_state(&self, now: P) -> Tat {
+        let tat = Nanos::from(now.duration_since(self.start)) + self.t;
+        Tat::new(tat)
+    }
+
     pub fn test_and_update(&self, state: &Tat, t0: P) -> Result<(), NotUntil<P>> {
         let t0: Nanos = self.start.duration_since(t0).into();
         let tau = self.tau;
@@ -70,39 +85,5 @@ impl<P: clock::Reference> GCRA<P> {
                 Ok(cmp::max(tat, t0) + t)
             }
         })
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-    use std::time::Duration;
-
-    #[test]
-    fn check_with_duration() {
-        let clock = FakeRelativeClock::default();
-        let gcra = GCRA {
-            t: Duration::from_secs(1).into(),
-            tau: Duration::from_secs(1).into(),
-            start: clock.now(),
-        };
-        let state: Tat = Default::default();
-        let now = clock.now();
-
-        crossbeam::scope(|scope| {
-            scope.spawn(|_| {
-                (&gcra)
-                    .test_and_update(&state, now)
-                    .expect("should succeed");
-            });
-            scope.spawn(|_| {
-                (&gcra)
-                    .test_and_update(&state, now)
-                    .expect("should succeed");
-            });
-        })
-        .unwrap();
-
-        assert_ne!((&gcra).test_and_update(&state, now), Ok(()));
     }
 }
