@@ -1,12 +1,16 @@
 pub mod clock;
 mod nanos;
 
+mod errors;
+pub use errors::*;
+
 mod gcra;
+pub use gcra::NotUntil;
 
 mod quota;
 pub use quota::Quota;
 
-pub mod state;
+mod state;
 pub use state::direct::DirectRateLimiter;
 
 #[cfg(not(feature = "std"))]

@@ -1,6 +1,6 @@
 use crate::lib::*;
 use crate::nanos::Nanos;
-use crate::{clock, Quota};
+use crate::{clock, NegativeMultiDecision, Quota};
 
 #[derive(Debug)]
 pub struct Tat(AtomicU64);
@@ -77,12 +77,42 @@ impl<P: clock::Reference> GCRA<P> {
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(|tat| {
-            // the "theoretical arrival time" of the next cell:
-            let tat = tat;
             if t0 < tat.saturating_sub(tau) {
                 Err(NotUntil { limiter: self, tat })
             } else {
                 Ok(cmp::max(tat, t0) + t)
+            }
+        })
+    }
+
+    /// Tests whether all `n` cells could be accommodated and updates the rate limiter state, if so.
+    ///
+    /// As this method is an extension of GCRA (using multiplication),
+    /// it is likely not as fast (and not as obviously "right") as the
+    /// single-cell variant.
+    pub fn test_n_all_and_update(
+        &self,
+        n: NonZeroU32,
+        state: &Tat,
+        t0: P,
+    ) -> Result<(), NegativeMultiDecision<NotUntil<P>>> {
+        let t0: Nanos = t0.duration_since(self.start).into();
+        let tau = self.tau;
+        let t = self.t;
+        let weight: u64 = n.get() as u64 * t.as_u64();
+        if weight > tau.into() {
+            return Err(NegativeMultiDecision::InsufficientCapacity(
+                (tau.as_u64() / t.as_u64()) as u32,
+            ));
+        }
+        state.measure_and_replace(|tat| {
+            if t0 + weight.into() < tat.saturating_sub(tau) {
+                Err(NegativeMultiDecision::BatchNonConforming(
+                    n.get(),
+                    NotUntil { limiter: self, tat },
+                ))
+            } else {
+                Ok(cmp::max(tat, t0) + weight.into())
             }
         })
     }
