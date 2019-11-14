@@ -4,6 +4,8 @@
 //! to be (optionally) independent of std, and additionally
 //! allow mocking the passage of time.
 
+use crate::lib::*;
+
 /// A measurement from a clock.
 pub trait Reference:
     Sized + Add<Duration, Output = Self> + PartialEq + Eq + Ord + Copy + Clone + Send + Sync + Debug
@@ -43,15 +45,38 @@ impl Reference for Duration {
 /// A mock implementation of a clock. All it does is keep track of
 /// what "now" is (relative to some point meaningful to the program),
 /// and returns that.
-#[derive(Debug, PartialEq, Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct FakeRelativeClock {
-    now: Duration,
+    now: Arc<AtomicU64>,
 }
 
 impl FakeRelativeClock {
     /// Advances the fake clock by the given amount.
     pub fn advance(&mut self, by: Duration) {
-        self.now += by
+        let by: u64 = by
+            .as_nanos()
+            .try_into()
+            .expect("Can not represent times past ~584 years");
+
+        let mut prev = self.now.load(Ordering::Acquire);
+        let mut next = prev + by;
+        while let Err(next_prev) =
+            self.now
+                .compare_exchange_weak(prev, next, Ordering::Release, Ordering::Relaxed)
+        {
+            prev = next_prev;
+            next = prev + by;
+        }
+    }
+}
+
+impl PartialEq for FakeRelativeClock {
+    fn eq(&self, other: &Self) -> bool {
+        self.now.load(Ordering::Relaxed) == other.now.load(Ordering::Relaxed)
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.now.load(Ordering::Relaxed) != other.now.load(Ordering::Relaxed)
     }
 }
 
@@ -59,7 +84,7 @@ impl Clock for FakeRelativeClock {
     type Instant = Duration;
 
     fn now(&self) -> Self::Instant {
-        self.now
+        Duration::from_nanos(self.now.load(Ordering::Relaxed))
     }
 }
 
@@ -72,7 +97,3 @@ pub use no_std::*;
 mod with_std;
 #[cfg(feature = "std")]
 pub use with_std::*;
-
-use std::fmt::Debug;
-use std::ops::Add;
-use std::time::Duration;
