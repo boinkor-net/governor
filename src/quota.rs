@@ -16,17 +16,6 @@ pub struct Quota {
 }
 
 impl Quota {
-    /// Construct a quota for a given burst size per unit of time.
-    ///
-    /// Return `None` if the duration is zero.
-    pub fn new(max_burst: NonZeroU32, per: Duration) -> Option<Quota> {
-        if per.as_nanos() == 0 {
-            None
-        } else {
-            Some(Quota { max_burst, per })
-        }
-    }
-
     /// Construct a quota for a number of cells per second.
     pub const fn per_second(max_burst: NonZeroU32) -> Quota {
         Quota {
@@ -48,6 +37,17 @@ impl Quota {
         Quota {
             max_burst,
             per: Duration::from_secs(60 * 60),
+        }
+    }
+
+    /// Construct a quota for a given burst size per unit of time.
+    ///
+    /// Returns `None` if the duration is zero.
+    pub fn new(max_burst: NonZeroU32, per: Duration) -> Option<Quota> {
+        if per.as_nanos() == 0 {
+            None
+        } else {
+            Some(Quota { max_burst, per })
         }
     }
 }
