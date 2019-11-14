@@ -1,10 +1,8 @@
 [package]
-name = "ratelimit_meter_rewrite"
+name = "governor"
 version = "0.1.0"
 authors = ["Andreas Fuchs <asf@boinkor.net>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
 crossbeam = "0.6.0"
