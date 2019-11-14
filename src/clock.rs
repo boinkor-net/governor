@@ -45,6 +45,10 @@ impl Reference for Duration {
 /// A mock implementation of a clock. All it does is keep track of
 /// what "now" is (relative to some point meaningful to the program),
 /// and returns that.
+///
+/// # Thread safety
+/// The mock time is represented as an atomic u64 count of nanoseconds, behind an [`Arc`].
+/// Clones of this clock will all show the same time, even if the original advances.
 #[derive(Debug, Clone, Default)]
 pub struct FakeRelativeClock {
     now: Arc<AtomicU64>,
