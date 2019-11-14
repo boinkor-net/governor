@@ -73,7 +73,7 @@ impl<P: clock::Reference> GCRA<P> {
     }
 
     pub fn test_and_update(&self, state: &Tat, t0: P) -> Result<(), NotUntil<P>> {
-        let t0: Nanos = self.start.duration_since(t0).into();
+        let t0: Nanos = t0.duration_since(self.start).into();
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(|tat| {
