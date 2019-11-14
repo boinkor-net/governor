@@ -1,12 +1,13 @@
 //! A time-keeping abstraction (nanoseconds) that works for storing in an atomic integer.
 
 use crate::lib::*;
+use std::fmt::{Error, Formatter};
 
 /// A number of nanoseconds from a reference point.
 ///
 /// Can not represent durations >584 years, but hopefully that
 /// should not be a problem in real-world applications.
-#[derive(PartialEq, Eq, Default, Debug, Clone, Copy, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Default, Clone, Copy, PartialOrd, Ord)]
 pub(crate) struct Nanos(u64);
 
 impl From<Duration> for Nanos {
@@ -17,6 +18,13 @@ impl From<Duration> for Nanos {
                 .try_into()
                 .expect("Duration is longer than 584 years"),
         )
+    }
+}
+
+impl fmt::Debug for Nanos {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        let d = Duration::from_nanos(self.0);
+        write!(f, "Nanos({:?})", d)
     }
 }
 
