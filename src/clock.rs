@@ -1,7 +1,7 @@
-//! Time sources for the rate limiter.
+//! Time sources for rate limiters.
 //!
 //! The time sources contained in this module allow the rate limiter
-//! to be (optionally) independent of std, and should additionally
+//! to be (optionally) independent of std, and additionally
 //! allow mocking the passage of time.
 
 /// A measurement from a clock.

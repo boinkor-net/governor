@@ -10,6 +10,7 @@ crossbeam = "0.6.0"
 [features]
 default = ["std"]
 std = ["parking_lot", "evmap", "nonzero_ext/std"]
+no_std = []
 
 [dependencies]
 nonzero_ext = {version = "0.1.5", default-features = false}

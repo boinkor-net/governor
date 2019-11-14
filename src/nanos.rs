@@ -1,6 +1,7 @@
+//! A time-keeping abstraction (nanoseconds) that works for storing in an atomic integer.
+
+use crate::lib::*;
 use derive_more::*;
-use std::convert::TryInto;
-use std::time::Duration;
 
 /// A number of nanoseconds from a reference point.
 ///
