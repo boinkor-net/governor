@@ -10,6 +10,12 @@ use std::fmt::{Error, Formatter};
 #[derive(PartialEq, Eq, Default, Clone, Copy, PartialOrd, Ord)]
 pub(crate) struct Nanos(u64);
 
+impl Nanos {
+    pub(crate) fn as_u64(self) -> u64 {
+        self.0
+    }
+}
+
 impl From<Duration> for Nanos {
     fn from(d: Duration) -> Self {
         // This will panic:
