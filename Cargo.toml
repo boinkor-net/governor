@@ -52,13 +52,16 @@ harness = false
 criterion = "0.2.11"
 crossbeam = "0.6.0"
 libc = "0.2.41"
+futures = "0.3.1"
 
 [features]
 default = ["std"]
-std = ["parking_lot", "evmap", "nonzero_ext/std"]
+std = ["parking_lot", "evmap", "nonzero_ext/std", "futures-timer"]
 no_std = []
 
 [dependencies]
 nonzero_ext = {version = "0.1.5", default-features = false}
 parking_lot = {version = "0.9.0", optional = true}
 evmap = {version = "6.0.0", optional = true}
+futures-timer = {version = "2.0.0", optional = true}
+rand = "0.7.2"

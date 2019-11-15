@@ -1,18 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod clock;
-mod nanos;
-
 mod errors;
-pub use errors::*;
-
 mod gcra;
-pub use gcra::NotUntil;
-
+mod nanos;
 mod quota;
-pub use quota::Quota;
-
 mod state;
+
+pub use errors::*;
+pub use gcra::NotUntil;
+pub use quota::Quota;
 pub use state::direct::DirectRateLimiter;
 
 #[cfg(not(feature = "std"))]
