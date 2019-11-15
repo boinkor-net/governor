@@ -23,7 +23,6 @@ pre-release-commit-message = "Release {{version}} 🎉🎉"
 pro-release-commit-message = "Start next development iteration {{version}}"
 tag-message = "Release {{prefix}}{{version}}"
 dev-version-ext = "dev"
-tag-prefix = "v"
 
 [package.metadata.template_ci.bench]
 run = true
