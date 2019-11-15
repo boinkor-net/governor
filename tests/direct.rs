@@ -125,7 +125,6 @@ fn rejects_too_many_all() {
     }
 }
 
-/*
 #[test]
 fn correct_wait_time() {
     let mut clock = FakeRelativeClock::default();
@@ -135,14 +134,14 @@ fn correct_wait_time() {
     let mut conforming = 0;
     for _i in 0..20 {
         clock.advance(ms);
-        let res = lb.check(now);
+        let res = lb.check();
         match res {
             Ok(()) => {
                 conforming += 1;
             }
             Err(wait) => {
-                now += wait.wait_time_from(now);
-                assert_eq!(Ok(()), lb.check_at(now));
+                clock.advance(wait.wait_time_from(clock.now()));
+                assert_eq!(Ok(()), lb.check());
                 conforming += 1;
             }
         }
@@ -150,6 +149,7 @@ fn correct_wait_time() {
     assert_eq!(20, conforming);
 }
 
+/*
 #[test]
 fn prevents_time_travel() {
     let clock = FakeRelativeClock::default();
@@ -183,7 +183,7 @@ fn actual_threadsafety() {
 }
 
 #[test]
-fn tooearly_wait_time_from() {
+fn too_early_wait_time_from() {
     let lim =
         LeakyBucket::construct(nonzero!(1u32), nonzero!(1u32), Duration::from_secs(1)).unwrap();
     let state = <LeakyBucket as Algorithm>::BucketState::default();

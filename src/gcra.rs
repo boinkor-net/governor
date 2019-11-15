@@ -40,10 +40,35 @@ impl Debug for Tat {
     }
 }
 
+/// A negative rate-limiting outcome.
+///
+/// `NotUntil`'s methods indicate when a caller can expect the next positive
+/// rate-limiting result.
 #[derive(Debug, PartialEq)]
 pub struct NotUntil<'a, P: clock::Reference> {
     limiter: &'a GCRA<P>,
     tat: Nanos,
+}
+
+impl<'a, P: clock::Reference> NotUntil<'a, P> {
+    /// Returns the earliest time at which a decision could be
+    /// conforming (excluding conforming decisions made by the Decider
+    /// that are made in the meantime).
+    pub fn earliest_possible(&self) -> P {
+        let tat: Duration = self.tat.into();
+        self.limiter.start.clone() + tat
+    }
+
+    /// Returns the minimum amount of time from the time that the
+    /// decision was made that must pass before a
+    /// decision can be conforming.
+    ///
+    /// If the time of the next expected positive result is in the past,
+    /// `wait_time_from` returns a zero `Duration`.
+    pub fn wait_time_from(&self, from: P) -> Duration {
+        let earliest = self.earliest_possible();
+        earliest.duration_since(earliest.min(from))
+    }
 }
 
 impl<'a, P: clock::Reference> fmt::Display for NotUntil<'a, P> {
