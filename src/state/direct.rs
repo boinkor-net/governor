@@ -62,3 +62,8 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
         DirectRateLimiter { state, clock, gcra }
     }
 }
+
+#[cfg(feature = "std")]
+mod with_async;
+#[cfg(feature = "std")]
+pub use with_async::*;
