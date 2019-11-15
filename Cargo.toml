@@ -3,6 +3,48 @@ name = "governor"
 version = "0.1.0"
 authors = ["Andreas Fuchs <asf@boinkor.net>"]
 edition = "2018"
+license = "MIT"
+homepage = "https://github.com/antifuchs/governor"
+repository = "https://github.com/antifuchs/governor.git"
+readme = "README.md"
+description = "A rate-limiting implementation in Rust"
+documentation = "https://docs.rs/governor"
+categories = ["algorithms", "network-programming", "concurrency", "no-std"]
+keywords = ["rate-limiting", "rate-limit", "no_std", "gcra"]
+
+# We use criterion, don't infer benchmark files.
+autobenches = false
+
+
+[package.metadata.release]
+sign-commit = false
+upload-doc = false
+pre-release-commit-message = "Release {{version}} 🎉🎉"
+pro-release-commit-message = "Start next development iteration {{version}}"
+tag-message = "Release {{prefix}}{{version}}"
+dev-version-ext = "dev"
+tag-prefix = "v"
+
+[package.metadata.template_ci.bench]
+run = true
+version = "stable"
+
+[package.metadata.template_ci.additional_matrix_entries]
+
+[package.metadata.template_ci.additional_matrix_entries.no_std_nightly]
+run = true
+version = "nightly"
+commandline = "cargo +nightly test --no-default-features --features no_std"
+
+[package.metadata.template_ci.additional_matrix_entries.no_std_stable]
+run = true
+version = "stable"
+commandline = "cargo test --no-default-features --features no_std"
+
+[badges]
+circle-ci = { repository = "antifuchs/governor", branch = "master" }
+maintenance = { status = "actively-developed" }
+
 
 [dev-dependencies]
 crossbeam = "0.6.0"
