@@ -37,20 +37,20 @@ fn rejects_too_many() {
 }
 
 #[test]
-fn never_allows_more_than_capacity() {
+fn never_allows_more_than_capacity_all() {
     let mut clock = FakeRelativeClock::default();
     let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     let ms = Duration::from_millis(1);
 
     // Should not allow the first 15 cells on a capacity 5 bucket:
-    assert_ne!(Ok(()), lb.check_n_all(nonzero!(15u32)));
+    assert_ne!(Ok(()), lb.check_all(nonzero!(15u32)));
 
     // After 3 and 20 seconds, it should not allow 15 on that bucket either:
     clock.advance(ms * 3 * 1000);
-    assert_ne!(Ok(()), lb.check_n_all(nonzero!(15u32)));
+    assert_ne!(Ok(()), lb.check_all(nonzero!(15u32)));
 
     clock.advance(ms * 17 * 1000);
-    let result = lb.check_n_all(nonzero!(15u32));
+    let result = lb.check_all(nonzero!(15u32));
     match result {
         Err(NegativeMultiDecision::InsufficientCapacity(n)) => assert_eq!(n, 5),
         _ => panic!("Did not expect {:?}", result),

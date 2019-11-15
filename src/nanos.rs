@@ -42,6 +42,30 @@ impl Add<Nanos> for Nanos {
     }
 }
 
+impl Mul<Nanos> for Nanos {
+    type Output = Nanos;
+
+    fn mul(self, rhs: Nanos) -> Self::Output {
+        Nanos(self.0 * rhs.0)
+    }
+}
+
+impl Mul<u64> for Nanos {
+    type Output = Nanos;
+
+    fn mul(self, rhs: u64) -> Self::Output {
+        Nanos(self.0 * rhs)
+    }
+}
+
+impl Div<Nanos> for Nanos {
+    type Output = u64;
+
+    fn div(self, rhs: Nanos) -> Self::Output {
+        self.0 / rhs.0
+    }
+}
+
 impl From<u64> for Nanos {
     fn from(u: u64) -> Self {
         Nanos(u)

@@ -35,7 +35,7 @@ mod lib {
     pub use self::core::fmt::Debug;
     pub use self::core::marker::{Copy, PhantomData, Send, Sized, Sync};
     pub use self::core::num::{NonZeroU128, NonZeroU32};
-    pub use self::core::ops::{Add, Sub};
+    pub use self::core::ops::{Add, Div, Mul, Sub};
     pub use self::core::sync::atomic::{AtomicU64, Ordering};
     pub use self::core::time::Duration;
 

@@ -2,7 +2,6 @@ use crate::lib::*;
 use crate::nanos::Nanos;
 use crate::{clock, NegativeMultiDecision, Quota};
 
-#[derive(Debug)]
 pub(crate) struct Tat(AtomicU64);
 
 impl Tat {
@@ -10,27 +9,34 @@ impl Tat {
         Tat(AtomicU64::new(tat.into()))
     }
 
-    fn measure_and_replace<F, E>(&self, f: F) -> Result<(), E>
+    fn measure_and_replace<T, F, E>(&self, f: F) -> Result<T, E>
     where
-        F: Fn(Nanos) -> Result<Nanos, E>,
+        F: Fn(Nanos) -> Result<(T, Nanos), E>,
     {
         let mut prev = self.0.load(Ordering::Acquire);
         let mut decision = f(prev.into());
-        while let Ok(new_data) = decision {
+        while let Ok((result, new_data)) = decision {
             match self.0.compare_exchange_weak(
                 prev,
                 new_data.into(),
                 Ordering::Release,
                 Ordering::Relaxed,
             ) {
-                Ok(_) => return Ok(()),
+                Ok(_) => return Ok(result),
                 Err(next_prev) => prev = next_prev,
             }
             decision = f(prev.into());
         }
         // This map shouldn't be needed, as we only get here in the error case, but the compiler
         // can't see it.
-        decision.map(|_| ())
+        decision.map(|(result, _)| result)
+    }
+}
+
+impl Debug for Tat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        let d = Duration::from_nanos(self.0.load(Ordering::Relaxed));
+        write!(f, "Tat({:?})", d)
     }
 }
 
@@ -80,16 +86,12 @@ impl<P: clock::Reference> GCRA<P> {
             if t0 < tat.saturating_sub(tau) {
                 Err(NotUntil { limiter: self, tat })
             } else {
-                Ok(cmp::max(tat, t0) + t)
+                Ok(((), cmp::max(tat, t0) + t))
             }
         })
     }
 
     /// Tests whether all `n` cells could be accommodated and updates the rate limiter state, if so.
-    ///
-    /// As this method is an extension of GCRA (using multiplication),
-    /// it is likely not as fast (and not as obviously "right") as the
-    /// single-cell variant.
     pub(crate) fn test_n_all_and_update(
         &self,
         n: NonZeroU32,
@@ -106,13 +108,13 @@ impl<P: clock::Reference> GCRA<P> {
             ));
         }
         state.measure_and_replace(|tat| {
-            if t0 + weight.into() < tat.saturating_sub(tau) {
+            if t0 < tat.saturating_sub(tau) + weight.into() {
                 Err(NegativeMultiDecision::BatchNonConforming(
                     n.get(),
                     NotUntil { limiter: self, tat },
                 ))
             } else {
-                Ok(cmp::max(tat, t0) + weight.into())
+                Ok(((), cmp::max(tat, t0) + weight.into()))
             }
         })
     }
