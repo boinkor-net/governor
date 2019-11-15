@@ -89,9 +89,3 @@ impl Nanos {
         Nanos(self.0.saturating_sub(rhs.0))
     }
 }
-
-#[test]
-#[should_panic(expected = "Duration is longer than 584 years")]
-fn panics_on_overflow() {
-    let _: Nanos = Duration::from_secs(600 * 366 * 24 * 60 * 60).into();
-}
