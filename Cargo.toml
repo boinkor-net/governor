@@ -45,8 +45,12 @@ commandline = "cargo test --no-default-features --features no_std"
 circle-ci = { repository = "antifuchs/governor", branch = "master" }
 maintenance = { status = "actively-developed" }
 
+[[bench]]
+name = "criterion"
+harness = false
 
 [dev-dependencies]
+criterion = "0.2.11"
 crossbeam = "0.6.0"
 libc = "0.2.41"
 
