@@ -108,9 +108,6 @@ impl<P: clock::Reference> GCRA<P> {
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(|tat| {
-            dbg!(t0, tat, tau);
-            dbg!(tat.saturating_sub(tau));
-
             if t0 < tat.saturating_sub(tau) {
                 Err(NotUntil { limiter: self, tat })
             } else {
