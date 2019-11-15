@@ -23,7 +23,7 @@ pub trait Reference:
 }
 
 /// A time source used by rate limiters.
-pub trait Clock: Default + Clone {
+pub trait Clock: Clone {
     /// A measurement of a monotonically increasing clock.
     type Instant: Reference;
 
@@ -49,12 +49,17 @@ impl Reference for Duration {
 /// # Thread safety
 /// The mock time is represented as an atomic u64 count of nanoseconds, behind an [`Arc`].
 /// Clones of this clock will all show the same time, even if the original advances.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct FakeRelativeClock {
     now: Arc<AtomicU64>,
 }
 
 impl FakeRelativeClock {
+    pub fn new() -> Self {
+        FakeRelativeClock {
+            now: Default::default(),
+        }
+    }
     /// Advances the fake clock by the given amount.
     pub fn advance(&mut self, by: Duration) {
         let by: u64 = by

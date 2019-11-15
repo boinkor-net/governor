@@ -14,13 +14,16 @@ pub struct DirectRateLimiter<C: clock::Clock = clock::DefaultClock> {
     clock: C,
 }
 
-impl<C: clock::Clock> DirectRateLimiter<C> {
-    /// Construct a new direct rate limiter for a quota.
-    pub fn new(quota: Quota) -> DirectRateLimiter<C> {
-        let clock: C = Default::default();
+#[cfg(feature = "std")]
+impl DirectRateLimiter<clock::DefaultClock> {
+    /// Construct a new direct rate limiter for a quota with the default clock.
+    pub fn new(quota: Quota) -> Self {
+        let clock = clock::DefaultClock::default();
         DirectRateLimiter::new_with_clock(quota, &clock)
     }
+}
 
+impl<C: clock::Clock> DirectRateLimiter<C> {
     /// Allow a single cell through the rate limiter.
     ///
     /// If the rate limit is reached, `check` returns information about the earliest
