@@ -1,7 +1,6 @@
 //! A time-keeping abstraction (nanoseconds) that works for storing in an atomic integer.
 
 use crate::lib::*;
-use std::fmt::{Error, Formatter};
 
 /// A number of nanoseconds from a reference point.
 ///
@@ -28,7 +27,7 @@ impl From<Duration> for Nanos {
 }
 
 impl fmt::Debug for Nanos {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let d = Duration::from_nanos(self.0);
         write!(f, "Nanos({:?})", d)
     }

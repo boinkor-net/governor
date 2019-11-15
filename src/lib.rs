@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 pub mod clock;
 mod nanos;
 
@@ -51,7 +53,7 @@ mod lib {
         pub use std::time::Instant;
     }
 
-    #[cfg(feature = "no_std")]
+    #[cfg(not(feature = "std"))]
     mod no_std {
         pub use alloc::sync::Arc;
     }
