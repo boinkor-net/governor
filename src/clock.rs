@@ -49,17 +49,12 @@ impl Reference for Duration {
 /// # Thread safety
 /// The mock time is represented as an atomic u64 count of nanoseconds, behind an [`Arc`].
 /// Clones of this clock will all show the same time, even if the original advances.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct FakeRelativeClock {
     now: Arc<AtomicU64>,
 }
 
 impl FakeRelativeClock {
-    pub fn new() -> Self {
-        FakeRelativeClock {
-            now: Default::default(),
-        }
-    }
     /// Advances the fake clock by the given amount.
     pub fn advance(&mut self, by: Duration) {
         let by: u64 = by
@@ -82,10 +77,6 @@ impl FakeRelativeClock {
 impl PartialEq for FakeRelativeClock {
     fn eq(&self, other: &Self) -> bool {
         self.now.load(Ordering::Relaxed) == other.now.load(Ordering::Relaxed)
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.now.load(Ordering::Relaxed) != other.now.load(Ordering::Relaxed)
     }
 }
 

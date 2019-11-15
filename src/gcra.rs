@@ -56,7 +56,7 @@ impl<'a, P: clock::Reference> NotUntil<'a, P> {
     /// that are made in the meantime).
     pub fn earliest_possible(&self) -> P {
         let tat: Duration = self.tat.into();
-        self.limiter.start.clone() + tat
+        self.limiter.start + tat
     }
 
     /// Returns the minimum amount of time from the time that the
