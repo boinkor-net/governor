@@ -83,6 +83,9 @@ impl<P: clock::Reference> GCRA<P> {
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(|tat| {
+            dbg!(t0, tat, tau);
+            dbg!(tat.saturating_sub(tau));
+
             if t0 < tat.saturating_sub(tau) {
                 Err(NotUntil { limiter: self, tat })
             } else {
@@ -101,20 +104,20 @@ impl<P: clock::Reference> GCRA<P> {
         let t0: Nanos = t0.duration_since(self.start).into();
         let tau = self.tau;
         let t = self.t;
-        let weight: u64 = n.get() as u64 * t.as_u64();
-        if weight > tau.into() {
+        let weight = t * (n.get() - 1) as u64;
+        if weight > tau {
             return Err(NegativeMultiDecision::InsufficientCapacity(
                 (tau.as_u64() / t.as_u64()) as u32,
             ));
         }
         state.measure_and_replace(|tat| {
-            if t0 < tat.saturating_sub(tau) + weight.into() {
+            if t0 < (tat + weight).saturating_sub(tau) {
                 Err(NegativeMultiDecision::BatchNonConforming(
                     n.get(),
                     NotUntil { limiter: self, tat },
                 ))
             } else {
-                Ok(((), cmp::max(tat, t0) + weight.into()))
+                Ok(((), cmp::max(tat, t0) + t + weight))
             }
         })
     }

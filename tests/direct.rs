@@ -37,7 +37,75 @@ fn rejects_too_many() {
 }
 
 #[test]
+fn all_1_identical_to_1() {
+    let mut clock = FakeRelativeClock::default();
+    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+    let one = nonzero!(1u32);
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(()), lb.check_all(one), "Now: {:?}", clock.now());
+    clock.advance(ms * 1);
+    assert_eq!(Ok(()), lb.check_all(one), "Now: {:?}", clock.now());
+
+    clock.advance(ms * 1);
+    assert_ne!(Ok(()), lb.check_all(one), "Now: {:?}", clock.now());
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(()), lb.check_all(one), "Now: {:?}", clock.now());
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check_all(one));
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check_all(one), "{:?}", lb);
+}
+
+#[test]
 fn never_allows_more_than_capacity_all() {
+    let mut clock = FakeRelativeClock::default();
+    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(4u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    // Use up the burst capacity:
+    assert_eq!(
+        Ok(()),
+        lb.check_all(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+    assert_eq!(
+        Ok(()),
+        lb.check_all(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+
+    clock.advance(ms * 1);
+    assert_ne!(
+        Ok(()),
+        lb.check_all(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(
+        Ok(()),
+        lb.check_all(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check_all(nonzero!(2u32)));
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check_all(nonzero!(2u32)), "{:?}", lb);
+}
+
+#[test]
+fn rejects_too_many_all() {
     let mut clock = FakeRelativeClock::default();
     let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     let ms = Duration::from_millis(1);
