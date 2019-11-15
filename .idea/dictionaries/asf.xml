@@ -2,7 +2,9 @@
   <dictionary name="asf">
     <words>
       <w>gcra</w>
+      <w>memleak</w>
       <w>nanos</w>
+      <w>procinfo</w>
     </words>
   </dictionary>
 </component>

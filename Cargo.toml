@@ -6,6 +6,7 @@ edition = "2018"
 
 [dev-dependencies]
 crossbeam = "0.6.0"
+libc = "0.2.41"
 
 [features]
 default = ["std"]
