@@ -149,39 +149,30 @@ fn correct_wait_time() {
     assert_eq!(20, conforming);
 }
 
-/*
-#[test]
-fn prevents_time_travel() {
-    let clock = FakeRelativeClock::default();
-    let mut lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
-    let now = current_moment() + Duration::from_secs(1);
-    let ms = Duration::from_millis(1);
-
-    assert!(lb.check_at(now).is_ok());
-    assert!(lb.check_at(now - ms).is_ok());
-    assert!(lb.check_at(now - ms * 500).is_ok());
-}
-
 #[test]
 fn actual_threadsafety() {
-    let clock = FakeRelativeClock::default();
-    let mut lim = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(20u32)), clock);
-    let now = current_moment();
-    let ms = Duration::from_millis(1);
-    let mut children = vec![];
+    use crossbeam;
 
-    lim.check_at(now).unwrap();
-    for _i in 0..20 {
-        let mut lim = lim.clone();
-        children.push(thread::spawn(move || lim.check_at(now).is_ok()));
-    }
-    for child in children {
-        child.join().unwrap();
-    }
-    assert!(!lim.check_at(now + ms * 2).is_ok());
-    assert_eq!(Ok(()), lim.check_at(now + ms * 1000));
+    let mut clock = FakeRelativeClock::default();
+    let lim = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    crossbeam::scope(|scope| {
+        for _i in 0..20 {
+            scope.spawn(|_| {
+                assert_eq!(Ok(()), lim.check());
+            });
+        }
+    })
+    .unwrap();
+
+    clock.advance(ms * 2);
+    assert_ne!(Ok(()), lim.check());
+    clock.advance(ms * 998);
+    assert_eq!(Ok(()), lim.check());
 }
 
+/*
 #[test]
 fn too_early_wait_time_from() {
     let lim =
