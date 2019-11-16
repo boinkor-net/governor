@@ -61,9 +61,19 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
         let state = gcra.new_state(clock.now());
         DirectRateLimiter { state, clock, gcra }
     }
+
+    /// Returns a reference to the rate limiter's clock.
+    pub fn get_clock(&self) -> &C {
+        &self.clock
+    }
 }
 
 #[cfg(feature = "std")]
 mod with_async;
 #[cfg(feature = "std")]
 pub use with_async::*;
+
+#[cfg(feature = "std")]
+mod async_sink;
+#[cfg(feature = "std")]
+pub use async_sink::*;

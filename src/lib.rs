@@ -1,17 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod clock;
-mod errors;
-mod gcra;
-mod nanos;
-mod quota;
-mod state;
-
-pub use errors::*;
-pub use gcra::NotUntil;
-pub use quota::Quota;
-pub use state::direct::DirectRateLimiter;
-
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
@@ -61,3 +49,18 @@ mod lib {
     #[cfg(not(feature = "std"))]
     pub use self::no_std::*;
 }
+
+pub mod clock;
+mod errors;
+mod gcra;
+mod nanos;
+mod quota;
+mod state;
+
+pub use errors::*;
+pub use gcra::NotUntil;
+pub use quota::Quota;
+pub use state::direct::DirectRateLimiter;
+
+#[cfg(feature = "std")]
+pub use state::direct::SinkExt;
