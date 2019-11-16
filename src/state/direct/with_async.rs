@@ -4,7 +4,9 @@ use super::DirectRateLimiter;
 use crate::{clock, Jitter};
 use futures_timer::Delay;
 
-impl<C: clock::Clock<Instant = Instant>> DirectRateLimiter<C> {
+#[cfg(feature = "std")]
+/// Methods that allow asynchronously waiting for the rate limit to clear.
+impl DirectRateLimiter<clock::MonotonicClock> {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///
     /// When polled, the returned future either resolves immediately (in the case where the rate
