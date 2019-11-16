@@ -29,7 +29,7 @@ impl<C: clock::Clock<Instant = Instant>> DirectRateLimiter<C> {
     /// This method allows for a randomized additional delay between polls of the rate limiter,
     /// which can help reduce the likelihood of thundering herd effects if multiple tasks try to
     /// wait on the same rate limiter.
-    pub async fn until_ready_with_jitter(&self, jitter: Jitter)  {
+    pub async fn until_ready_with_jitter(&self, jitter: Jitter) {
         while let Err(negative) = self.check() {
             let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
             delay.await;
