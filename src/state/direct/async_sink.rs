@@ -1,7 +1,7 @@
 use crate::lib::*;
 
 use super::DirectRateLimiter;
-use crate::clock;
+use crate::{clock, Jitter};
 use futures::task::{Context, Poll};
 use futures::Future;
 use futures::Sink;
@@ -19,6 +19,16 @@ where
     ) -> RatelimitedSink<'a, Item, S, C>
     where
         Self: Sized;
+
+    /// Limits the rate at which items can be put into the current sink, with a randomized wait
+    /// period.
+    fn ratelimit_sink_with_jitter<'a, C: clock::Clock<Instant = Instant>>(
+        self,
+        limiter: &'a DirectRateLimiter<C>,
+        jitter: Jitter,
+    ) -> RatelimitedSink<'a, Item, S, C>
+    where
+        Self: Sized;
 }
 
 impl<Item, S: Sink<Item>> SinkExt<Item, S> for S {
@@ -29,7 +39,18 @@ impl<Item, S: Sink<Item>> SinkExt<Item, S> for S {
     where
         Self: Sized,
     {
-        RatelimitedSink::new(self, limiter)
+        RatelimitedSink::new(self, limiter, Jitter::NONE)
+    }
+
+    fn ratelimit_sink_with_jitter<'a, C: clock::Clock<Instant = Instant>>(
+        self,
+        limiter: &'a DirectRateLimiter<C>,
+        jitter: Jitter,
+    ) -> RatelimitedSink<'a, Item, S, C>
+    where
+        Self: Sized,
+    {
+        RatelimitedSink::new(self, limiter, jitter)
     }
 }
 
@@ -45,16 +66,22 @@ pub struct RatelimitedSink<'a, Item, S: Sink<Item>, C: clock::Clock<Instant = In
     state: State,
     limiter: &'a DirectRateLimiter<C>,
     delay: Delay,
+    jitter: Jitter,
     phantom: PhantomData<Item>,
 }
 
 impl<'a, Item, S: Sink<Item>, C: clock::Clock<Instant = Instant>> RatelimitedSink<'a, Item, S, C> {
-    fn new(inner: S, limiter: &'a DirectRateLimiter<C>) -> RatelimitedSink<'a, Item, S, C> {
+    fn new(
+        inner: S,
+        limiter: &'a DirectRateLimiter<C>,
+        jitter: Jitter,
+    ) -> RatelimitedSink<'a, Item, S, C> {
         RatelimitedSink {
             inner,
             limiter,
             delay: Delay::new(Default::default()),
             state: State::NotReady,
+            jitter,
             phantom: PhantomData,
         }
     }
@@ -89,7 +116,8 @@ where
             match self.state {
                 State::NotReady => {
                     if let Err(negative) = self.limiter.check() {
-                        self.delay.reset(negative.earliest_possible());
+                        let earliest = self.jitter + negative.earliest_possible();
+                        self.delay.reset(earliest);
                         let future = Pin::new(&mut self.delay);
                         match future.poll(cx) {
                             Poll::Pending => {

@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use futures::executor::block_on;
 use futures::SinkExt as _;
 use governor::{DirectRateLimiter, Quota, SinkExt};

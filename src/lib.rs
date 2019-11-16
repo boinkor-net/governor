@@ -53,12 +53,14 @@ mod lib {
 pub mod clock;
 mod errors;
 mod gcra;
+mod jitter;
 mod nanos;
 mod quota;
 mod state;
 
 pub use errors::*;
 pub use gcra::NotUntil;
+pub use jitter::Jitter;
 pub use quota::Quota;
 pub use state::direct::DirectRateLimiter;
 

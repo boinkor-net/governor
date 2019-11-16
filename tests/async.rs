@@ -2,6 +2,7 @@
 
 use futures::executor::block_on;
 use governor::{DirectRateLimiter, Quota};
+use more_asserts::*;
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::thread;
@@ -20,7 +21,7 @@ fn pauses() {
     }
 
     block_on(lim.until_ready());
-    assert!(i.elapsed() >= Duration::from_millis(100));
+    assert_ge!(i.elapsed(), Duration::from_millis(100));
 }
 
 #[test]
@@ -29,7 +30,7 @@ fn proceeds() {
     let lim = DirectRateLimiter::new(Quota::per_second(nonzero!(10u32)));
 
     block_on(lim.until_ready());
-    assert!(i.elapsed() <= Duration::from_millis(100));
+    assert_le!(i.elapsed(), Duration::from_millis(100));
 }
 
 #[test]
@@ -50,8 +51,9 @@ fn multiple() {
     // by now we've waited for, on average, 10ms; but sometimes the
     // test finishes early; let's assume it takes at least 8ms:
     let elapsed = i.elapsed();
-    assert!(
-        elapsed >= Duration::from_millis(8),
+    assert_ge!(
+        elapsed,
+        Duration::from_millis(8),
         "Expected to wait some time, but waited: {:?}",
         elapsed
     );
