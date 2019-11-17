@@ -15,11 +15,11 @@
 //! ``` rust
 //! use std::num::NonZeroU32;
 //! use nonzero_ext::*;
-//! use governor::{Quota, DirectRateLimiter};
+//! use governor::{Quota, RateLimiter};
 //!
 //! # #[cfg(feature = "std")]
 //! # fn main () {
-//! let mut lim = DirectRateLimiter::new(Quota::per_second(nonzero!(50u32))); // Allow 50 units per second
+//! let mut lim = RateLimiter::direct(Quota::per_second(nonzero!(50u32))); // Allow 50 units per second
 //! assert_eq!(Ok(()), lim.check());
 //! # }
 //! # #[cfg(not(feature = "std"))]
@@ -93,7 +93,7 @@ pub use gcra::NotUntil;
 pub use jitter::Jitter;
 pub use quota::Quota;
 #[doc(inline)]
-pub use state::direct::DirectRateLimiter;
+pub use state::RateLimiter;
 
 #[cfg(feature = "std")]
 pub use state::direct::RatelimitedSink;

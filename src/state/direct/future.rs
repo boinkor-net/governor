@@ -1,13 +1,17 @@
-use super::DirectRateLimiter;
+use super::RateLimiter;
 use crate::{
     clock::{self, Clock},
+    state::DirectStateStore,
     Jitter,
 };
 use futures_timer::Delay;
 
 #[cfg(feature = "std")]
 /// Methods that allow asynchronously waiting for the rate limit to clear.
-impl DirectRateLimiter<clock::MonotonicClock> {
+impl<S> RateLimiter<(), S, clock::MonotonicClock>
+where
+    S: DirectStateStore,
+{
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///
     /// When polled, the returned future either resolves immediately (in the case where the rate

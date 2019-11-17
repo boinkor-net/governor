@@ -31,8 +31,10 @@ impl Tat {
     }
 }
 
+/// Tat is a valid in-memory state store.
 impl StateStore for Tat {
     type Key = ();
+    type CreationParameters = Nanos;
 
     fn measure_and_replace<T, F, E>(&self, _key: Self::Key, f: F) -> Result<T, E>
     where
@@ -41,8 +43,8 @@ impl StateStore for Tat {
         self.measure_and_replace_one(f)
     }
 
-    fn new(tat: Nanos) -> Self {
-        Tat(AtomicU64::new(tat.into()))
+    fn new(start: Self::CreationParameters) -> Self {
+        Tat(AtomicU64::new(start.into()))
     }
 }
 
@@ -129,7 +131,7 @@ impl GCRA {
                 Err(NotUntil {
                     limiter: self,
                     tat: earliest_time,
-                    start: start,
+                    start,
                 })
             } else {
                 Ok(((), cmp::max(tat, t0) + t))
@@ -163,7 +165,7 @@ impl GCRA {
                     NotUntil {
                         limiter: self,
                         tat: earliest_time,
-                        start: start,
+                        start,
                     },
                 ))
             } else {

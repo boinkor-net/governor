@@ -1,5 +1,5 @@
 use criterion::{black_box, Benchmark, Criterion, Throughput};
-use governor::{DirectRateLimiter, Quota};
+use governor::{Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::thread;
@@ -12,7 +12,7 @@ fn bench_direct(c: &mut Criterion) {
     let id = "multi_threaded/direct";
     let bm = Benchmark::new(id, |b| {
         let mut children = vec![];
-        let lim = Arc::new(DirectRateLimiter::new(Quota::per_second(nonzero!(
+        let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(
             1_000_000u32
         ))));
 

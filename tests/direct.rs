@@ -1,6 +1,6 @@
 use governor::{
     clock::{Clock, FakeRelativeClock},
-    DirectRateLimiter, NegativeMultiDecision, Quota,
+    NegativeMultiDecision, Quota, RateLimiter,
 };
 use nonzero_ext::nonzero;
 use std::time::Duration;
@@ -8,14 +8,14 @@ use std::time::Duration;
 #[test]
 fn accepts_first_cell() {
     let clock = FakeRelativeClock::default();
-    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     assert_eq!(Ok(()), lb.check());
 }
 
 #[test]
 fn rejects_too_many() {
     let mut clock = FakeRelativeClock::default();
-    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
     let ms = Duration::from_millis(1);
 
     // use up our burst capacity (2 in the first second):
@@ -39,7 +39,7 @@ fn rejects_too_many() {
 #[test]
 fn all_1_identical_to_1() {
     let mut clock = FakeRelativeClock::default();
-    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
     let ms = Duration::from_millis(1);
     let one = nonzero!(1u32);
 
@@ -64,7 +64,7 @@ fn all_1_identical_to_1() {
 #[test]
 fn never_allows_more_than_capacity_all() {
     let mut clock = FakeRelativeClock::default();
-    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(4u32)), &clock);
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), &clock);
     let ms = Duration::from_millis(1);
 
     // Use up the burst capacity:
@@ -107,7 +107,7 @@ fn never_allows_more_than_capacity_all() {
 #[test]
 fn rejects_too_many_all() {
     let mut clock = FakeRelativeClock::default();
-    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     let ms = Duration::from_millis(1);
 
     // Should not allow the first 15 cells on a capacity 5 bucket:
@@ -129,7 +129,7 @@ fn rejects_too_many_all() {
 fn correct_wait_time() {
     let mut clock = FakeRelativeClock::default();
     // Bucket adding a new element per 200ms:
-    let lb = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     let ms = Duration::from_millis(1);
     let mut conforming = 0;
     for _i in 0..20 {
@@ -154,7 +154,7 @@ fn actual_threadsafety() {
     use crossbeam;
 
     let mut clock = FakeRelativeClock::default();
-    let lim = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+    let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
     let ms = Duration::from_millis(1);
 
     crossbeam::scope(|scope| {

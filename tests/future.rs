@@ -1,7 +1,7 @@
 #![cfg(feature = "std")]
 
 use futures::executor::block_on;
-use governor::{DirectRateLimiter, Quota};
+use governor::{Quota, RateLimiter};
 use more_asserts::*;
 use nonzero_ext::*;
 use std::sync::Arc;
@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 #[test]
 fn pauses() {
     let i = Instant::now();
-    let lim = DirectRateLimiter::new(Quota::per_second(nonzero!(10u32)));
+    let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
 
     // exhaust the limiter:
     loop {
@@ -27,7 +27,7 @@ fn pauses() {
 #[test]
 fn proceeds() {
     let i = Instant::now();
-    let lim = DirectRateLimiter::new(Quota::per_second(nonzero!(10u32)));
+    let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
 
     block_on(lim.until_ready());
     assert_le!(i.elapsed(), Duration::from_millis(100));
@@ -36,7 +36,7 @@ fn proceeds() {
 #[test]
 fn multiple() {
     let i = Instant::now();
-    let lim = Arc::new(DirectRateLimiter::new(Quota::per_second(nonzero!(10u32))));
+    let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
     let mut children = vec![];
 
     for _i in 0..20 {

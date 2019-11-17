@@ -2,7 +2,7 @@
 
 use futures::executor::block_on;
 use futures::{stream, StreamExt};
-use governor::{prelude::*, DirectRateLimiter, Quota};
+use governor::{prelude::*, Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 #[test]
 fn stream() {
     let i = Instant::now();
-    let lim = Arc::new(DirectRateLimiter::new(Quota::per_second(nonzero!(10u32))));
+    let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
     let mut stream = stream::repeat(()).ratelimit_stream(&lim);
 
     for _ in 0..10 {

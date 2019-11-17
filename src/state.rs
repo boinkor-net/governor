@@ -2,9 +2,9 @@
 
 pub mod direct;
 
-use crate::gcra::{Tat, GCRA};
+use crate::clock;
+use crate::gcra::GCRA;
 use crate::nanos::Nanos;
-use crate::{clock, Quota};
 pub use direct::*;
 
 /// A way for rate limiters to keep state.
@@ -17,7 +17,11 @@ pub use direct::*;
 /// A direct state store is expressed as [`StateStore::Key`] = `()`. Keyed state stores have a
 /// type parameter for the key and set their key to that.
 pub trait StateStore {
+    /// The type of key that the state store can represent.
     type Key;
+
+    /// The parameters used to create a state store.
+    type CreationParameters;
 
     /// Updates a state store's rate limiting state for a given key, using the given closure.
     ///
@@ -36,10 +40,11 @@ pub trait StateStore {
         F: Fn(Nanos) -> Result<(T, Nanos), E>;
 
     /// Returns a new rate limiting state, given an initial value.
-    fn new(initial: Nanos) -> Self;
+    fn new(parameters: Self::CreationParameters) -> Self;
 }
 
 /// A rate limiter.
+#[derive(Debug)]
 pub struct RateLimiter<K, S, C>
 where
     S: StateStore<Key = K>,
@@ -56,16 +61,14 @@ where
     S: StateStore<Key = K>,
     C: clock::Clock,
 {
-    //    pub fn new_with_clock(quota: Quota, state: S, clock: C) -> Self {
-    //        let gcra: GCRA = GCRA::new(quota);
-    //        let clock = clock.clone();
-    //        RateLimiter {
-    //            state,
-    //            clock,
-    //            gcra,
-    //            start: clock.now(),
-    //        }
-    //    }
+    pub(crate) fn new(gcra: GCRA, state: S, clock: &C) -> Self {
+        let start = clock.now();
+        let clock = clock.clone();
+        RateLimiter {
+            state,
+            clock,
+            gcra,
+            start,
+        }
+    }
 }
-
-pub type DirectRateLimiter2<C> = RateLimiter<(), Tat, C>;

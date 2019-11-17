@@ -3,7 +3,7 @@
 // This test uses procinfo, so can only be run on Linux.
 extern crate libc;
 
-use governor::{DirectRateLimiter, Quota};
+use governor::{Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::thread;
@@ -45,7 +45,7 @@ impl LeakCheck {
 
 #[test]
 fn memleak_gcra() {
-    let bucket = DirectRateLimiter::new(Quota::per_second(nonzero!(1_000_000u32)));
+    let bucket = RateLimiter::direct(Quota::per_second(nonzero!(1_000_000u32)));
 
     let leak_check = LeakCheck::new(500_000);
 
@@ -56,7 +56,7 @@ fn memleak_gcra() {
 
 #[test]
 fn memleak_gcra_multi() {
-    let bucket = DirectRateLimiter::new(Quota::per_second(nonzero!(1_000_000u32)));
+    let bucket = RateLimiter::direct(Quota::per_second(nonzero!(1_000_000u32)));
     let leak_check = LeakCheck::new(500_000);
 
     for _i in 0..leak_check.n_iter {
@@ -66,7 +66,7 @@ fn memleak_gcra_multi() {
 
 #[test]
 fn memleak_gcra_threaded() {
-    let bucket = Arc::new(DirectRateLimiter::new(Quota::per_second(nonzero!(
+    let bucket = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(
         1_000_000u32
     ))));
     let leak_check = LeakCheck::new(5_000);
