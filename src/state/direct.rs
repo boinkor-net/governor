@@ -73,11 +73,11 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
 }
 
 #[cfg(feature = "std")]
-mod with_async;
+mod future;
 #[cfg(feature = "std")]
-pub use with_async::*;
+pub use future::*;
 
 #[cfg(feature = "std")]
-mod async_sink;
+mod sinks;
 #[cfg(feature = "std")]
-pub use async_sink::*;
+pub use sinks::*;
