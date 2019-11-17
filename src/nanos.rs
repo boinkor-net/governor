@@ -4,10 +4,10 @@ use crate::lib::*;
 
 /// A number of nanoseconds from a reference point.
 ///
-/// Can not represent durations >584 years, but hopefully that
+/// Nanos can not represent durations >584 years, but hopefully that
 /// should not be a problem in real-world applications.
 #[derive(PartialEq, Eq, Default, Clone, Copy, PartialOrd, Ord)]
-pub(crate) struct Nanos(u64);
+pub struct Nanos(u64);
 
 impl Nanos {
     pub(crate) fn as_u64(self) -> u64 {

@@ -86,12 +86,13 @@ mod gcra;
 mod jitter;
 mod nanos;
 mod quota;
-mod state;
+pub mod state;
 
 pub use errors::*;
 pub use gcra::NotUntil;
 pub use jitter::Jitter;
 pub use quota::Quota;
+#[doc(inline)]
 pub use state::direct::DirectRateLimiter;
 
 #[cfg(feature = "std")]
