@@ -81,3 +81,8 @@ pub use future::*;
 mod sinks;
 #[cfg(feature = "std")]
 pub use sinks::*;
+
+#[cfg(feature = "std")]
+mod streams;
+#[cfg(feature = "std")]
+pub use streams::*;

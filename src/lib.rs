@@ -66,9 +66,13 @@ pub use state::direct::DirectRateLimiter;
 
 #[cfg(feature = "std")]
 pub use state::direct::RatelimitedSink;
+#[cfg(feature = "std")]
+pub use state::direct::RatelimitedStream;
 
 /// The collection of asynchronous traits exported from this crate.
 pub mod prelude {
     #[cfg(feature = "std")]
     pub use crate::state::direct::SinkRateLimitExt;
+    #[cfg(feature = "std")]
+    pub use crate::state::direct::StreamRateLimitExt;
 }

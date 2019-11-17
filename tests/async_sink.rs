@@ -1,7 +1,7 @@
 #![cfg(feature = "std")]
 
 use futures::executor::block_on;
-use futures::SinkExt as _;
+use futures::SinkExt;
 use governor::{prelude::*, DirectRateLimiter, Quota};
 use nonzero_ext::*;
 use std::sync::Arc;
@@ -37,4 +37,8 @@ fn sink() {
     block_on(sink.send(())).unwrap();
     assert!(i.elapsed() > Duration::from_millis(200));
     assert!(i.elapsed() <= Duration::from_millis(300));
+
+    let result = sink.into_inner();
+    assert_eq!(result.len(), 12);
+    assert!(result.into_iter().all(|elt| elt == ()));
 }

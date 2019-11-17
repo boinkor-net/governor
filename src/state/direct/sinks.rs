@@ -3,8 +3,7 @@ use crate::lib::*;
 use super::DirectRateLimiter;
 use crate::{clock, Jitter};
 use futures::task::{Context, Poll};
-use futures::Sink;
-use futures::{Future, Stream};
+use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
 use std::pin::Pin;
 
@@ -62,7 +61,8 @@ enum State {
     Ready,
 }
 
-/// A [`futures::Sink`] that only allows sending elements when the rate-limiter allows it.
+/// A [`futures::Sink`] combinator that only allows sending elements when the rate-limiter allows
+/// it.
 pub struct RatelimitedSink<'a, Item, S: Sink<Item>> {
     inner: S,
     state: State,
@@ -72,6 +72,7 @@ pub struct RatelimitedSink<'a, Item, S: Sink<Item>> {
     phantom: PhantomData<Item>,
 }
 
+/// Conversion methods for the sink combinator.
 impl<'a, Item, S: Sink<Item>> RatelimitedSink<'a, Item, S> {
     fn new(
         inner: S,
@@ -173,6 +174,7 @@ where
     }
 }
 
+/// Pass-through implementation for [`futures::Stream`] if the Sink also implements it.
 impl<'a, Item, S: Stream + Sink<Item>> Stream for RatelimitedSink<'a, Item, S>
 where
     S::Item: Unpin,
