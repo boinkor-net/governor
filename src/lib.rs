@@ -1,17 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod clock;
-mod errors;
-mod gcra;
-mod nanos;
-mod quota;
-mod state;
-
-pub use errors::*;
-pub use gcra::NotUntil;
-pub use quota::Quota;
-pub use state::direct::DirectRateLimiter;
-
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
@@ -60,4 +48,31 @@ mod lib {
 
     #[cfg(not(feature = "std"))]
     pub use self::no_std::*;
+}
+
+pub mod clock;
+mod errors;
+mod gcra;
+mod jitter;
+mod nanos;
+mod quota;
+mod state;
+
+pub use errors::*;
+pub use gcra::NotUntil;
+pub use jitter::Jitter;
+pub use quota::Quota;
+pub use state::direct::DirectRateLimiter;
+
+#[cfg(feature = "std")]
+pub use state::direct::RatelimitedSink;
+#[cfg(feature = "std")]
+pub use state::direct::RatelimitedStream;
+
+/// The collection of asynchronous traits exported from this crate.
+pub mod prelude {
+    #[cfg(feature = "std")]
+    pub use crate::state::direct::SinkRateLimitExt;
+    #[cfg(feature = "std")]
+    pub use crate::state::direct::StreamRateLimitExt;
 }

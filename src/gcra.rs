@@ -108,8 +108,12 @@ impl<P: clock::Reference> GCRA<P> {
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(|tat| {
-            if t0 < tat.saturating_sub(tau) {
-                Err(NotUntil { limiter: self, tat })
+            let earliest_time = tat.saturating_sub(tau);
+            if t0 < earliest_time {
+                Err(NotUntil {
+                    limiter: self,
+                    tat: earliest_time,
+                })
             } else {
                 Ok(((), cmp::max(tat, t0) + t))
             }
@@ -133,10 +137,14 @@ impl<P: clock::Reference> GCRA<P> {
             ));
         }
         state.measure_and_replace(|tat| {
-            if t0 < (tat + weight).saturating_sub(tau) {
+            let earliest_time = (tat + weight).saturating_sub(tau);
+            if t0 < earliest_time {
                 Err(NegativeMultiDecision::BatchNonConforming(
                     n.get(),
-                    NotUntil { limiter: self, tat },
+                    NotUntil {
+                        limiter: self,
+                        tat: earliest_time,
+                    },
                 ))
             } else {
                 Ok(((), cmp::max(tat, t0) + t + weight))

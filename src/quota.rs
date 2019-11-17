@@ -1,6 +1,9 @@
 use crate::lib::*;
 
-/// A rate-limiting quota in cells per unit of time.
+/// A rate-limiting quota.
+///
+/// Quotas are expressed in a positive number of "cells" (the number of positive decisions /
+/// allowed items) per unit of time.
 ///
 /// Neither the number of cells nor the unit of time may be zero.
 ///

@@ -14,6 +14,7 @@ pub struct DirectRateLimiter<C: clock::Clock = clock::DefaultClock> {
     clock: C,
 }
 
+/// The default constructor in `std` mode.
 #[cfg(feature = "std")]
 impl DirectRateLimiter<clock::DefaultClock> {
     /// Construct a new direct rate limiter for a quota with the default clock.
@@ -23,6 +24,7 @@ impl DirectRateLimiter<clock::DefaultClock> {
     }
 }
 
+/// Manually checking cells against a rate limit.
 impl<C: clock::Clock> DirectRateLimiter<C> {
     /// Allow a single cell through the rate limiter.
     ///
@@ -53,7 +55,9 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
         self.gcra
             .test_n_all_and_update(n, &self.state, self.clock.now())
     }
+}
 
+impl<C: clock::Clock> DirectRateLimiter<C> {
     /// Construct a new direct rate limiter with a custom clock.
     pub fn new_with_clock(quota: Quota, clock: &C) -> DirectRateLimiter<C> {
         let gcra: GCRA<C::Instant> = GCRA::new(clock.now(), quota);
@@ -61,9 +65,24 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
         let state = gcra.new_state(clock.now());
         DirectRateLimiter { state, clock, gcra }
     }
+
+    /// Returns a reference to the rate limiter's clock.
+    pub fn get_clock(&self) -> &C {
+        &self.clock
+    }
 }
 
 #[cfg(feature = "std")]
-mod with_async;
+mod future;
 #[cfg(feature = "std")]
-pub use with_async::*;
+pub use future::*;
+
+#[cfg(feature = "std")]
+mod sinks;
+#[cfg(feature = "std")]
+pub use sinks::*;
+
+#[cfg(feature = "std")]
+mod streams;
+#[cfg(feature = "std")]
+pub use streams::*;
