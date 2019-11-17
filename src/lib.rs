@@ -64,8 +64,11 @@ pub use jitter::Jitter;
 pub use quota::Quota;
 pub use state::direct::DirectRateLimiter;
 
+#[cfg(feature = "std")]
+pub use state::direct::RatelimitedSink;
+
 /// The collection of asynchronous traits exported from this crate.
 pub mod prelude {
     #[cfg(feature = "std")]
-    pub use crate::state::direct::SinkExt;
+    pub use crate::state::direct::SinkRateLimitExt;
 }

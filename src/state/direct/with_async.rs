@@ -1,7 +1,5 @@
-use crate::lib::*;
-
 use super::DirectRateLimiter;
-use crate::{clock, Jitter};
+use crate::{clock::{self, Clock}, Jitter};
 use futures_timer::Delay;
 
 #[cfg(feature = "std")]

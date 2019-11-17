@@ -3,50 +3,51 @@ use crate::lib::*;
 use super::DirectRateLimiter;
 use crate::{clock, Jitter};
 use futures::task::{Context, Poll};
-use futures::Future;
 use futures::Sink;
+use futures::{Future, Stream};
 use futures_timer::Delay;
 use std::pin::Pin;
 
-pub trait SinkExt<Item, S>: Sink<Item>
+/// Allows converting a [`futures::Sink`] into a ratelimited sink.  
+pub trait SinkRateLimitExt<Item, S>: Sink<Item>
 where
     S: Sink<Item>,
 {
     /// Limits the rate at which items can be put into the current sink.
-    fn ratelimit_sink<'a, C: clock::Clock<Instant = Instant>>(
+    fn ratelimit_sink<'a>(
         self,
-        limiter: &'a DirectRateLimiter<C>,
-    ) -> RatelimitedSink<'a, Item, S, C>
+        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
+    ) -> RatelimitedSink<'a, Item, S>
     where
         Self: Sized;
 
     /// Limits the rate at which items can be put into the current sink, with a randomized wait
     /// period.
-    fn ratelimit_sink_with_jitter<'a, C: clock::Clock<Instant = Instant>>(
+    fn ratelimit_sink_with_jitter<'a>(
         self,
-        limiter: &'a DirectRateLimiter<C>,
+        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
         jitter: Jitter,
-    ) -> RatelimitedSink<'a, Item, S, C>
+    ) -> RatelimitedSink<'a, Item, S>
     where
         Self: Sized;
 }
 
-impl<Item, S: Sink<Item>> SinkExt<Item, S> for S {
-    fn ratelimit_sink<'a, C: clock::Clock<Instant = Instant>>(
+impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
+    fn ratelimit_sink(
         self,
-        limiter: &'a DirectRateLimiter<C>,
-    ) -> RatelimitedSink<'a, Item, S, C>
+        limiter: &DirectRateLimiter<clock::MonotonicClock>,
+    ) -> RatelimitedSink<Item, S>
     where
         Self: Sized,
     {
         RatelimitedSink::new(self, limiter, Jitter::NONE)
     }
 
-    fn ratelimit_sink_with_jitter<'a, C: clock::Clock<Instant = Instant>>(
+    fn ratelimit_sink_with_jitter(
         self,
-        limiter: &'a DirectRateLimiter<C>,
+        limiter: &DirectRateLimiter<clock::MonotonicClock>,
         jitter: Jitter,
-    ) -> RatelimitedSink<'a, Item, S, C>
+    ) -> RatelimitedSink<Item, S>
     where
         Self: Sized,
     {
@@ -61,21 +62,22 @@ enum State {
     Ready,
 }
 
-pub struct RatelimitedSink<'a, Item, S: Sink<Item>, C: clock::Clock<Instant = Instant>> {
+/// A [`futures::Sink`] that only allows sending elements when the rate-limiter allows it.
+pub struct RatelimitedSink<'a, Item, S: Sink<Item>> {
     inner: S,
     state: State,
-    limiter: &'a DirectRateLimiter<C>,
+    limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
     delay: Delay,
     jitter: Jitter,
     phantom: PhantomData<Item>,
 }
 
-impl<'a, Item, S: Sink<Item>, C: clock::Clock<Instant = Instant>> RatelimitedSink<'a, Item, S, C> {
+impl<'a, Item, S: Sink<Item>> RatelimitedSink<'a, Item, S> {
     fn new(
         inner: S,
-        limiter: &'a DirectRateLimiter<C>,
+        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
         jitter: Jitter,
-    ) -> RatelimitedSink<'a, Item, S, C> {
+    ) -> Self {
         RatelimitedSink {
             inner,
             limiter,
@@ -102,12 +104,10 @@ impl<'a, Item, S: Sink<Item>, C: clock::Clock<Instant = Instant>> RatelimitedSin
     }
 }
 
-impl<'a, Item, S: Sink<Item>, C: clock::Clock<Instant = Instant>> Sink<Item>
-    for RatelimitedSink<'a, Item, S, C>
+impl<'a, Item, S: Sink<Item>> Sink<Item> for RatelimitedSink<'a, Item, S>
 where
     S: Unpin,
     Item: Unpin,
-    C: Unpin,
 {
     type Error = S::Error;
 
@@ -170,5 +170,23 @@ where
     fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         let inner = Pin::new(&mut self.inner);
         inner.poll_close(cx)
+    }
+}
+
+impl<'a, Item, S: Stream + Sink<Item>> Stream for RatelimitedSink<'a, Item, S>
+where
+    S::Item: Unpin,
+    S: Unpin,
+    Item: Unpin,
+{
+    type Item = <S as Stream>::Item;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let inner = Pin::new(&mut self.inner);
+        inner.poll_next(cx)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
     }
 }

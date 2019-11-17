@@ -2,7 +2,7 @@
 
 use futures::executor::block_on;
 use futures::SinkExt as _;
-use governor::{DirectRateLimiter, Quota, SinkExt};
+use governor::{prelude::*, DirectRateLimiter, Quota};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
