@@ -7,7 +7,7 @@ use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
 use std::pin::Pin;
 
-/// Allows converting a [`futures::Sink`] into a ratelimited sink.  
+/// Allows converting a [`futures::Sink`] combinator into a rate-limited sink.  
 pub trait SinkRateLimitExt<Item, S>: Sink<Item>
 where
     S: Sink<Item>,
