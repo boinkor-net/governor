@@ -1,7 +1,7 @@
 use super::DirectRateLimiter;
 use crate::{
     clock::{self, Clock},
-    Jitter
+    Jitter,
 };
 use futures_timer::Delay;
 
