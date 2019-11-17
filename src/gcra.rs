@@ -112,32 +112,8 @@ impl GCRA {
         Nanos::from(now.duration_since(start)) + self.t
     }
 
-    #[deprecated]
-    pub(crate) fn test_and_update<P: clock::Reference>(
-        &self,
-        start: P,
-        state: &Tat,
-        t0: P,
-    ) -> Result<(), NotUntil<P>> {
-        let t0: Nanos = t0.duration_since(start).into();
-        let tau = self.tau;
-        let t = self.t;
-        state.measure_and_replace_one(|tat| {
-            let earliest_time = tat.saturating_sub(tau);
-            if t0 < earliest_time {
-                Err(NotUntil {
-                    limiter: self,
-                    tat: earliest_time,
-                    start: start,
-                })
-            } else {
-                Ok(((), cmp::max(tat, t0) + t))
-            }
-        })
-    }
-
     /// Tests a single cell against the rate limiter state and updates it at the given key.
-    pub(crate) fn test_and_update_state<K, P: clock::Reference>(
+    pub(crate) fn test_and_update<K, P: clock::Reference>(
         &self,
         start: P,
         key: K,
@@ -162,7 +138,7 @@ impl GCRA {
     }
 
     /// Tests whether all `n` cells could be accommodated and updates the rate limiter state, if so.
-    pub(crate) fn test_n_all_and_update_state<K, P: clock::Reference>(
+    pub(crate) fn test_n_all_and_update<K, P: clock::Reference>(
         &self,
         start: P,
         key: K,
@@ -180,40 +156,6 @@ impl GCRA {
             ));
         }
         state.measure_and_replace(key, |tat| {
-            let earliest_time = (tat + weight).saturating_sub(tau);
-            if t0 < earliest_time {
-                Err(NegativeMultiDecision::BatchNonConforming(
-                    n.get(),
-                    NotUntil {
-                        limiter: self,
-                        tat: earliest_time,
-                        start: start,
-                    },
-                ))
-            } else {
-                Ok(((), cmp::max(tat, t0) + t + weight))
-            }
-        })
-    }
-
-    #[deprecated]
-    pub(crate) fn test_n_all_and_update<P: clock::Reference>(
-        &self,
-        start: P,
-        n: NonZeroU32,
-        state: &Tat,
-        t0: P,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<P>>> {
-        let t0: Nanos = t0.duration_since(start).into();
-        let tau = self.tau;
-        let t = self.t;
-        let weight = t * (n.get() - 1) as u64;
-        if weight > tau {
-            return Err(NegativeMultiDecision::InsufficientCapacity(
-                (tau.as_u64() / t.as_u64()) as u32,
-            ));
-        }
-        state.measure_and_replace_one(|tat| {
             let earliest_time = (tat + weight).saturating_sub(tau);
             if t0 < earliest_time {
                 Err(NegativeMultiDecision::BatchNonConforming(

@@ -61,7 +61,7 @@ where
     /// time that a cell might be allowed through again.
     pub fn check(&self) -> Result<(), NotUntil<C::Instant>> {
         self.gcra
-            .test_and_update_state(self.start, (), &self.state, self.clock.now())
+            .test_and_update(self.start, (), &self.state, self.clock.now())
     }
 
     /// Allow *only all* `n` cells through the rate limiter.
@@ -83,7 +83,7 @@ where
         n: NonZeroU32,
     ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
         self.gcra
-            .test_n_all_and_update_state(self.start, (), n, &self.state, self.clock.now())
+            .test_n_all_and_update(self.start, (), n, &self.state, self.clock.now())
     }
 }
 
@@ -95,7 +95,7 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
     /// time that a cell might be allowed through again.  
     pub fn check(&self) -> Result<(), NotUntil<C::Instant>> {
         self.gcra
-            .test_and_update(self.start, &self.state, self.clock.now())
+            .test_and_update(self.start, (), &self.state, self.clock.now())
     }
 
     /// Allow *only all* `n` cells through the rate limiter.
@@ -117,7 +117,7 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
         n: NonZeroU32,
     ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
         self.gcra
-            .test_n_all_and_update(self.start, n, &self.state, self.clock.now())
+            .test_n_all_and_update(self.start, (), n, &self.state, self.clock.now())
     }
 }
 
