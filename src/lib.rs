@@ -1,3 +1,32 @@
+//! # governor - a rate-limiting library for rust.
+//!
+//! Governor aims to be a very efficient and ergonomic way to enforce
+//! rate limits in Rust programs. It implements the [Generic Cell Rate
+//! Algorithm](https://en.wikipedia.org/wiki/Generic_cell_rate_algorithm)
+//! and keeps state in a very efficient way.
+//!
+//! For detailed information on usage, please see the [user's guide][crate::_guide].
+//!
+//! # Quick example
+//!
+//! In this example, we set up a rate limiter to allow 5 elements per
+//! second, and check that a single element can pass through.
+//!
+//! ``` rust
+//! use std::num::NonZeroU32;
+//! use nonzero_ext::*;
+//! use governor::{Quota, DirectRateLimiter};
+//!
+//! # #[cfg(feature = "std")]
+//! # fn main () {
+//! let mut lim = DirectRateLimiter::new(Quota::per_second(nonzero!(50u32))); // Allow 50 units per second
+//! assert_eq!(Ok(()), lim.check());
+//! # }
+//! # #[cfg(not(feature = "std"))]
+//! # fn main() {}
+//! ```
+//!
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature = "std"))]
@@ -50,6 +79,7 @@ mod lib {
     pub use self::no_std::*;
 }
 
+pub mod r#_guide;
 pub mod clock;
 mod errors;
 mod gcra;
