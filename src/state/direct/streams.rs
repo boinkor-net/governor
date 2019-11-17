@@ -7,7 +7,7 @@ use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
 use std::pin::Pin;
 
-/// Allows converting a [`futures::Stream`] into a rate-limited stream.
+/// Allows converting a [`futures::Stream`] combinator into a rate-limited stream.
 pub trait StreamRateLimitExt<'a>: Stream {
     /// Limits the rate at which the stream produces items.
     ///
