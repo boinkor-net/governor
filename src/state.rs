@@ -2,9 +2,9 @@
 
 pub mod direct;
 
-use crate::clock;
 use crate::gcra::GCRA;
 use crate::nanos::Nanos;
+use crate::{clock, Quota};
 pub use direct::*;
 
 /// A way for rate limiters to keep state.
@@ -25,8 +25,8 @@ pub trait StateStore {
 
     /// Updates a state store's rate limiting state for a given key, using the given closure.
     ///
-    /// The closure parameter takes the old value of the state store at the key's location,
-    /// checks if the request an be accommodated and:
+    /// The closure parameter takes the old value (`None` is this is the first measurement) of the
+    /// state store at the key's location, checks if the request an be accommodated and:
     ///
     /// * If the request is rate-limited, returns `Err(E)`.
     /// * If the request can make it through, returns `Ok(T)` (an arbitrary positive return
@@ -37,7 +37,7 @@ pub trait StateStore {
     /// crate use `AtomicU64` operations for this.    
     fn measure_and_replace<T, F, E>(&self, key: Self::Key, f: F) -> Result<T, E>
     where
-        F: Fn(Nanos) -> Result<(T, Nanos), E>;
+        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
 
     /// Returns a new rate limiting state, given an initial value.
     fn new(parameters: Self::CreationParameters) -> Self;
@@ -61,7 +61,12 @@ where
     S: StateStore<Key = K>,
     C: clock::Clock,
 {
-    pub(crate) fn new(gcra: GCRA, state: S, clock: &C) -> Self {
+    /// Creates a new rate limiter from components.
+    ///
+    /// This is the most generic way to construct a rate-limiter; most users should prefer
+    /// [`direct`] or other methods instead.
+    pub fn new(quota: Quota, state: S, clock: &C) -> Self {
+        let gcra = GCRA::new(quota);
         let start = clock.now();
         let clock = clock.clone();
         RateLimiter {

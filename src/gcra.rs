@@ -4,15 +4,16 @@ use crate::state::StateStore;
 use crate::{clock, NegativeMultiDecision, Quota};
 
 /// An in-memory representation of a GCRA's rate-limiting state.
+#[derive(Default)]
 pub struct Tat(AtomicU64);
 
 impl Tat {
     pub(crate) fn measure_and_replace_one<T, F, E>(&self, f: F) -> Result<T, E>
     where
-        F: Fn(Nanos) -> Result<(T, Nanos), E>,
+        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         let mut prev = self.0.load(Ordering::Acquire);
-        let mut decision = f(prev.into());
+        let mut decision = f(NonZeroU64::new(prev).map(|n| n.get().into()));
         while let Ok((result, new_data)) = decision {
             match self.0.compare_exchange_weak(
                 prev,
@@ -23,7 +24,7 @@ impl Tat {
                 Ok(_) => return Ok(result),
                 Err(next_prev) => prev = next_prev,
             }
-            decision = f(prev.into());
+            decision = f(NonZeroU64::new(prev).map(|n| n.get().into()));
         }
         // This map shouldn't be needed, as we only get here in the error case, but the compiler
         // can't see it.
@@ -38,7 +39,7 @@ impl StateStore for Tat {
 
     fn measure_and_replace<T, F, E>(&self, _key: Self::Key, f: F) -> Result<T, E>
     where
-        F: Fn(Nanos) -> Result<(T, Nanos), E>,
+        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         self.measure_and_replace_one(f)
     }
@@ -110,8 +111,9 @@ impl GCRA {
         GCRA { tau, t }
     }
 
-    pub(crate) fn starting_state<P: clock::Reference>(&self, now: P, start: P) -> Nanos {
-        Nanos::from(now.duration_since(start)) + self.t
+    /// Computes and returns a new ratelimiter state if none exists yet.
+    fn starting_state(&self, t0: Nanos) -> Nanos {
+        t0 + self.t
     }
 
     /// Tests a single cell against the rate limiter state and updates it at the given key.
@@ -126,6 +128,7 @@ impl GCRA {
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(key, |tat| {
+            let tat = tat.unwrap_or(self.starting_state(t0));
             let earliest_time = tat.saturating_sub(tau);
             if t0 < earliest_time {
                 Err(NotUntil {
@@ -158,6 +161,7 @@ impl GCRA {
             ));
         }
         state.measure_and_replace(key, |tat| {
+            let tat = tat.unwrap_or(self.starting_state(t0));
             let earliest_time = (tat + weight).saturating_sub(tau);
             if t0 < earliest_time {
                 Err(NegativeMultiDecision::BatchNonConforming(

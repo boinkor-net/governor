@@ -1,4 +1,4 @@
-use crate::gcra::{NotUntil, Tat, GCRA};
+use crate::gcra::{NotUntil, Tat};
 use crate::lib::*;
 use crate::{clock, NegativeMultiDecision, Quota};
 
@@ -31,15 +31,13 @@ where
 {
     /// Construct a new direct rate limiter for a quota with a custom clock.
     pub fn direct_with_clock(quota: Quota, clock: &C) -> Self {
-        let gcra: GCRA = GCRA::new(quota);
-        let start = clock.now();
-        let state = Tat::new(gcra.starting_state(start, start));
-        RateLimiter::new(gcra, state, &clock)
+        let state: Tat = Default::default();
+        RateLimiter::new(quota, state, &clock)
     }
 }
 
 /// Manually checking cells against direct rate limiters
-impl<S, C> RateLimiter<S::Key, S, C>
+impl<S, C> RateLimiter<(), S, C>
 where
     S: DirectStateStore,
     C: clock::Clock,
