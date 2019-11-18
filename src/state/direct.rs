@@ -2,12 +2,22 @@ use crate::gcra::{NotUntil, Tat};
 use crate::lib::*;
 use crate::{clock, NegativeMultiDecision, Quota};
 
+/// The "this state store does not use keys" key type.
+///
+/// It's possible to use this to create a "direct" rate limiter. It explicitly does not implement
+/// [`Hash`][std::hash::Hash] so that it is possible to tell apart from "hashable" key types.
+#[derive(PartialEq, Debug, Eq)]
+pub enum NotKeyed {
+    /// The value given to state stores' methods.
+    NonKey,
+}
+
 /// A trait for state stores that only keep one rate limiting state.
 ///
-/// This is blanket-implemented by all [`StateStore`]s with `()` key associated types.
-pub trait DirectStateStore: StateStore<Key = (), CreationParameters = Nanos> {}
+/// This is blanket-implemented by all [`StateStore`]s with [`NotKeyed`] key associated types.
+pub trait DirectStateStore: StateStore<Key = NotKeyed> {}
 
-impl<T> DirectStateStore for T where T: StateStore<Key = (), CreationParameters = Nanos> {}
+impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
 
 /// Constructing in-memory direct rate limiters
 ///
@@ -17,7 +27,7 @@ impl<T> DirectStateStore for T where T: StateStore<Key = (), CreationParameters 
 /// or to ensure that an API client stays within a service's rate
 /// limit.
 #[cfg(feature = "std")]
-impl RateLimiter<(), Tat, clock::MonotonicClock> {
+impl RateLimiter<NotKeyed, Tat, clock::MonotonicClock> {
     /// Construct a new in-memory direct rate limiter for a quota with the monotonic clock.
     pub fn direct(quota: Quota) -> Self {
         let clock = clock::MonotonicClock::default();
@@ -25,7 +35,7 @@ impl RateLimiter<(), Tat, clock::MonotonicClock> {
     }
 }
 
-impl<C> RateLimiter<(), Tat, C>
+impl<C> RateLimiter<NotKeyed, Tat, C>
 where
     C: clock::Clock,
 {
@@ -37,7 +47,7 @@ where
 }
 
 /// Manually checking cells against direct rate limiters
-impl<S, C> RateLimiter<(), S, C>
+impl<S, C> RateLimiter<NotKeyed, S, C>
 where
     S: DirectStateStore,
     C: clock::Clock,
@@ -48,7 +58,7 @@ where
     /// time that a cell might be allowed through again.
     pub fn check(&self) -> Result<(), NotUntil<C::Instant>> {
         self.gcra
-            .test_and_update(self.start, (), &self.state, self.clock.now())
+            .test_and_update(self.start, NotKeyed::NonKey, &self.state, self.clock.now())
     }
 
     /// Allow *only all* `n` cells through the rate limiter.
@@ -69,8 +79,13 @@ where
         &self,
         n: NonZeroU32,
     ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
-        self.gcra
-            .test_n_all_and_update(self.start, (), n, &self.state, self.clock.now())
+        self.gcra.test_n_all_and_update(
+            self.start,
+            NotKeyed::NonKey,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
     }
 }
 
@@ -87,7 +102,6 @@ pub use sinks::*;
 #[cfg(feature = "std")]
 mod streams;
 
-use crate::nanos::Nanos;
 use crate::state::{RateLimiter, StateStore};
 #[cfg(feature = "std")]
 pub use streams::*;

@@ -1,7 +1,7 @@
 #![cfg(feature = "std")]
 
 use crate::lib::*;
-use crate::state::DirectStateStore;
+use crate::state::{DirectStateStore, NotKeyed};
 use crate::{clock, Jitter, RateLimiter};
 use futures::task::{Context, Poll};
 use futures::{Future, Sink, Stream};
@@ -19,7 +19,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// it will not `poll` the underlying stream.
     fn ratelimit_stream<D: DirectStateStore>(
         self,
-        limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     ) -> RatelimitedStream<'a, Self, D>
     where
         Self: Sized;
@@ -33,7 +33,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// it will not `poll` the underlying stream.
     fn ratelimit_stream_with_jitter<D: DirectStateStore>(
         self,
-        limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
     ) -> RatelimitedStream<'a, Self, D>
     where
@@ -43,7 +43,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
 impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     fn ratelimit_stream<D: DirectStateStore>(
         self,
-        limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     ) -> RatelimitedStream<'a, Self, D>
     where
         Self: Sized,
@@ -53,7 +53,7 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
 
     fn ratelimit_stream_with_jitter<D: DirectStateStore>(
         self,
-        limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
     ) -> RatelimitedStream<'a, Self, D>
     where
@@ -83,7 +83,7 @@ enum State {
 /// [`StreamRateLimitExt::ratelimit_stream_with_jitter`] methods.
 pub struct RatelimitedStream<'a, S: Stream, D: DirectStateStore> {
     inner: S,
-    limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+    limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     delay: Delay,
     buf: Option<S::Item>,
     jitter: Jitter,

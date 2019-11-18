@@ -5,6 +5,7 @@ pub mod direct;
 use crate::gcra::GCRA;
 use crate::nanos::Nanos;
 use crate::{clock, Quota};
+
 pub use direct::*;
 
 /// A way for rate limiters to keep state.
@@ -14,14 +15,11 @@ pub use direct::*;
 /// do more than N tasks a day). The keyed kind allows one rate limit per key (e.g. an API
 /// call budget per client API key).
 ///
-/// A direct state store is expressed as [`StateStore::Key`] = `()`. Keyed state stores have a
+/// A direct state store is expressed as [`StateStore::Key`] = `NotKeyed`. Keyed state stores have a
 /// type parameter for the key and set their key to that.
 pub trait StateStore {
     /// The type of key that the state store can represent.
     type Key;
-
-    /// The parameters used to create a state store.
-    type CreationParameters;
 
     /// Updates a state store's rate limiting state for a given key, using the given closure.
     ///
@@ -38,9 +36,6 @@ pub trait StateStore {
     fn measure_and_replace<T, F, E>(&self, key: Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
-
-    /// Returns a new rate limiting state, given an initial value.
-    fn new(parameters: Self::CreationParameters) -> Self;
 }
 
 /// A rate limiter.

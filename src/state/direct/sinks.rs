@@ -1,6 +1,10 @@
 use crate::lib::*;
 
-use crate::{clock, state::DirectStateStore, Jitter, RateLimiter};
+use crate::{
+    clock,
+    state::{DirectStateStore, NotKeyed},
+    Jitter, RateLimiter,
+};
 use futures::task::{Context, Poll};
 use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
@@ -14,7 +18,7 @@ where
     /// Limits the rate at which items can be put into the current sink.
     fn ratelimit_sink<'a, D: DirectStateStore>(
         self,
-        limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     ) -> RatelimitedSink<'a, Item, S, D>
     where
         Self: Sized;
@@ -23,7 +27,7 @@ where
     /// period.
     fn ratelimit_sink_with_jitter<'a, D: DirectStateStore>(
         self,
-        limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
     ) -> RatelimitedSink<'a, Item, S, D>
     where
@@ -33,7 +37,7 @@ where
 impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
     fn ratelimit_sink<D: DirectStateStore>(
         self,
-        limiter: &RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     ) -> RatelimitedSink<Item, S, D>
     where
         Self: Sized,
@@ -43,7 +47,7 @@ impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
 
     fn ratelimit_sink_with_jitter<D: DirectStateStore>(
         self,
-        limiter: &RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
     ) -> RatelimitedSink<Item, S, D>
     where
@@ -65,7 +69,7 @@ enum State {
 pub struct RatelimitedSink<'a, Item, S: Sink<Item>, D: DirectStateStore> {
     inner: S,
     state: State,
-    limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+    limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     delay: Delay,
     jitter: Jitter,
     phantom: PhantomData<Item>,
@@ -75,7 +79,7 @@ pub struct RatelimitedSink<'a, Item, S: Sink<Item>, D: DirectStateStore> {
 impl<'a, Item, S: Sink<Item>, D: DirectStateStore> RatelimitedSink<'a, Item, S, D> {
     fn new(
         inner: S,
-        limiter: &'a RateLimiter<(), D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
     ) -> Self {
         RatelimitedSink {

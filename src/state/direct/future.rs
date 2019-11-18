@@ -1,14 +1,14 @@
 use super::RateLimiter;
 use crate::{
     clock::{self, Clock},
-    state::DirectStateStore,
+    state::{DirectStateStore, NotKeyed},
     Jitter,
 };
 use futures_timer::Delay;
 
 #[cfg(feature = "std")]
 /// Methods that allow asynchronously waiting for the rate limit to clear.
-impl<S> RateLimiter<(), S, clock::MonotonicClock>
+impl<S> RateLimiter<NotKeyed, S, clock::MonotonicClock>
 where
     S: DirectStateStore,
 {

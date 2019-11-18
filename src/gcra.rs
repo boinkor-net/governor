@@ -1,7 +1,10 @@
 use crate::lib::*;
 use crate::nanos::Nanos;
-use crate::state::StateStore;
-use crate::{clock, NegativeMultiDecision, Quota};
+use crate::{
+    clock,
+    state::{NotKeyed, StateStore},
+    NegativeMultiDecision, Quota,
+};
 
 /// An in-memory representation of a GCRA's rate-limiting state.
 #[derive(Default)]
@@ -34,18 +37,13 @@ impl Tat {
 
 /// Tat is a valid in-memory state store.
 impl StateStore for Tat {
-    type Key = ();
-    type CreationParameters = Nanos;
+    type Key = NotKeyed;
 
     fn measure_and_replace<T, F, E>(&self, _key: Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         self.measure_and_replace_one(f)
-    }
-
-    fn new(start: Self::CreationParameters) -> Self {
-        Tat(AtomicU64::new(start.into()))
     }
 }
 
@@ -128,7 +126,7 @@ impl GCRA {
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(key, |tat| {
-            let tat = tat.unwrap_or(self.starting_state(t0));
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = tat.saturating_sub(tau);
             if t0 < earliest_time {
                 Err(NotUntil {
@@ -161,7 +159,7 @@ impl GCRA {
             ));
         }
         state.measure_and_replace(key, |tat| {
-            let tat = tat.unwrap_or(self.starting_state(t0));
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = (tat + weight).saturating_sub(tau);
             if t0 < earliest_time {
                 Err(NegativeMultiDecision::BatchNonConforming(
