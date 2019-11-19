@@ -53,6 +53,14 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 mod hash_map;
 
+#[cfg(feature = "std")]
 pub use hash_map::HashMapStateStore;
+
+#[cfg(all(feature = "std", feature = "dashmap"))]
+mod dashmap;
+
+#[cfg(all(feature = "std", feature = "dashmap"))]
+pub use self::dashmap::DashMapStateStore;

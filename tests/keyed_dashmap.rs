@@ -1,4 +1,4 @@
-#![cfg(feature = "std")]
+#![cfg(all(feature = "std", feature = "dashmap"))]
 
 use governor::{
     clock::{Clock, FakeRelativeClock},
@@ -12,7 +12,7 @@ const KEYS: &[u32] = &[1u32, 2u32];
 #[test]
 fn accepts_first_cell() {
     let clock = FakeRelativeClock::default();
-    let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+    let lb = RateLimiter::dashmap_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     for key in KEYS {
         assert_eq!(Ok(()), lb.check_key(&key), "key {:?}", key);
     }
@@ -21,7 +21,7 @@ fn accepts_first_cell() {
 #[test]
 fn rejects_too_many() {
     let mut clock = FakeRelativeClock::default();
-    let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let lb = RateLimiter::dashmap_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
     let ms = Duration::from_millis(1);
 
     for key in KEYS {
@@ -49,7 +49,7 @@ fn actual_threadsafety() {
     use crossbeam;
 
     let mut clock = FakeRelativeClock::default();
-    let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+    let lim = RateLimiter::dashmap_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
     let ms = Duration::from_millis(1);
 
     for key in KEYS {
