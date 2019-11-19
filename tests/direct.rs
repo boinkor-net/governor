@@ -14,16 +14,16 @@ fn accepts_first_cell() {
 
 #[test]
 fn rejects_too_many() {
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
     let ms = Duration::from_millis(1);
 
     // use up our burst capacity (2 in the first second):
     assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
-    clock.advance(ms * 1);
+    clock.advance(ms);
     assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
 
-    clock.advance(ms * 1);
+    clock.advance(ms);
     assert_ne!(Ok(()), lb.check(), "Now: {:?}", clock.now());
 
     // should be ok again in 1s:
@@ -38,17 +38,17 @@ fn rejects_too_many() {
 
 #[test]
 fn all_1_identical_to_1() {
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
     let ms = Duration::from_millis(1);
     let one = nonzero!(1u32);
 
     // use up our burst capacity (2 in the first second):
     assert_eq!(Ok(()), lb.check_all(one), "Now: {:?}", clock.now());
-    clock.advance(ms * 1);
+    clock.advance(ms);
     assert_eq!(Ok(()), lb.check_all(one), "Now: {:?}", clock.now());
 
-    clock.advance(ms * 1);
+    clock.advance(ms);
     assert_ne!(Ok(()), lb.check_all(one), "Now: {:?}", clock.now());
 
     // should be ok again in 1s:
@@ -63,7 +63,7 @@ fn all_1_identical_to_1() {
 
 #[test]
 fn never_allows_more_than_capacity_all() {
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), &clock);
     let ms = Duration::from_millis(1);
 
@@ -81,7 +81,7 @@ fn never_allows_more_than_capacity_all() {
         clock.now()
     );
 
-    clock.advance(ms * 1);
+    clock.advance(ms);
     assert_ne!(
         Ok(()),
         lb.check_all(nonzero!(2u32)),
@@ -106,7 +106,7 @@ fn never_allows_more_than_capacity_all() {
 
 #[test]
 fn rejects_too_many_all() {
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     let ms = Duration::from_millis(1);
 
@@ -127,7 +127,7 @@ fn rejects_too_many_all() {
 
 #[test]
 fn correct_wait_time() {
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     // Bucket adding a new element per 200ms:
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     let ms = Duration::from_millis(1);
@@ -153,7 +153,7 @@ fn correct_wait_time() {
 fn actual_threadsafety() {
     use crossbeam;
 
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
     let ms = Duration::from_millis(1);
 
@@ -171,22 +171,3 @@ fn actual_threadsafety() {
     clock.advance(ms * 998);
     assert_eq!(Ok(()), lim.check());
 }
-
-/*
-#[test]
-fn too_early_wait_time_from() {
-    let lim =
-        LeakyBucket::construct(nonzero!(1u32), nonzero!(1u32), Duration::from_secs(1)).unwrap();
-    let state = <LeakyBucket as Algorithm>::BucketState::default();
-    let now = current_moment();
-    let ms = Duration::from_millis(1);
-    lim.test_and_update(&state, now).unwrap();
-    if let Err(failure) = lim.test_and_update(&state, now) {
-        assert_eq!(ms * 1000, failure.wait_time_from(now));
-        assert_eq!(Duration::new(0, 0), failure.wait_time_from(now + ms * 1000));
-        assert_eq!(Duration::new(0, 0), failure.wait_time_from(now + ms * 2001));
-    } else {
-        assert!(false, "Second attempt should fail");
-    }
-}
-*/

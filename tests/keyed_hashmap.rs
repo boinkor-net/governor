@@ -2,7 +2,7 @@
 
 use governor::{
     clock::{Clock, FakeRelativeClock},
-    NegativeMultiDecision, Quota, RateLimiter,
+    Quota, RateLimiter,
 };
 use nonzero_ext::nonzero;
 use std::time::Duration;
@@ -20,17 +20,17 @@ fn accepts_first_cell() {
 
 #[test]
 fn rejects_too_many() {
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
     let ms = Duration::from_millis(1);
 
     for key in KEYS {
         // use up our burst capacity (2 in the first second):
         assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
-        clock.advance(ms * 1);
+        clock.advance(ms);
         assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
 
-        clock.advance(ms * 1);
+        clock.advance(ms);
         assert_ne!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
 
         // should be ok again in 1s:
@@ -48,7 +48,7 @@ fn rejects_too_many() {
 fn actual_threadsafety() {
     use crossbeam;
 
-    let mut clock = FakeRelativeClock::default();
+    let clock = FakeRelativeClock::default();
     let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
     let ms = Duration::from_millis(1);
 

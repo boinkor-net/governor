@@ -32,7 +32,7 @@ fn test_config() -> ProptestConfig {
 #[test]
 fn accurate_not_until() {
     proptest!(test_config(), |(capacity: Count, additional: Count, wait_time_parts: Count)| {
-        let mut clock = FakeRelativeClock::default();
+        let clock = FakeRelativeClock::default();
         let lb = RateLimiter::direct_with_clock(Quota::per_second(capacity.0), &clock);
         let step = Duration::from_secs(1) / capacity.0.get();
 
