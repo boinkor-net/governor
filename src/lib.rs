@@ -49,6 +49,7 @@ mod lib {
     pub use self::core::convert::TryInto;
     pub use self::core::default::Default;
     pub use self::core::fmt::Debug;
+    pub use self::core::hash::Hash;
     pub use self::core::marker::{Copy, PhantomData, Send, Sized, Sync};
     pub use self::core::num::{NonZeroU128, NonZeroU32, NonZeroU64};
     pub use self::core::ops::{Add, Div, Mul, Sub};
@@ -62,7 +63,7 @@ mod lib {
     #[cfg(feature = "std")]
     mod std {
         pub use std::collections::hash_map::RandomState;
-        pub use std::hash::{BuildHasher, Hash};
+        pub use std::hash::BuildHasher;
         pub use std::sync::Arc;
         pub use std::time::Instant;
     }

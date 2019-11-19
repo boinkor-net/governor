@@ -1,6 +1,7 @@
 //! State stores for rate limiters
 
 pub mod direct;
+pub mod keyed;
 
 use crate::gcra::GCRA;
 use crate::nanos::Nanos;
