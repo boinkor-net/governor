@@ -23,7 +23,7 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         let mut map = self.lock();
-        let entry = (*map).entry(key.clone()).or_insert(Tat::default());
+        let entry = (*map).entry(key.clone()).or_insert_with(Tat::default);
         entry.measure_and_replace_one(f)
     }
 }
