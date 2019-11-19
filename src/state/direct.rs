@@ -19,9 +19,9 @@ pub trait DirectStateStore: StateStore<Key = NotKeyed> {}
 
 impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
 
-/// Constructing in-memory direct rate limiters
+/// # Direct in-memory rate limiters - Constructors
 ///
-/// This constructs an in-memory rate limiter that makes direct (un-keyed)
+/// Here we construct an in-memory rate limiter that makes direct (un-keyed)
 /// rate-limiting decisions. Direct rate limiters can be used to
 /// e.g. regulate the transmission of packets on a single connection,
 /// or to ensure that an API client stays within a service's rate
@@ -29,7 +29,7 @@ impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
 #[cfg(feature = "std")]
 impl RateLimiter<NotKeyed, Tat, clock::MonotonicClock> {
     /// Construct a new in-memory direct rate limiter for a quota with the monotonic clock.
-    pub fn direct(quota: Quota) -> Self {
+    pub fn direct(quota: Quota) -> RateLimiter<NotKeyed, Tat, clock::MonotonicClock> {
         let clock = clock::MonotonicClock::default();
         Self::direct_with_clock(quota, &clock)
     }
@@ -46,7 +46,7 @@ where
     }
 }
 
-/// Manually checking cells against direct rate limiters
+/// # Direct rate limiters - Manually checking cells
 impl<S, C> RateLimiter<NotKeyed, S, C>
 where
     S: DirectStateStore,
@@ -71,7 +71,7 @@ where
     /// * Failure (the batch can never go through): The rate limit is too low for the given number
     ///   of cells.
     ///
-    /// # Performance
+    /// ### Performance
     /// This method diverges a little from the GCRA algorithm, using
     /// multiplication to determine the next theoretical arrival time, and so
     /// is not as fast as checking a single cell.  

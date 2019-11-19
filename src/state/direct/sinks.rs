@@ -64,8 +64,8 @@ enum State {
     Ready,
 }
 
-/// A [`futures::Sink`] combinator that only allows sending elements when the rate-limiter allows
-/// it.
+/// A [`Sink`][futures::Sink] combinator that only allows sending elements when the rate-limiter
+/// allows it.
 pub struct RatelimitedSink<'a, Item, S: Sink<Item>, D: DirectStateStore> {
     inner: S,
     state: State,

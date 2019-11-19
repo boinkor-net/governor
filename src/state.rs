@@ -40,6 +40,10 @@ pub trait StateStore {
 }
 
 /// A rate limiter.
+///
+/// This is the structure that ties together the parameters (how many cells to allow in what time
+/// period) and the concrete state of rate limiting decisions. This crate ships in-memory state
+/// stores, but it's possible (by implementing the [`StateStore`] trait) to make others.  
 #[derive(Debug)]
 pub struct RateLimiter<K, S, C>
 where

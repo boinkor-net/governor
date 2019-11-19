@@ -77,7 +77,7 @@ enum State {
     Wait,
 }
 
-/// A stream combinator which will limit the rate of items passing through.
+/// A [`Stream`][futures::Stream] combinator which will limit the rate of items being received.
 ///
 /// This is produced by the [`StreamRateLimitExt::ratelimit_stream`] and
 /// [`StreamRateLimitExt::ratelimit_stream_with_jitter`] methods.

@@ -7,7 +7,7 @@ use crate::{
 use futures_timer::Delay;
 
 #[cfg(feature = "std")]
-/// Methods that allow asynchronously waiting for the rate limit to clear.
+/// # Direct rate limiters - `async`/`await`
 impl<S> RateLimiter<NotKeyed, S, clock::MonotonicClock>
 where
     S: DirectStateStore,
