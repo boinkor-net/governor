@@ -13,6 +13,7 @@ pub trait KeyedStateStore<K: Hash>: StateStore<Key = K> {}
 
 impl<T, K: Hash> KeyedStateStore<K> for T where T: StateStore<Key = K> {}
 
+#[cfg(feature = "std")]
 /// # Keyed rate limiters - default constructors
 impl<K> RateLimiter<K, DefaultKeyedStateStore<K>, clock::MonotonicClock>
 where
