@@ -1,3 +1,8 @@
+//! Direct rate limiters (those that can only hold one state).
+//!
+//! Rate limiters based on these types are constructed with
+//! [the `RateLimiter` constructors](../struct.RateLimiter.html#direct-in-memory-rate-limiters---constructors)
+
 use crate::gcra::{NotUntil, Tat};
 use crate::lib::*;
 use crate::{clock, NegativeMultiDecision, Quota};

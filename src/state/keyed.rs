@@ -1,17 +1,29 @@
-//! Keyed rate limiters.
+//! Keyed rate limiters (those that can hold one state per key).
 //!
 //! These are rate limiters that have one set of parameters (burst capacity per time period) but
 //! apply those to several sets of actual rate-limiting states, e.g. to enforce one API call rate
 //! limit per API key.
+//!
+//! Rate limiters based on these types are constructed with
+//! [the `RateLimiter` constructors](../struct.RateLimiter.html#keyed-rate-limiters---default-constructors)
 
 use crate::lib::*;
 
 use crate::state::StateStore;
 use crate::{clock, NegativeMultiDecision, NotUntil, Quota, RateLimiter};
 
+/// A trait for state stores with one rate limiting state per key.
+///
+/// This is blanket-implemented by all [`StateStore`]s with hashable (`Eq + Hash + Clone`) key
+/// associated types.
 pub trait KeyedStateStore<K: Hash>: StateStore<Key = K> {}
 
-impl<T, K: Hash> KeyedStateStore<K> for T where T: StateStore<Key = K> {}
+impl<T, K: Hash> KeyedStateStore<K> for T
+where
+    T: StateStore<Key = K>,
+    K: Eq + Clone + Hash,
+{
+}
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - default constructors

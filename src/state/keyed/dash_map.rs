@@ -8,6 +8,7 @@ use crate::state::StateStore;
 use crate::{clock, Quota, RateLimiter};
 use dashmap::DashMap;
 
+/// A concurrent, thread-safe and fairly performant hashmap based on [`DashMap`].
 pub type DashMapStateStore<K> = DashMap<K, Tat>;
 
 impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {

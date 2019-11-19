@@ -16,7 +16,8 @@ pub use direct::*;
 /// do more than N tasks a day). The keyed kind allows one rate limit per key (e.g. an API
 /// call budget per client API key).
 ///
-/// A direct state store is expressed as [`StateStore::Key`] = `NotKeyed`. Keyed state stores have a
+/// A direct state store is expressed as [`StateStore::Key`] = [`NotKeyed`][direct::NotKeyed].
+/// Keyed state stores have a
 /// type parameter for the key and set their key to that.
 pub trait StateStore {
     /// The type of key that the state store can represent.
@@ -24,7 +25,7 @@ pub trait StateStore {
 
     /// Updates a state store's rate limiting state for a given key, using the given closure.
     ///
-    /// The closure parameter takes the old value (`None` is this is the first measurement) of the
+    /// The closure parameter takes the old value (`None` if this is the first measurement) of the
     /// state store at the key's location, checks if the request an be accommodated and:
     ///
     /// * If the request is rate-limited, returns `Err(E)`.
