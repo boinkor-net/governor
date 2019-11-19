@@ -28,12 +28,13 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
     }
 }
 
-/// # Keyed rate limiters - Constructors
+/// # Keyed rate limiters - [`HashMap`]-backed
 impl<K, C> RateLimiter<K, HashMapStateStore<K>, C>
 where
     K: Hash + Eq + Clone,
     C: clock::Clock,
 {
+    /// Constructs a new rate limiter with a custom clock, backed by a [`HashMap`].
     pub fn hashmap_with_clock(quota: Quota, clock: &C) -> Self {
         let state: HashMapStateStore<K> = Mutex::new(HashMap::new());
         RateLimiter::new(quota, state, clock)

@@ -7,11 +7,57 @@
 use crate::lib::*;
 
 use crate::state::StateStore;
-use crate::{clock, NegativeMultiDecision, NotUntil, RateLimiter};
+use crate::{clock, NegativeMultiDecision, NotUntil, Quota, RateLimiter};
 
 pub trait KeyedStateStore<K: Hash>: StateStore<Key = K> {}
 
 impl<T, K: Hash> KeyedStateStore<K> for T where T: StateStore<Key = K> {}
+
+/// # Keyed rate limiters - default constructors
+impl<K> RateLimiter<K, DefaultKeyedStateStore<K>, clock::MonotonicClock>
+where
+    K: Clone + Hash + Eq,
+{
+    #[cfg(all(feature = "std", feature = "dashmap"))]
+    /// Construct a new keyed rate limiter backed by
+    /// the [`DefaultKeyedStateStore`].
+    pub fn keyed(quota: Quota) -> Self {
+        let state = DefaultKeyedStateStore::default();
+        let clock = clock::MonotonicClock::default();
+        RateLimiter::new(quota, state, &clock)
+    }
+
+    #[cfg(all(feature = "std", feature = "dashmap"))]
+    /// Constructs a new keyed rate limiter explicitly backed by a [`DashMap`][dashmap::DashMap].
+    pub fn dashmap(quota: Quota) -> Self {
+        let state = DashMapStateStore::default();
+        let clock = clock::MonotonicClock::default();
+        RateLimiter::new(quota, state, &clock)
+    }
+
+    #[cfg(all(feature = "std", not(feature = "dashmap")))]
+    /// Constructs a new keyed rate limiter explicitly backed by a
+    /// [`HashMap`][std::collections::HashMap].
+    pub fn hashmap(quota: Quota) -> Self {
+        let state = HashMapStateStore::default();
+        let clock = clock::MonotonicClock::default();
+        RateLimiter::new(quota, state, &clock)
+    }
+}
+
+#[cfg(all(feature = "std", feature = "dashmap"))]
+impl<K> RateLimiter<K, HashMapStateStore<K>, clock::MonotonicClock>
+where
+    K: Clone + Hash + Eq,
+{
+    /// Constructs a new keyed rate limiter explicitly backed by a
+    /// [`HashMap`][std::collections::HashMap].
+    pub fn hashmap(quota: Quota) -> Self {
+        let state = HashMapStateStore::default();
+        let clock = clock::MonotonicClock::default();
+        RateLimiter::new(quota, state, &clock)
+    }
+}
 
 /// # Keyed rate limiters - Manually checking cells
 impl<K, S, C> RateLimiter<K, S, C>
@@ -60,7 +106,15 @@ mod hash_map;
 pub use hash_map::HashMapStateStore;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
-mod dashmap;
+mod dash_map;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
-pub use self::dashmap::DashMapStateStore;
+pub use self::dash_map::DashMapStateStore;
+
+#[cfg(all(feature = "std", not(feature = "dashmap")))]
+/// The default keyed rate limiter type: a mutex-wrapped [`HashMap`][std::collections::HashMap].
+pub type DefaultKeyedStateStore<K> = HashMapStateStore<K>;
+
+#[cfg(all(feature = "std", feature = "dashmap"))]
+/// The default keyed rate limiter type: the concurrent [`DashMap`][dashmap::DashMap].
+pub type DefaultKeyedStateStore<K> = DashMapStateStore<K>;
