@@ -114,15 +114,16 @@ where
 
 #[cfg(feature = "std")]
 mod hash_map;
-
 #[cfg(feature = "std")]
 pub use hash_map::HashMapStateStore;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
 mod dash_map;
-
 #[cfg(all(feature = "std", feature = "dashmap"))]
 pub use self::dash_map::DashMapStateStore;
+
+#[cfg(feature = "std")]
+mod future;
 
 #[cfg(all(feature = "std", not(feature = "dashmap")))]
 /// The default keyed rate limiter type: a mutex-wrapped [`HashMap`][std::collections::HashMap].
