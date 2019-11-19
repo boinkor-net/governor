@@ -43,6 +43,7 @@ mod lib {
         pub use std::*;
     }
 
+    pub use self::core::borrow::Borrow;
     pub use self::core::clone::Clone;
     pub use self::core::cmp::{Eq, Ord, PartialEq};
     pub use self::core::convert::TryFrom;
@@ -62,7 +63,7 @@ mod lib {
     /// Imports that are only available on std.
     #[cfg(feature = "std")]
     mod std {
-        pub use std::collections::hash_map::RandomState;
+        pub use std::collections::{hash_map::RandomState, HashMap};
         pub use std::hash::BuildHasher;
         pub use std::sync::Arc;
         pub use std::time::Instant;

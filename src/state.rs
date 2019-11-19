@@ -34,7 +34,7 @@ pub trait StateStore {
     /// It is `measure_and_replace`'s job then to safely replace the value at the key - it must
     /// only update the value if the value hasn't changed. The implementations in this
     /// crate use `AtomicU64` operations for this.    
-    fn measure_and_replace<T, F, E>(&self, key: Self::Key, f: F) -> Result<T, E>
+    fn measure_and_replace<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
 }

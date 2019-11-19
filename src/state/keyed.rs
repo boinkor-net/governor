@@ -24,7 +24,7 @@ where
     ///
     /// If the rate limit is reached, `check_key` returns information about the earliest
     /// time that a cell might be allowed through again under that key.
-    pub fn check_key(&self, key: K) -> Result<(), NotUntil<C::Instant>> {
+    pub fn check_key(&self, key: &K) -> Result<(), NotUntil<C::Instant>> {
         self.gcra
             .test_and_update(self.start, key, &self.state, self.clock.now())
     }
@@ -45,10 +45,14 @@ where
     /// is not as fast as checking a single cell.
     pub fn check_key_all(
         &self,
-        key: K,
+        key: &K,
         n: NonZeroU32,
     ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
         self.gcra
             .test_n_all_and_update(self.start, key, n, &self.state, self.clock.now())
     }
 }
+
+mod hash_map;
+
+pub use hash_map::HashMapStateStore;

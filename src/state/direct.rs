@@ -58,7 +58,7 @@ where
     /// time that a cell might be allowed through again.
     pub fn check(&self) -> Result<(), NotUntil<C::Instant>> {
         self.gcra
-            .test_and_update(self.start, NotKeyed::NonKey, &self.state, self.clock.now())
+            .test_and_update(self.start, &NotKeyed::NonKey, &self.state, self.clock.now())
     }
 
     /// Allow *only all* `n` cells through the rate limiter.
@@ -81,7 +81,7 @@ where
     ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
         self.gcra.test_n_all_and_update(
             self.start,
-            NotKeyed::NonKey,
+            &NotKeyed::NonKey,
             n,
             &self.state,
             self.clock.now(),

@@ -39,7 +39,7 @@ impl Tat {
 impl StateStore for Tat {
     type Key = NotKeyed;
 
-    fn measure_and_replace<T, F, E>(&self, _key: Self::Key, f: F) -> Result<T, E>
+    fn measure_and_replace<T, F, E>(&self, _key: &Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
@@ -118,7 +118,7 @@ impl GCRA {
     pub(crate) fn test_and_update<K, P: clock::Reference>(
         &self,
         start: P,
-        key: K,
+        key: &K,
         state: &impl StateStore<Key = K>,
         t0: P,
     ) -> Result<(), NotUntil<P>> {
@@ -144,7 +144,7 @@ impl GCRA {
     pub(crate) fn test_n_all_and_update<K, P: clock::Reference>(
         &self,
         start: P,
-        key: K,
+        key: &K,
         n: NonZeroU32,
         state: &impl StateStore<Key = K>,
         t0: P,
