@@ -80,3 +80,14 @@ fn memleak_gcra_threaded() {
         .unwrap();
     }
 }
+
+#[test]
+fn memleak_keyed() {
+    let bucket = RateLimiter::keyed(Quota::per_second(nonzero!(50u32)));
+
+    let leak_check = LeakCheck::new(500_000);
+
+    for i in 0..leak_check.n_iter {
+        drop(bucket.check_key(&(i % 1000)));
+    }
+}
