@@ -2,14 +2,13 @@
 
 use crate::lib::*;
 
-use crate::gcra::Tat;
 use crate::nanos::Nanos;
-use crate::state::StateStore;
+use crate::state::{InMemoryState, StateStore};
 use crate::{clock, Quota, RateLimiter};
 use dashmap::DashMap;
 
 /// A concurrent, thread-safe and fairly performant hashmap based on [`DashMap`].
-pub type DashMapStateStore<K> = DashMap<K, Tat>;
+pub type DashMapStateStore<K> = DashMap<K, InMemoryState>;
 
 impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
     type Key = K;
@@ -18,7 +17,7 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
-        let entry = self.get_or_insert_with(key, Tat::default);
+        let entry = self.get_or_insert_with(key, InMemoryState::default);
         (*entry).measure_and_replace_one(f)
     }
 }

@@ -2,9 +2,8 @@
 
 use crate::lib::*;
 
-use crate::gcra::Tat;
 use crate::nanos::Nanos;
-use crate::state::StateStore;
+use crate::state::{InMemoryState, StateStore};
 use crate::{clock, Quota, RateLimiter};
 use parking_lot::Mutex;
 
@@ -13,7 +12,7 @@ use parking_lot::Mutex;
 ///
 /// The `HashMapStateStore` is the default state store in `std` when no other thread-safe
 /// features are enabled.
-pub type HashMapStateStore<K> = Mutex<HashMap<K, Tat>>;
+pub type HashMapStateStore<K> = Mutex<HashMap<K, InMemoryState>>;
 
 impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
     type Key = K;
@@ -23,7 +22,9 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         let mut map = self.lock();
-        let entry = (*map).entry(key.clone()).or_insert_with(Tat::default);
+        let entry = (*map)
+            .entry(key.clone())
+            .or_insert_with(InMemoryState::default);
         entry.measure_and_replace_one(f)
     }
 }

@@ -3,9 +3,9 @@
 //! Rate limiters based on these types are constructed with
 //! [the `RateLimiter` constructors](../struct.RateLimiter.html#direct-in-memory-rate-limiters---constructors)
 
-use crate::gcra::{NotUntil, Tat};
+use crate::gcra::NotUntil;
 use crate::lib::*;
-use crate::{clock, NegativeMultiDecision, Quota};
+use crate::{clock, state::InMemoryState, NegativeMultiDecision, Quota};
 
 /// The "this state store does not use keys" key type.
 ///
@@ -32,21 +32,21 @@ impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
 /// or to ensure that an API client stays within a service's rate
 /// limit.
 #[cfg(feature = "std")]
-impl RateLimiter<NotKeyed, Tat, clock::MonotonicClock> {
+impl RateLimiter<NotKeyed, InMemoryState, clock::MonotonicClock> {
     /// Construct a new in-memory direct rate limiter for a quota with the monotonic clock.
-    pub fn direct(quota: Quota) -> RateLimiter<NotKeyed, Tat, clock::MonotonicClock> {
+    pub fn direct(quota: Quota) -> RateLimiter<NotKeyed, InMemoryState, clock::MonotonicClock> {
         let clock = clock::MonotonicClock::default();
         Self::direct_with_clock(quota, &clock)
     }
 }
 
-impl<C> RateLimiter<NotKeyed, Tat, C>
+impl<C> RateLimiter<NotKeyed, InMemoryState, C>
 where
     C: clock::Clock,
 {
     /// Construct a new direct rate limiter for a quota with a custom clock.
     pub fn direct_with_clock(quota: Quota, clock: &C) -> Self {
-        let state: Tat = Default::default();
+        let state: InMemoryState = Default::default();
         RateLimiter::new(quota, state, &clock)
     }
 }

@@ -1,7 +1,10 @@
 //! State stores for rate limiters
 
 pub mod direct;
+mod in_memory;
 pub mod keyed;
+
+pub use self::in_memory::InMemoryState;
 
 use crate::gcra::GCRA;
 use crate::nanos::Nanos;

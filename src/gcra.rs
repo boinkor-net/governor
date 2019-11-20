@@ -1,58 +1,7 @@
 use crate::lib::*;
 use crate::nanos::Nanos;
-use crate::{
-    clock,
-    state::{NotKeyed, StateStore},
-    NegativeMultiDecision, Quota,
-};
-
-/// An in-memory representation of a GCRA's rate-limiting state.
-#[derive(Default)]
-pub struct Tat(AtomicU64);
-
-impl Tat {
-    pub(crate) fn measure_and_replace_one<T, F, E>(&self, f: F) -> Result<T, E>
-    where
-        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
-    {
-        let mut prev = self.0.load(Ordering::Acquire);
-        let mut decision = f(NonZeroU64::new(prev).map(|n| n.get().into()));
-        while let Ok((result, new_data)) = decision {
-            match self.0.compare_exchange_weak(
-                prev,
-                new_data.into(),
-                Ordering::Release,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => return Ok(result),
-                Err(next_prev) => prev = next_prev,
-            }
-            decision = f(NonZeroU64::new(prev).map(|n| n.get().into()));
-        }
-        // This map shouldn't be needed, as we only get here in the error case, but the compiler
-        // can't see it.
-        decision.map(|(result, _)| result)
-    }
-}
-
-/// Tat is a valid in-memory state store.
-impl StateStore for Tat {
-    type Key = NotKeyed;
-
-    fn measure_and_replace<T, F, E>(&self, _key: &Self::Key, f: F) -> Result<T, E>
-    where
-        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
-    {
-        self.measure_and_replace_one(f)
-    }
-}
-
-impl Debug for Tat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        let d = Duration::from_nanos(self.0.load(Ordering::Relaxed));
-        write!(f, "Tat({:?})", d)
-    }
-}
+use crate::state::StateStore;
+use crate::{clock, NegativeMultiDecision, Quota};
 
 /// A negative rate-limiting outcome.
 ///
