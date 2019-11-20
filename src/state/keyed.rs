@@ -113,14 +113,14 @@ where
 }
 
 #[cfg(feature = "std")]
-mod hash_map;
+mod hashmap;
 #[cfg(feature = "std")]
-pub use hash_map::HashMapStateStore;
+pub use hashmap::HashMapStateStore;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
-mod dash_map;
+mod dashmap;
 #[cfg(all(feature = "std", feature = "dashmap"))]
-pub use self::dash_map::DashMapStateStore;
+pub use self::dashmap::DashMapStateStore;
 
 #[cfg(feature = "std")]
 mod future;
