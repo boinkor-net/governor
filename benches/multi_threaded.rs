@@ -1,4 +1,4 @@
-use criterion::{black_box, Benchmark, Criterion, Throughput};
+use criterion::{black_box, BatchSize, Benchmark, Criterion, Throughput};
 use governor::state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore};
 use governor::{clock, Quota, RateLimiter};
 use nonzero_ext::*;
@@ -28,10 +28,15 @@ fn bench_direct(c: &mut Criterion) {
             let clock = clock.clone();
             let mut b = *b;
             children.push(thread::spawn(move || {
-                b.iter(|| {
-                    clock.advance(ms);
-                    black_box(lim.check().is_ok());
-                });
+                b.iter_batched(
+                    || {
+                        clock.advance(ms);
+                    },
+                    |()| {
+                        black_box(lim.check().is_ok());
+                    },
+                    BatchSize::SmallInput,
+                );
             }));
         }
         b.iter(|| {
@@ -67,20 +72,30 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(
             let clock = clock.clone();
             let mut b = *b;
             children.push(thread::spawn(move || {
-                b.iter(|| {
-                    clock.advance(ms);
-                    black_box(lim.check_key(&1u32).is_ok());
-                    black_box(lim.check_key(&2u32).is_ok());
-                    black_box(lim.check_key(&3u32).is_ok());
-                });
+                b.iter_batched(
+                    || {
+                        clock.advance(ms);
+                    },
+                    |()| {
+                        black_box(lim.check_key(&1u32).is_ok());
+                        black_box(lim.check_key(&2u32).is_ok());
+                        black_box(lim.check_key(&3u32).is_ok());
+                    },
+                    BatchSize::SmallInput,
+                );
             }));
         }
-        b.iter(|| {
-            clock.advance(ms);
-            black_box(lim.check_key(&1u32).is_ok());
-            black_box(lim.check_key(&2u32).is_ok());
-            black_box(lim.check_key(&3u32).is_ok());
-        });
+        b.iter_batched(
+            || {
+                clock.advance(ms);
+            },
+            |()| {
+                black_box(lim.check_key(&1u32).is_ok());
+                black_box(lim.check_key(&2u32).is_ok());
+                black_box(lim.check_key(&3u32).is_ok());
+            },
+            BatchSize::SmallInput,
+        );
         for child in children {
             child.join().unwrap();
         }
