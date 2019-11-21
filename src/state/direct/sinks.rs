@@ -1,7 +1,10 @@
 use crate::lib::*;
 
-use super::DirectRateLimiter;
-use crate::{clock, Jitter};
+use crate::{
+    clock,
+    state::{DirectStateStore, NotKeyed},
+    Jitter, RateLimiter,
+};
 use futures::task::{Context, Poll};
 use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
@@ -13,40 +16,40 @@ where
     S: Sink<Item>,
 {
     /// Limits the rate at which items can be put into the current sink.
-    fn ratelimit_sink<'a>(
+    fn ratelimit_sink<'a, D: DirectStateStore>(
         self,
-        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
-    ) -> RatelimitedSink<'a, Item, S>
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
+    ) -> RatelimitedSink<'a, Item, S, D>
     where
         Self: Sized;
 
     /// Limits the rate at which items can be put into the current sink, with a randomized wait
     /// period.
-    fn ratelimit_sink_with_jitter<'a>(
+    fn ratelimit_sink_with_jitter<'a, D: DirectStateStore>(
         self,
-        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
-    ) -> RatelimitedSink<'a, Item, S>
+    ) -> RatelimitedSink<'a, Item, S, D>
     where
         Self: Sized;
 }
 
 impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
-    fn ratelimit_sink(
+    fn ratelimit_sink<D: DirectStateStore>(
         self,
-        limiter: &DirectRateLimiter<clock::MonotonicClock>,
-    ) -> RatelimitedSink<Item, S>
+        limiter: &RateLimiter<NotKeyed, D, clock::MonotonicClock>,
+    ) -> RatelimitedSink<Item, S, D>
     where
         Self: Sized,
     {
         RatelimitedSink::new(self, limiter, Jitter::NONE)
     }
 
-    fn ratelimit_sink_with_jitter(
+    fn ratelimit_sink_with_jitter<D: DirectStateStore>(
         self,
-        limiter: &DirectRateLimiter<clock::MonotonicClock>,
+        limiter: &RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
-    ) -> RatelimitedSink<Item, S>
+    ) -> RatelimitedSink<Item, S, D>
     where
         Self: Sized,
     {
@@ -61,22 +64,22 @@ enum State {
     Ready,
 }
 
-/// A [`futures::Sink`] combinator that only allows sending elements when the rate-limiter allows
-/// it.
-pub struct RatelimitedSink<'a, Item, S: Sink<Item>> {
+/// A [`Sink`][futures::Sink] combinator that only allows sending elements when the rate-limiter
+/// allows it.
+pub struct RatelimitedSink<'a, Item, S: Sink<Item>, D: DirectStateStore> {
     inner: S,
     state: State,
-    limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
+    limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     delay: Delay,
     jitter: Jitter,
     phantom: PhantomData<Item>,
 }
 
 /// Conversion methods for the sink combinator.
-impl<'a, Item, S: Sink<Item>> RatelimitedSink<'a, Item, S> {
+impl<'a, Item, S: Sink<Item>, D: DirectStateStore> RatelimitedSink<'a, Item, S, D> {
     fn new(
         inner: S,
-        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
     ) -> Self {
         RatelimitedSink {
@@ -105,7 +108,7 @@ impl<'a, Item, S: Sink<Item>> RatelimitedSink<'a, Item, S> {
     }
 }
 
-impl<'a, Item, S: Sink<Item>> Sink<Item> for RatelimitedSink<'a, Item, S>
+impl<'a, Item, S: Sink<Item>, D: DirectStateStore> Sink<Item> for RatelimitedSink<'a, Item, S, D>
 where
     S: Unpin,
     Item: Unpin,
@@ -175,7 +178,8 @@ where
 }
 
 /// Pass-through implementation for [`futures::Stream`] if the Sink also implements it.
-impl<'a, Item, S: Stream + Sink<Item>> Stream for RatelimitedSink<'a, Item, S>
+impl<'a, Item, S: Stream + Sink<Item>, D: DirectStateStore> Stream
+    for RatelimitedSink<'a, Item, S, D>
 where
     S::Item: Unpin,
     S: Unpin,

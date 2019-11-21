@@ -15,11 +15,11 @@
 //! ``` rust
 //! use std::num::NonZeroU32;
 //! use nonzero_ext::*;
-//! use governor::{Quota, DirectRateLimiter};
+//! use governor::{Quota, RateLimiter};
 //!
 //! # #[cfg(feature = "std")]
 //! # fn main () {
-//! let mut lim = DirectRateLimiter::new(Quota::per_second(nonzero!(50u32))); // Allow 50 units per second
+//! let mut lim = RateLimiter::direct(Quota::per_second(nonzero!(50u32))); // Allow 50 units per second
 //! assert_eq!(Ok(()), lim.check());
 //! # }
 //! # #[cfg(not(feature = "std"))]
@@ -43,14 +43,16 @@ mod lib {
         pub use std::*;
     }
 
+    pub use self::core::borrow::Borrow;
     pub use self::core::clone::Clone;
     pub use self::core::cmp::{Eq, Ord, PartialEq};
     pub use self::core::convert::TryFrom;
     pub use self::core::convert::TryInto;
     pub use self::core::default::Default;
     pub use self::core::fmt::Debug;
+    pub use self::core::hash::Hash;
     pub use self::core::marker::{Copy, PhantomData, Send, Sized, Sync};
-    pub use self::core::num::{NonZeroU128, NonZeroU32};
+    pub use self::core::num::{NonZeroU128, NonZeroU32, NonZeroU64};
     pub use self::core::ops::{Add, Div, Mul, Sub};
     pub use self::core::sync::atomic::{AtomicU64, Ordering};
     pub use self::core::time::Duration;
@@ -61,8 +63,8 @@ mod lib {
     /// Imports that are only available on std.
     #[cfg(feature = "std")]
     mod std {
-        pub use std::collections::hash_map::RandomState;
-        pub use std::hash::{BuildHasher, Hash};
+        pub use std::collections::{hash_map::RandomState, HashMap};
+        pub use std::hash::BuildHasher;
         pub use std::sync::Arc;
         pub use std::time::Instant;
     }
@@ -86,13 +88,14 @@ mod gcra;
 mod jitter;
 mod nanos;
 mod quota;
-mod state;
+pub mod state;
 
 pub use errors::*;
 pub use gcra::NotUntil;
 pub use jitter::Jitter;
 pub use quota::Quota;
-pub use state::direct::DirectRateLimiter;
+#[doc(inline)]
+pub use state::RateLimiter;
 
 #[cfg(feature = "std")]
 pub use state::direct::RatelimitedSink;

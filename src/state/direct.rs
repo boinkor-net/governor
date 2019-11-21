@@ -1,37 +1,69 @@
-use crate::gcra::{NotUntil, Tat, GCRA};
-use crate::lib::*;
-use crate::{clock, NegativeMultiDecision, Quota};
+//! Direct rate limiters (those that can only hold one state).
+//!
+//! Rate limiters based on these types are constructed with
+//! [the `RateLimiter` constructors](../struct.RateLimiter.html#direct-in-memory-rate-limiters---constructors)
 
-/// An in-memory rate limiter that makes direct (un-keyed)
+use crate::gcra::NotUntil;
+use crate::lib::*;
+use crate::{clock, state::InMemoryState, NegativeMultiDecision, Quota};
+
+/// The "this state store does not use keys" key type.
+///
+/// It's possible to use this to create a "direct" rate limiter. It explicitly does not implement
+/// [`Hash`][std::hash::Hash] so that it is possible to tell apart from "hashable" key types.
+#[derive(PartialEq, Debug, Eq)]
+pub enum NotKeyed {
+    /// The value given to state stores' methods.
+    NonKey,
+}
+
+/// A trait for state stores that only keep one rate limiting state.
+///
+/// This is blanket-implemented by all [`StateStore`]s with [`NotKeyed`] key associated types.
+pub trait DirectStateStore: StateStore<Key = NotKeyed> {}
+
+impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
+
+/// # Direct in-memory rate limiters - Constructors
+///
+/// Here we construct an in-memory rate limiter that makes direct (un-keyed)
 /// rate-limiting decisions. Direct rate limiters can be used to
 /// e.g. regulate the transmission of packets on a single connection,
 /// or to ensure that an API client stays within a service's rate
 /// limit.
-#[derive(Debug)]
-pub struct DirectRateLimiter<C: clock::Clock = clock::DefaultClock> {
-    state: Tat,
-    gcra: GCRA<C::Instant>,
-    clock: C,
-}
-
-/// The default constructor in `std` mode.
 #[cfg(feature = "std")]
-impl DirectRateLimiter<clock::DefaultClock> {
-    /// Construct a new direct rate limiter for a quota with the default clock.
-    pub fn new(quota: Quota) -> Self {
-        let clock = clock::DefaultClock::default();
-        DirectRateLimiter::new_with_clock(quota, &clock)
+impl RateLimiter<NotKeyed, InMemoryState, clock::MonotonicClock> {
+    /// Construct a new in-memory direct rate limiter for a quota with the monotonic clock.
+    pub fn direct(quota: Quota) -> RateLimiter<NotKeyed, InMemoryState, clock::MonotonicClock> {
+        let clock = clock::MonotonicClock::default();
+        Self::direct_with_clock(quota, &clock)
     }
 }
 
-/// Manually checking cells against a rate limit.
-impl<C: clock::Clock> DirectRateLimiter<C> {
+impl<C> RateLimiter<NotKeyed, InMemoryState, C>
+where
+    C: clock::Clock,
+{
+    /// Construct a new direct rate limiter for a quota with a custom clock.
+    pub fn direct_with_clock(quota: Quota, clock: &C) -> Self {
+        let state: InMemoryState = Default::default();
+        RateLimiter::new(quota, state, &clock)
+    }
+}
+
+/// # Direct rate limiters - Manually checking cells
+impl<S, C> RateLimiter<NotKeyed, S, C>
+where
+    S: DirectStateStore,
+    C: clock::Clock,
+{
     /// Allow a single cell through the rate limiter.
     ///
     /// If the rate limit is reached, `check` returns information about the earliest
-    /// time that a cell might be allowed through again.  
+    /// time that a cell might be allowed through again.
     pub fn check(&self) -> Result<(), NotUntil<C::Instant>> {
-        self.gcra.test_and_update(&self.state, self.clock.now())
+        self.gcra
+            .test_and_update(self.start, &NotKeyed::NonKey, &self.state, self.clock.now())
     }
 
     /// Allow *only all* `n` cells through the rate limiter.
@@ -44,7 +76,7 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
     /// * Failure (the batch can never go through): The rate limit is too low for the given number
     ///   of cells.
     ///
-    /// # Performance
+    /// ### Performance
     /// This method diverges a little from the GCRA algorithm, using
     /// multiplication to determine the next theoretical arrival time, and so
     /// is not as fast as checking a single cell.  
@@ -52,23 +84,13 @@ impl<C: clock::Clock> DirectRateLimiter<C> {
         &self,
         n: NonZeroU32,
     ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
-        self.gcra
-            .test_n_all_and_update(n, &self.state, self.clock.now())
-    }
-}
-
-impl<C: clock::Clock> DirectRateLimiter<C> {
-    /// Construct a new direct rate limiter with a custom clock.
-    pub fn new_with_clock(quota: Quota, clock: &C) -> DirectRateLimiter<C> {
-        let gcra: GCRA<C::Instant> = GCRA::new(clock.now(), quota);
-        let clock = clock.clone();
-        let state = gcra.new_state(clock.now());
-        DirectRateLimiter { state, clock, gcra }
-    }
-
-    /// Returns a reference to the rate limiter's clock.
-    pub fn get_clock(&self) -> &C {
-        &self.clock
+        self.gcra.test_n_all_and_update(
+            self.start,
+            &NotKeyed::NonKey,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
     }
 }
 
@@ -84,5 +106,7 @@ pub use sinks::*;
 
 #[cfg(feature = "std")]
 mod streams;
+
+use crate::state::{RateLimiter, StateStore};
 #[cfg(feature = "std")]
 pub use streams::*;

@@ -2,7 +2,7 @@
 
 use futures::executor::block_on;
 use futures::SinkExt;
-use governor::{prelude::*, DirectRateLimiter, Quota};
+use governor::{prelude::*, Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 #[test]
 fn sink() {
     let i = Instant::now();
-    let lim = Arc::new(DirectRateLimiter::new(Quota::per_second(nonzero!(10u32))));
+    let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
     let mut sink = Vec::new().ratelimit_sink(&lim);
 
     for _ in 0..10 {

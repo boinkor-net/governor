@@ -40,8 +40,8 @@
 //! ```rust
 //! # #[cfg(feature = "std")] fn main() {
 //! # use nonzero_ext::*;
-//! # use governor::{DirectRateLimiter, Quota};
-//! DirectRateLimiter::new(Quota::per_second(nonzero!(50u32)));
+//! # use governor::{RateLimiter, Quota};
+//! RateLimiter::direct(Quota::per_second(nonzero!(50u32)));
 //! # } #[cfg(not(feature = "std"))] fn main() {}
 //! ```
 //!
@@ -55,9 +55,9 @@
 //!
 //! ```rust
 //! # use nonzero_ext::*;
-//! # use governor::{clock::FakeRelativeClock, DirectRateLimiter, Quota};
+//! # use governor::{clock::FakeRelativeClock, RateLimiter, Quota};
 //! let clock = FakeRelativeClock::default();
-//! DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(50u32)), &clock);
+//! RateLimiter::direct_with_clock(Quota::per_second(nonzero!(50u32)), &clock);
 //! ```
 //!
 //! # Data ownership and references to rate limiters
@@ -92,11 +92,11 @@
 //! ```rust
 //! # use crossbeam;
 //! # use nonzero_ext::*;
-//! # use governor::{clock::FakeRelativeClock, DirectRateLimiter, Quota};
+//! # use governor::{clock::FakeRelativeClock, RateLimiter, Quota};
 //! # use std::time::Duration;
 //!
 //! let mut clock = FakeRelativeClock::default();
-//! let lim = DirectRateLimiter::new_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+//! let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
 //! let ms = Duration::from_millis(1);
 //!
 //! crossbeam::scope(|scope| {
@@ -125,11 +125,11 @@
 //! ```rust
 //! # #[cfg(feature = "std")] fn main() {
 //! # use nonzero_ext::*;
-//! # use governor::{DirectRateLimiter, Quota};
+//! # use governor::{RateLimiter, Quota};
 //! # use std::time::Duration;
 //! # use std::sync::Arc;
 //! # use std::thread;
-//! let bucket = Arc::new(DirectRateLimiter::new(Quota::per_second(nonzero!(20u32))));
+//! let bucket = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(20u32))));
 //! for _i in 0..20 {
 //!     let bucket = bucket.clone();
 //!     thread::spawn(move || {

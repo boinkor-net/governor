@@ -1,16 +1,17 @@
-use super::RateLimiter;
+use crate::lib::*;
 use crate::{
     clock::{self, Clock},
-    state::{DirectStateStore, NotKeyed},
-    Jitter,
+    state::keyed::KeyedStateStore,
+    Jitter, RateLimiter,
 };
 use futures_timer::Delay;
 
 #[cfg(feature = "std")]
-/// # Direct rate limiters - `async`/`await`
-impl<S> RateLimiter<NotKeyed, S, clock::MonotonicClock>
+/// # Keyed rate limiters - `async`/`await`
+impl<K, S> RateLimiter<K, S, clock::MonotonicClock>
 where
-    S: DirectStateStore,
+    K: Hash + Eq + Clone,
+    S: KeyedStateStore<K>,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///
@@ -21,8 +22,8 @@ where
     ///
     /// If multiple futures are dispatched against the rate limiter, it is advisable to use
     /// [`until_ready_with_jitter`](#method.until_ready_with_jitter), to avoid thundering herds.
-    pub async fn until_ready(&self) {
-        self.until_ready_with_jitter(Jitter::NONE).await;
+    pub async fn until_key_ready(&self, key: &K) {
+        self.until_key_ready_with_jitter(key, Jitter::NONE).await;
     }
 
     /// Asynchronously resolves as soon as the rate limiter allows it, with a randomized wait
@@ -36,8 +37,8 @@ where
     /// This method allows for a randomized additional delay between polls of the rate limiter,
     /// which can help reduce the likelihood of thundering herd effects if multiple tasks try to
     /// wait on the same rate limiter.
-    pub async fn until_ready_with_jitter(&self, jitter: Jitter) {
-        while let Err(negative) = self.check() {
+    pub async fn until_key_ready_with_jitter(&self, key: &K, jitter: Jitter) {
+        while let Err(negative) = self.check_key(key) {
             let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
             delay.await;
         }

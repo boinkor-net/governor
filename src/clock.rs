@@ -56,7 +56,7 @@ pub struct FakeRelativeClock {
 
 impl FakeRelativeClock {
     /// Advances the fake clock by the given amount.
-    pub fn advance(&mut self, by: Duration) {
+    pub fn advance(&self, by: Duration) {
         let by: u64 = by
             .as_nanos()
             .try_into()

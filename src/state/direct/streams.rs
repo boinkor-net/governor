@@ -1,7 +1,8 @@
 #![cfg(feature = "std")]
 
 use crate::lib::*;
-use crate::{clock, DirectRateLimiter, Jitter};
+use crate::state::{DirectStateStore, NotKeyed};
+use crate::{clock, Jitter, RateLimiter};
 use futures::task::{Context, Poll};
 use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
@@ -16,10 +17,10 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// The combinator will buffer at most one item in order to adhere to the
     /// given limiter. I.e. if it already has an item buffered and needs to wait
     /// it will not `poll` the underlying stream.
-    fn ratelimit_stream(
+    fn ratelimit_stream<D: DirectStateStore>(
         self,
-        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
-    ) -> RatelimitedStream<'a, Self>
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
+    ) -> RatelimitedStream<'a, Self, D>
     where
         Self: Sized;
 
@@ -30,31 +31,31 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// The combinator will buffer at most one item in order to adhere to the
     /// given limiter. I.e. if it already has an item buffered and needs to wait
     /// it will not `poll` the underlying stream.
-    fn ratelimit_stream_with_jitter(
+    fn ratelimit_stream_with_jitter<D: DirectStateStore>(
         self,
-        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
-    ) -> RatelimitedStream<'a, Self>
+    ) -> RatelimitedStream<'a, Self, D>
     where
         Self: Sized;
 }
 
 impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
-    fn ratelimit_stream(
+    fn ratelimit_stream<D: DirectStateStore>(
         self,
-        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
-    ) -> RatelimitedStream<'a, Self>
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
+    ) -> RatelimitedStream<'a, Self, D>
     where
         Self: Sized,
     {
         self.ratelimit_stream_with_jitter(limiter, Jitter::NONE)
     }
 
-    fn ratelimit_stream_with_jitter(
+    fn ratelimit_stream_with_jitter<D: DirectStateStore>(
         self,
-        limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
         jitter: Jitter,
-    ) -> RatelimitedStream<'a, Self>
+    ) -> RatelimitedStream<'a, Self, D>
     where
         Self: Sized,
     {
@@ -76,13 +77,13 @@ enum State {
     Wait,
 }
 
-/// A stream combinator which will limit the rate of items passing through.
+/// A [`Stream`][futures::Stream] combinator which will limit the rate of items being received.
 ///
 /// This is produced by the [`StreamRateLimitExt::ratelimit_stream`] and
 /// [`StreamRateLimitExt::ratelimit_stream_with_jitter`] methods.
-pub struct RatelimitedStream<'a, S: Stream> {
+pub struct RatelimitedStream<'a, S: Stream, D: DirectStateStore> {
     inner: S,
-    limiter: &'a DirectRateLimiter<clock::MonotonicClock>,
+    limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
     delay: Delay,
     buf: Option<S::Item>,
     jitter: Jitter,
@@ -90,7 +91,7 @@ pub struct RatelimitedStream<'a, S: Stream> {
 }
 
 /// Conversion methods for the stream combinator.
-impl<'a, S: Stream> RatelimitedStream<'a, S> {
+impl<'a, S: Stream, D: DirectStateStore> RatelimitedStream<'a, S, D> {
     /// Acquires a reference to the underlying stream that this combinator is pulling from.
     pub fn get_ref(&self) -> &S {
         &self.inner
@@ -110,7 +111,7 @@ impl<'a, S: Stream> RatelimitedStream<'a, S> {
 }
 
 /// Implements the [`futures::Stream`] combinator.
-impl<'a, S: Stream> Stream for RatelimitedStream<'a, S>
+impl<'a, S: Stream, D: DirectStateStore> Stream for RatelimitedStream<'a, S, D>
 where
     S: Unpin,
     S::Item: Unpin,
@@ -173,7 +174,8 @@ where
 }
 
 /// Pass-through implementation for [`futures::Sink`] if the Stream also implements it.
-impl<'a, Item, S: Stream + Sink<Item>> Sink<Item> for RatelimitedStream<'a, S>
+impl<'a, Item, S: Stream + Sink<Item>, D: DirectStateStore> Sink<Item>
+    for RatelimitedStream<'a, S, D>
 where
     S: Unpin,
     S::Item: Unpin,
