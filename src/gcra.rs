@@ -19,7 +19,7 @@ impl<'a, P: clock::Reference> NotUntil<'a, P> {
     /// conforming (excluding conforming decisions made by the Decider
     /// that are made in the meantime).
     pub fn earliest_possible(&self) -> P {
-        let tat: Duration = self.tat.into();
+        let tat: Nanos = self.tat;
         self.start + tat
     }
 
@@ -31,14 +31,13 @@ impl<'a, P: clock::Reference> NotUntil<'a, P> {
     /// `wait_time_from` returns a zero `Duration`.
     pub fn wait_time_from(&self, from: P) -> Duration {
         let earliest = self.earliest_possible();
-        earliest.duration_since(earliest.min(from))
+        earliest.duration_since(earliest.min(from)).into()
     }
 }
 
 impl<'a, P: clock::Reference> fmt::Display for NotUntil<'a, P> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let tat: Duration = self.tat.into();
-        write!(f, "rate-limited until {:?}", self.start + tat)
+        write!(f, "rate-limited until {:?}", self.start + self.tat)
     }
 }
 
@@ -71,7 +70,7 @@ impl GCRA {
         state: &impl StateStore<Key = K>,
         t0: P,
     ) -> Result<(), NotUntil<P>> {
-        let t0: Nanos = t0.duration_since(start).into();
+        let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(key, |tat| {
@@ -98,7 +97,7 @@ impl GCRA {
         state: &impl StateStore<Key = K>,
         t0: P,
     ) -> Result<(), NegativeMultiDecision<NotUntil<P>>> {
-        let t0: Nanos = t0.duration_since(start).into();
+        let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
         let weight = t * (n.get() - 1) as u64;

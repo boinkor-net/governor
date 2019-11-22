@@ -83,12 +83,12 @@ impl Nanos {
 }
 
 impl clock::Reference for Nanos {
-    fn duration_since(&self, earlier: Self) -> Duration {
-        Duration::from_nanos((*self as Nanos).saturating_sub(earlier).0)
+    fn duration_since(&self, earlier: Self) -> Nanos {
+        (*self as Nanos).saturating_sub(earlier)
     }
 
-    fn saturating_sub(&self, duration: Duration) -> Self {
-        (*self as Nanos).saturating_sub(duration.into())
+    fn saturating_sub(&self, duration: Nanos) -> Self {
+        (*self as Nanos).saturating_sub(duration)
     }
 }
 
