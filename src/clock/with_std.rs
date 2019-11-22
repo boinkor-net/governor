@@ -4,9 +4,6 @@ use parking_lot::Mutex;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 
-/// The default clock that reports [`Instant`]s.
-pub type DefaultClock = MonotonicClock;
-
 /// A mock implementation of a clock tracking [`Instant`]s. All it
 /// does is keep track of what "now" is by allowing the program to
 /// increment the current time (taken at time of construction) by some

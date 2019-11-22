@@ -97,3 +97,11 @@ pub use no_std::*;
 mod with_std;
 #[cfg(feature = "std")]
 pub use with_std::*;
+
+#[cfg(all(feature = "std", feature = "quanta"))]
+mod quanta;
+#[cfg(all(feature = "std", feature = "quanta"))]
+pub use self::quanta::*;
+
+mod default;
+pub use default::*;
