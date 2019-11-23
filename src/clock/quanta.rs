@@ -1,8 +1,9 @@
 use crate::lib::*;
 
-use crate::clock::{Clock, Reference};
+use crate::clock::{Clock, CompatibleConversion, Reference};
 use crate::nanos::Nanos;
 use quanta;
+use std::time::SystemTime;
 
 /// A clock using the default [`quanta::Clock`] structure.
 ///
@@ -49,6 +50,10 @@ impl Reference for QuantaInstant {
         QuantaInstant(self.0.saturating_sub(duration))
     }
 }
+
+impl CompatibleConversion<Instant> for QuantaInstant {}
+
+impl CompatibleConversion<SystemTime> for QuantaInstant {}
 
 /// A clock using the default [`quanta::Clock`] structure and an upkeep thread.
 ///

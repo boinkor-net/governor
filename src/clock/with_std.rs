@@ -1,6 +1,6 @@
 use crate::lib::*;
 
-use super::{Clock, Reference};
+use super::{Clock, CompatibleConversion, Reference};
 
 use crate::nanos::Nanos;
 use std::time::{Duration, Instant, SystemTime};
@@ -31,6 +31,8 @@ impl Reference for Instant {
         self.checked_sub(duration.into()).unwrap_or(*self)
     }
 }
+
+impl CompatibleConversion<SystemTime> for Instant {}
 
 impl Clock for MonotonicClock {
     type Instant = Instant;
