@@ -8,10 +8,12 @@ use futures_timer::Delay;
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - `async`/`await`
-impl<K, S> RateLimiter<K, S, clock::MonotonicClock>
+impl<K, S, C> RateLimiter<K, S, C>
 where
     K: Hash + Eq + Clone,
     S: KeyedStateStore<K>,
+    C: Clock,
+    C::Instant: clock::CompatibleConversion<Instant>,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///
