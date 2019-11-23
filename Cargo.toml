@@ -49,7 +49,7 @@ name = "criterion"
 harness = false
 
 [dev-dependencies]
-criterion = "0.2.11"
+criterion = "0.3.0"
 crossbeam = "0.7.3"
 libc = "0.2.41"
 futures = "0.3.1"
