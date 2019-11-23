@@ -32,10 +32,10 @@ impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
 /// or to ensure that an API client stays within a service's rate
 /// limit.
 #[cfg(feature = "std")]
-impl RateLimiter<NotKeyed, InMemoryState, clock::MonotonicClock> {
-    /// Construct a new in-memory direct rate limiter for a quota with the monotonic clock.
-    pub fn direct(quota: Quota) -> RateLimiter<NotKeyed, InMemoryState, clock::MonotonicClock> {
-        let clock = clock::MonotonicClock::default();
+impl RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock> {
+    /// Constructs a new in-memory direct rate limiter for a quota with the default real-time clock.
+    pub fn direct(quota: Quota) -> RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock> {
+        let clock = clock::DefaultClock::default();
         Self::direct_with_clock(quota, &clock)
     }
 }
@@ -44,7 +44,7 @@ impl<C> RateLimiter<NotKeyed, InMemoryState, C>
 where
     C: clock::Clock,
 {
-    /// Construct a new direct rate limiter for a quota with a custom clock.
+    /// Constructs a new direct rate limiter for a quota with a custom clock.
     pub fn direct_with_clock(quota: Quota, clock: &C) -> Self {
         let state: InMemoryState = Default::default();
         RateLimiter::new(quota, state, &clock)

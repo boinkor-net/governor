@@ -27,16 +27,16 @@ where
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - default constructors
-impl<K> RateLimiter<K, DefaultKeyedStateStore<K>, clock::MonotonicClock>
+impl<K> RateLimiter<K, DefaultKeyedStateStore<K>, clock::DefaultClock>
 where
     K: Clone + Hash + Eq,
 {
     #[cfg(all(feature = "std", feature = "dashmap"))]
-    /// Construct a new keyed rate limiter backed by
+    /// Constructs a new keyed rate limiter backed by
     /// the [`DefaultKeyedStateStore`].
     pub fn keyed(quota: Quota) -> Self {
         let state = DefaultKeyedStateStore::default();
-        let clock = clock::MonotonicClock::default();
+        let clock = clock::DefaultClock::default();
         RateLimiter::new(quota, state, &clock)
     }
 
@@ -44,7 +44,7 @@ where
     /// Constructs a new keyed rate limiter explicitly backed by a [`DashMap`][dashmap::DashMap].
     pub fn dashmap(quota: Quota) -> Self {
         let state = DashMapStateStore::default();
-        let clock = clock::MonotonicClock::default();
+        let clock = clock::DefaultClock::default();
         RateLimiter::new(quota, state, &clock)
     }
 
@@ -53,13 +53,13 @@ where
     /// [`HashMap`][std::collections::HashMap].
     pub fn hashmap(quota: Quota) -> Self {
         let state = HashMapStateStore::default();
-        let clock = clock::MonotonicClock::default();
+        let clock = clock::DefaultClock::default();
         RateLimiter::new(quota, state, &clock)
     }
 }
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
-impl<K> RateLimiter<K, HashMapStateStore<K>, clock::MonotonicClock>
+impl<K> RateLimiter<K, HashMapStateStore<K>, clock::DefaultClock>
 where
     K: Clone + Hash + Eq,
 {
@@ -67,7 +67,7 @@ where
     /// [`HashMap`][std::collections::HashMap].
     pub fn hashmap(quota: Quota) -> Self {
         let state = HashMapStateStore::default();
-        let clock = clock::MonotonicClock::default();
+        let clock = clock::DefaultClock::default();
         RateLimiter::new(quota, state, &clock)
     }
 }
