@@ -18,18 +18,15 @@ macro_rules! with_realtime_clocks {
     {($name:expr, $group:ident) |$b:pat, $clock:pat| $closure:block} => {
         {
             let clock = clock::MonotonicClock::default();
-            $group.throughput(Throughput::Elements(1));
             $group.bench_with_input(BenchmarkId::new($name, "MonotonicClock"), &clock, |$b, $clock| $closure);
         }
         {
             let clock = clock::QuantaClock::default();
-            $group.throughput(Throughput::Elements(1));
             $group.bench_with_input(BenchmarkId::new($name, "QuantaClock"), &clock, |$b, $clock| $closure);
         }
         {
             let clock = clock::QuantaUpkeepClock::from_interval(Duration::from_micros(40))
                 .expect("could not spawn upkeep thread");
-            $group.throughput(Throughput::Elements(1));
             $group.bench_with_input(BenchmarkId::new($name, "QuantaUpkeepClock"), &clock, |$b, $clock| $closure);
         }
     };
@@ -37,6 +34,7 @@ macro_rules! with_realtime_clocks {
 
 fn bench_mostly_allow(c: &mut Criterion) {
     let mut group = c.benchmark_group("realtime_clock");
+    group.throughput(Throughput::Elements(1));
     with_realtime_clocks! {("mostly_allow", group) |b, clock| {
         let rl = RateLimiter::direct_with_clock(
             Quota::new(nonzero!(u32::max_value()), Duration::from_nanos(1)).unwrap(),
@@ -51,6 +49,7 @@ fn bench_mostly_allow(c: &mut Criterion) {
 
 fn bench_mostly_deny(c: &mut Criterion) {
     let mut group = c.benchmark_group("realtime_clock");
+    group.throughput(Throughput::Elements(1));
     with_realtime_clocks! {("mostly_deny", group) |b, clock| {
         let rl = RateLimiter::direct_with_clock(Quota::per_hour(nonzero!(1u32)), clock);
         b.iter(|| {
