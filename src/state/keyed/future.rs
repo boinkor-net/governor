@@ -1,6 +1,6 @@
 use crate::lib::*;
 use crate::{
-    clock::{self, Clock},
+    clock::{self},
     state::keyed::KeyedStateStore,
     Jitter, RateLimiter,
 };
@@ -12,8 +12,7 @@ impl<K, S, C> RateLimiter<K, S, C>
 where
     K: Hash + Eq + Clone,
     S: KeyedStateStore<K>,
-    C: Clock,
-    C::Instant: clock::CompatibleConversion<Instant>,
+    C: clock::ReasonablyRealtime
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///

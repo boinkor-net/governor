@@ -31,14 +31,6 @@ pub trait Clock: Clone {
     fn now(&self) -> Self::Instant;
 }
 
-/// A clock reference is compatible with another reference.
-///
-/// The purpose of this trait is to restrict availability of the `async` functions, as they
-/// wait real amounts of time - if a measurement is "off" or fake, the async function would still
-/// cause the program to wait, but be unable to make progress because the rate limiter is on
-/// another clock.  
-pub trait CompatibleConversion<O>: Reference {}
-
 impl Reference for Duration {
     fn duration_since(&self, earlier: Self) -> Nanos {
         self.checked_sub(earlier)
@@ -50,9 +42,6 @@ impl Reference for Duration {
         self.checked_sub(duration.into()).unwrap_or(*self)
     }
 }
-
-/// Every instant is compatible with itself.
-impl<T: Reference> CompatibleConversion<T> for T {}
 
 impl Add<Nanos> for Duration {
     type Output = Self;

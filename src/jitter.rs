@@ -53,8 +53,8 @@ impl Jitter {
     #[cfg(feature = "std")]
     /// The "empty" jitter interval - no jitter at all.
     pub(crate) const NONE: Jitter = Jitter {
-        min: Nanos::from(0),
-        max: Nanos::from(0),
+        min: Nanos::new(0),
+        max: Nanos::new(0),
     };
 
     /// Constructs a new Jitter interval, waiting at most a duration of `max`.
@@ -66,7 +66,7 @@ impl Jitter {
     }
 
     /// Constructs a new Jitter interval, waiting at least `min` and at most `min+interval`.
-    pub const fn new(min: Duration, interval: Duration) -> Jitter {
+    pub fn new(min: Duration, interval: Duration) -> Jitter {
         let min: Nanos = min.into();
         let max: Nanos = min + Nanos::from(interval);
         Jitter { min, max }
@@ -74,13 +74,14 @@ impl Jitter {
 
     /// Returns a random amount of jitter within the configured interval.
     pub(crate) fn get(&self) -> Nanos {
-        let mut uniform = Uniform::new(self.min, self.max);
+        let uniform = Uniform::new(self.min, self.max);
         uniform.sample(&mut thread_rng())
     }
 }
 
+/// A random distribution of nanoseconds
 #[derive(Clone, Copy, Debug)]
-struct UniformJitter(UniformInt<u64>);
+pub struct UniformJitter(UniformInt<u64>);
 
 impl UniformSampler for UniformJitter {
     type X = Nanos;

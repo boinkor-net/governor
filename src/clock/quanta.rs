@@ -1,9 +1,8 @@
 use crate::lib::*;
 
-use crate::clock::{Clock, CompatibleConversion, Reference};
+use crate::clock::{Clock, ReasonablyRealtime, Reference};
 use crate::nanos::Nanos;
 use quanta;
-use std::time::SystemTime;
 
 /// A clock using the default [`quanta::Clock`] structure.
 ///
@@ -51,10 +50,6 @@ impl Reference for QuantaInstant {
     }
 }
 
-impl CompatibleConversion<Instant> for QuantaInstant {}
-
-impl CompatibleConversion<SystemTime> for QuantaInstant {}
-
 /// A clock using the default [`quanta::Clock`] structure and an upkeep thread.
 ///
 /// This clock relies on an upkeep thread that wakes up in regular (user defined) intervals to
@@ -92,5 +87,16 @@ impl Clock for QuantaUpkeepClock {
 
     fn now(&self) -> Self::Instant {
         QuantaInstant(Nanos::from(self.0.recent()))
+    }
+}
+
+impl ReasonablyRealtime for QuantaClock {
+    fn convert_from_reference(
+        reference: (Self::Instant, Instant),
+        reading: Self::Instant,
+    ) -> Instant {
+        let reference_ns = reference.0;
+        let diff = Duration::from_nanos(reading.0.as_u64() - reference_ns.0.as_u64());
+        reference.1 + diff
     }
 }

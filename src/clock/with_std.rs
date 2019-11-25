@@ -1,6 +1,6 @@
 use crate::lib::*;
 
-use super::{Clock, CompatibleConversion, Reference};
+use super::{Clock, Reference};
 
 use crate::nanos::Nanos;
 use std::time::{Duration, Instant, SystemTime};
@@ -31,8 +31,6 @@ impl Reference for Instant {
         self.checked_sub(duration.into()).unwrap_or(*self)
     }
 }
-
-impl CompatibleConversion<SystemTime> for Instant {}
 
 impl Clock for MonotonicClock {
     type Instant = Instant;
@@ -76,5 +74,43 @@ impl Clock for SystemClock {
 
     fn now(&self) -> Self::Instant {
         SystemTime::now()
+    }
+}
+
+/// Identifies clocks that run similarly to the monotonic realtime clock.
+///
+/// Clocks implementing this trait can be used with rate-limiters functions that operate
+/// asynchronously.
+pub trait ReasonablyRealtime: Clock {
+    /// Returns a reference point at the start of an operation.
+    fn reference_point(&self) -> (Self::Instant, Instant) {
+        (self.now(), Instant::now())
+    }
+
+    /// Converts a reference point and a value of this clock to an Instant in the future.
+    fn convert_from_reference(
+        reference: (Self::Instant, Instant),
+        reading: Self::Instant,
+    ) -> Instant;
+}
+
+impl ReasonablyRealtime for MonotonicClock {
+    fn convert_from_reference(
+        _reference: (Self::Instant, Instant),
+        reading: Self::Instant,
+    ) -> Instant {
+        reading
+    }
+}
+
+impl ReasonablyRealtime for SystemClock {
+    fn convert_from_reference(
+        reference: (Self::Instant, Instant),
+        reading: Self::Instant,
+    ) -> Instant {
+        let diff = reading
+            .duration_since(reference.0)
+            .unwrap_or(Duration::new(0, 0));
+        reference.1 + diff
     }
 }

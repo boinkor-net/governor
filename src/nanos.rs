@@ -14,6 +14,10 @@ impl Nanos {
     pub(crate) fn as_u64(self) -> u64 {
         self.0
     }
+
+    pub(crate) const fn new(u: u64) -> Self {
+        Nanos(u)
+    }
 }
 
 impl From<Duration> for Nanos {

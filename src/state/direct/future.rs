@@ -1,8 +1,6 @@
-use crate::lib::*;
-
 use super::RateLimiter;
 use crate::{
-    clock::{self, Clock},
+    clock,
     state::{DirectStateStore, NotKeyed},
     Jitter,
 };
@@ -13,8 +11,7 @@ use futures_timer::Delay;
 impl<S, C> RateLimiter<NotKeyed, S, C>
 where
     S: DirectStateStore,
-    C: Clock,
-    C::Instant: clock::CompatibleConversion<Instant>,
+    C: clock::ReasonablyRealtime,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///

@@ -23,7 +23,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
     ) -> RatelimitedStream<'a, Self, D, C>
     where
         Self: Sized,
-        C::Instant: clock::CompatibleConversion<Instant>;
+        C: clock::ReasonablyRealtime;
 
     /// Limits the rate at which the stream produces items, with a randomized wait period.
     ///
@@ -39,7 +39,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
     ) -> RatelimitedStream<'a, Self, D, C>
     where
         Self: Sized,
-        C::Instant: clock::CompatibleConversion<Instant>;
+        C: clock::ReasonablyRealtime;
 }
 
 impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
@@ -49,7 +49,7 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     ) -> RatelimitedStream<'a, Self, D, C>
     where
         Self: Sized,
-        C::Instant: clock::CompatibleConversion<Instant>,
+        C: clock::ReasonablyRealtime,
     {
         self.ratelimit_stream_with_jitter(limiter, Jitter::NONE)
     }
@@ -61,7 +61,7 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     ) -> RatelimitedStream<'a, Self, D, C>
     where
         Self: Sized,
-        C::Instant: clock::CompatibleConversion<Instant>,
+        C: clock::ReasonablyRealtime,
     {
         RatelimitedStream {
             inner: self,
@@ -120,7 +120,7 @@ where
     S: Unpin,
     S::Item: Unpin,
     Self: Unpin,
-    C::Instant: clock::CompatibleConversion<Instant>,
+    C: clock::ReasonablyRealtime,
 {
     type Item = S::Item;
 
@@ -142,8 +142,10 @@ where
                     }
                 }
                 State::NotReady => {
+                    let reference = self.limiter.reference_reading();
                     if let Err(negative) = self.limiter.check() {
                         let earliest = negative.earliest_possible_with_offset(self.jitter);
+                        let earliest = self.limiter.instant_from_reference(reference, earliest);
                         self.delay.reset(earliest);
                         let future = Pin::new(&mut self.delay);
                         match future.poll(cx) {
