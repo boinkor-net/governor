@@ -1,4 +1,8 @@
 use crate::lib::*;
+use crate::nanos::Nanos;
+use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformInt, UniformSampler};
+use rand::distributions::{Distribution, Uniform};
+use rand::{thread_rng, Rng};
 
 /// An interval specification for deviating from the nominal wait time.
 ///
@@ -41,43 +45,91 @@ use crate::lib::*;
 /// ```
 #[derive(Debug, PartialEq, Default, Clone, Copy)]
 pub struct Jitter {
-    min: Duration,
-    interval: Duration,
+    min: Nanos,
+    max: Nanos,
 }
 
 impl Jitter {
     #[cfg(feature = "std")]
     /// The "empty" jitter interval - no jitter at all.
     pub(crate) const NONE: Jitter = Jitter {
-        min: Duration::from_secs(0),
-        interval: Duration::from_secs(0),
+        min: Nanos::from(0),
+        max: Nanos::from(0),
     };
 
     /// Constructs a new Jitter interval, waiting at most a duration of `max`.
     pub fn up_to(max: Duration) -> Jitter {
         Jitter {
-            min: Duration::new(0, 0),
-            interval: max,
+            min: Nanos::from(0),
+            max: max.into(),
         }
     }
 
     /// Constructs a new Jitter interval, waiting at least `min` and at most `min+interval`.
     pub const fn new(min: Duration, interval: Duration) -> Jitter {
-        Jitter { min, interval }
+        let min: Nanos = min.into();
+        let max: Nanos = min + Nanos::from(interval);
+        Jitter { min, max }
     }
 
     /// Returns a random amount of jitter within the configured interval.
-    pub(crate) fn get(&self) -> Duration {
-        let range = rand::random::<f32>();
-        self.min + self.interval.mul_f32(range)
+    pub(crate) fn get(&self) -> Nanos {
+        let mut uniform = Uniform::new(self.min, self.max);
+        uniform.sample(&mut thread_rng())
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct UniformJitter(UniformInt<u64>);
+
+impl UniformSampler for UniformJitter {
+    type X = Nanos;
+
+    fn new<B1, B2>(low: B1, high: B2) -> Self
+    where
+        B1: SampleBorrow<Self::X> + Sized,
+        B2: SampleBorrow<Self::X> + Sized,
+    {
+        UniformJitter(UniformInt::new(
+            low.borrow().as_u64(),
+            high.borrow().as_u64(),
+        ))
+    }
+
+    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Self
+    where
+        B1: SampleBorrow<Self::X> + Sized,
+        B2: SampleBorrow<Self::X> + Sized,
+    {
+        UniformJitter(UniformInt::new_inclusive(
+            low.borrow().as_u64(),
+            high.borrow().as_u64(),
+        ))
+    }
+
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
+        Nanos::from(self.0.sample(rng))
+    }
+}
+
+impl SampleUniform for Nanos {
+    type Sampler = UniformJitter;
 }
 
 impl Add<Duration> for Jitter {
     type Output = Duration;
 
     fn add(self, rhs: Duration) -> Duration {
-        self.get() + rhs
+        let amount: Duration = self.get().into();
+        rhs + amount
+    }
+}
+
+impl Add<Nanos> for Jitter {
+    type Output = Nanos;
+
+    fn add(self, rhs: Nanos) -> Nanos {
+        rhs + self.get()
     }
 }
 
@@ -86,6 +138,7 @@ impl Add<Instant> for Jitter {
     type Output = Instant;
 
     fn add(self, rhs: Instant) -> Instant {
-        rhs + self.get()
+        let amount: Duration = self.get().into();
+        rhs + amount
     }
 }

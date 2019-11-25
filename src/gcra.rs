@@ -1,7 +1,7 @@
 use crate::lib::*;
 use crate::nanos::Nanos;
 use crate::state::StateStore;
-use crate::{clock, NegativeMultiDecision, Quota};
+use crate::{clock, Jitter, NegativeMultiDecision, Quota};
 
 /// A negative rate-limiting outcome.
 ///
@@ -32,6 +32,11 @@ impl<'a, P: clock::Reference> NotUntil<'a, P> {
     pub fn wait_time_from(&self, from: P) -> Duration {
         let earliest = self.earliest_possible();
         earliest.duration_since(earliest.min(from)).into()
+    }
+
+    pub(crate) fn earliest_possible_with_offset(&self, jitter: Jitter) -> P {
+        let tat = jitter + self.tat;
+        self.start + tat
     }
 }
 
