@@ -12,7 +12,7 @@ impl<K, S, C> RateLimiter<K, S, C>
 where
     K: Hash + Eq + Clone,
     S: KeyedStateStore<K>,
-    C: clock::ReasonablyRealtime
+    C: clock::ReasonablyRealtime,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///

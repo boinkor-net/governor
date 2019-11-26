@@ -110,7 +110,7 @@ impl ReasonablyRealtime for SystemClock {
     ) -> Instant {
         let diff = reading
             .duration_since(reference.0)
-            .unwrap_or(Duration::new(0, 0));
+            .unwrap_or_else(|_| Duration::new(0, 0));
         reference.1 + diff
     }
 }

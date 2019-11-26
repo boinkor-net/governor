@@ -74,6 +74,9 @@ impl Jitter {
 
     /// Returns a random amount of jitter within the configured interval.
     pub(crate) fn get(&self) -> Nanos {
+        if self.min == self.max {
+            return self.min;
+        }
         let uniform = Uniform::new(self.min, self.max);
         uniform.sample(&mut thread_rng())
     }
