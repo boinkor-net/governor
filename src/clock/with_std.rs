@@ -1,59 +1,34 @@
+use crate::lib::*;
+
 use super::{Clock, Reference};
 
-use parking_lot::Mutex;
-use std::sync::Arc;
+use crate::nanos::Nanos;
 use std::time::{Duration, Instant, SystemTime};
-
-/// The default clock that reports [`Instant`]s.
-pub type DefaultClock = MonotonicClock;
-
-/// A mock implementation of a clock tracking [`Instant`]s. All it
-/// does is keep track of what "now" is by allowing the program to
-/// increment the current time (taken at time of construction) by some
-/// arbitrary [`Duration`].
-#[derive(Debug, Clone)]
-pub struct FakeAbsoluteClock {
-    now: Arc<Mutex<Instant>>,
-}
-
-impl Default for FakeAbsoluteClock {
-    fn default() -> Self {
-        FakeAbsoluteClock {
-            now: Arc::new(Mutex::new(Instant::now())),
-        }
-    }
-}
-
-impl FakeAbsoluteClock {
-    /// Advances the fake clock by the given amount.
-    pub fn advance(&mut self, by: Duration) {
-        *(self.now.lock()) += by
-    }
-}
-
-impl Clock for FakeAbsoluteClock {
-    type Instant = Instant;
-
-    fn now(&self) -> Self::Instant {
-        *self.now.lock()
-    }
-}
 
 /// The monotonic clock implemented by [`Instant`].
 #[derive(Clone, Debug, Default)]
 pub struct MonotonicClock();
 
+impl Add<Nanos> for Instant {
+    type Output = Instant;
+
+    fn add(self, other: Nanos) -> Instant {
+        let other: Duration = other.into();
+        self + other
+    }
+}
+
 impl Reference for Instant {
-    fn duration_since(&self, earlier: Self) -> Duration {
+    fn duration_since(&self, earlier: Self) -> Nanos {
         if earlier < *self {
-            *self - earlier
+            (*self - earlier).into()
         } else {
-            Duration::new(0, 0)
+            Nanos::from(Duration::new(0, 0))
         }
     }
 
-    fn saturating_sub(&self, duration: Duration) -> Self {
-        self.checked_sub(duration).unwrap_or(*self)
+    fn saturating_sub(&self, duration: Nanos) -> Self {
+        self.checked_sub(duration.into()).unwrap_or(*self)
     }
 }
 
@@ -74,13 +49,23 @@ impl Reference for SystemTime {
     /// SystemTimes. Due to the fallible nature of SystemTimes,
     /// returns the zero duration if a negative duration would
     /// result (e.g. due to system clock adjustments).
-    fn duration_since(&self, earlier: Self) -> Duration {
+    fn duration_since(&self, earlier: Self) -> Nanos {
         self.duration_since(earlier)
             .unwrap_or_else(|_| Duration::new(0, 0))
+            .into()
     }
 
-    fn saturating_sub(&self, duration: Duration) -> Self {
-        self.checked_sub(duration).unwrap_or(*self)
+    fn saturating_sub(&self, duration: Nanos) -> Self {
+        self.checked_sub(duration.into()).unwrap_or(*self)
+    }
+}
+
+impl Add<Nanos> for SystemTime {
+    type Output = SystemTime;
+
+    fn add(self, other: Nanos) -> SystemTime {
+        let other: Duration = other.into();
+        self + other
     }
 }
 
@@ -89,5 +74,43 @@ impl Clock for SystemClock {
 
     fn now(&self) -> Self::Instant {
         SystemTime::now()
+    }
+}
+
+/// Identifies clocks that run similarly to the monotonic realtime clock.
+///
+/// Clocks implementing this trait can be used with rate-limiters functions that operate
+/// asynchronously.
+pub trait ReasonablyRealtime: Clock {
+    /// Returns a reference point at the start of an operation.
+    fn reference_point(&self) -> (Self::Instant, Instant) {
+        (self.now(), Instant::now())
+    }
+
+    /// Converts a reference point and a value of this clock to an Instant in the future.
+    fn convert_from_reference(
+        reference: (Self::Instant, Instant),
+        reading: Self::Instant,
+    ) -> Instant;
+}
+
+impl ReasonablyRealtime for MonotonicClock {
+    fn convert_from_reference(
+        _reference: (Self::Instant, Instant),
+        reading: Self::Instant,
+    ) -> Instant {
+        reading
+    }
+}
+
+impl ReasonablyRealtime for SystemClock {
+    fn convert_from_reference(
+        reference: (Self::Instant, Instant),
+        reading: Self::Instant,
+    ) -> Instant {
+        let diff = reading
+            .duration_since(reference.0)
+            .unwrap_or_else(|_| Duration::new(0, 0));
+        reference.1 + diff
     }
 }

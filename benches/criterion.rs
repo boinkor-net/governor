@@ -8,6 +8,6 @@ criterion_group!(
     benches,
     realtime_clock::bench_all,
     single_threaded::bench_all,
-    multi_threaded::bench_all
+    multi_threaded::bench_all,
 );
 criterion_main!(benches);

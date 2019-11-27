@@ -8,18 +8,18 @@ use crate::lib::*;
 
 /// A measurement from a clock.
 pub trait Reference:
-    Sized + Add<Duration, Output = Self> + PartialEq + Eq + Ord + Copy + Clone + Send + Sync + Debug
+    Sized + Add<Nanos, Output = Self> + PartialEq + Eq + Ord + Copy + Clone + Send + Sync + Debug
 {
     /// Determines the time that separates two measurements of a
     /// clock. Implementations of this must perform a saturating
     /// subtraction - if the `earlier` timestamp should be later,
     /// `duration_since` must return the zero duration.
-    fn duration_since(&self, earlier: Self) -> Duration;
+    fn duration_since(&self, earlier: Self) -> Nanos;
 
     /// Returns a reference point that lies at most `duration` in the
     /// past from the current reference. If an underflow should occur,
     /// returns the current reference.
-    fn saturating_sub(&self, duration: Duration) -> Self;
+    fn saturating_sub(&self, duration: Nanos) -> Self;
 }
 
 /// A time source used by rate limiters.
@@ -32,13 +32,23 @@ pub trait Clock: Clone {
 }
 
 impl Reference for Duration {
-    fn duration_since(&self, earlier: Self) -> Duration {
+    fn duration_since(&self, earlier: Self) -> Nanos {
         self.checked_sub(earlier)
             .unwrap_or_else(|| Duration::new(0, 0))
+            .into()
     }
 
-    fn saturating_sub(&self, duration: Duration) -> Self {
-        self.checked_sub(duration).unwrap_or(*self)
+    fn saturating_sub(&self, duration: Nanos) -> Self {
+        self.checked_sub(duration.into()).unwrap_or(*self)
+    }
+}
+
+impl Add<Nanos> for Duration {
+    type Output = Self;
+
+    fn add(self, other: Nanos) -> Self {
+        let other: Duration = other.into();
+        self + other
     }
 }
 
@@ -81,10 +91,10 @@ impl PartialEq for FakeRelativeClock {
 }
 
 impl Clock for FakeRelativeClock {
-    type Instant = Duration;
+    type Instant = Nanos;
 
     fn now(&self) -> Self::Instant {
-        Duration::from_nanos(self.now.load(Ordering::Relaxed))
+        self.now.load(Ordering::Relaxed).into()
     }
 }
 
@@ -97,3 +107,13 @@ pub use no_std::*;
 mod with_std;
 #[cfg(feature = "std")]
 pub use with_std::*;
+
+#[cfg(all(feature = "std", feature = "quanta"))]
+mod quanta;
+#[cfg(all(feature = "std", feature = "quanta"))]
+pub use self::quanta::*;
+
+mod default;
+
+use crate::nanos::Nanos;
+pub use default::*;

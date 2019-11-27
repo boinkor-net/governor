@@ -1,5 +1,6 @@
 //! A time-keeping abstraction (nanoseconds) that works for storing in an atomic integer.
 
+use crate::clock;
 use crate::lib::*;
 
 /// A number of nanoseconds from a reference point.
@@ -12,6 +13,10 @@ pub struct Nanos(u64);
 impl Nanos {
     pub(crate) fn as_u64(self) -> u64 {
         self.0
+    }
+
+    pub(crate) const fn new(u: u64) -> Self {
+        Nanos(u)
     }
 }
 
@@ -38,14 +43,6 @@ impl Add<Nanos> for Nanos {
 
     fn add(self, rhs: Nanos) -> Self::Output {
         Nanos(self.0 + rhs.0)
-    }
-}
-
-impl Mul<Nanos> for Nanos {
-    type Output = Nanos;
-
-    fn mul(self, rhs: Nanos) -> Self::Output {
-        Nanos(self.0 * rhs.0)
     }
 }
 
@@ -86,5 +83,24 @@ impl Into<Duration> for Nanos {
 impl Nanos {
     pub(crate) fn saturating_sub(self, rhs: Nanos) -> Nanos {
         Nanos(self.0.saturating_sub(rhs.0))
+    }
+}
+
+impl clock::Reference for Nanos {
+    fn duration_since(&self, earlier: Self) -> Nanos {
+        (*self as Nanos).saturating_sub(earlier)
+    }
+
+    fn saturating_sub(&self, duration: Nanos) -> Self {
+        (*self as Nanos).saturating_sub(duration)
+    }
+}
+
+impl Add<Duration> for Nanos {
+    type Output = Self;
+
+    fn add(self, other: Duration) -> Self {
+        let other: Nanos = other.into();
+        self + other
     }
 }

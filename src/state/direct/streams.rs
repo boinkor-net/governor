@@ -17,12 +17,13 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// The combinator will buffer at most one item in order to adhere to the
     /// given limiter. I.e. if it already has an item buffered and needs to wait
     /// it will not `poll` the underlying stream.
-    fn ratelimit_stream<D: DirectStateStore>(
+    fn ratelimit_stream<D: DirectStateStore, C: clock::Clock>(
         self,
-        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
-    ) -> RatelimitedStream<'a, Self, D>
+        limiter: &'a RateLimiter<NotKeyed, D, C>,
+    ) -> RatelimitedStream<'a, Self, D, C>
     where
-        Self: Sized;
+        Self: Sized,
+        C: clock::ReasonablyRealtime;
 
     /// Limits the rate at which the stream produces items, with a randomized wait period.
     ///
@@ -31,33 +32,36 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// The combinator will buffer at most one item in order to adhere to the
     /// given limiter. I.e. if it already has an item buffered and needs to wait
     /// it will not `poll` the underlying stream.
-    fn ratelimit_stream_with_jitter<D: DirectStateStore>(
+    fn ratelimit_stream_with_jitter<D: DirectStateStore, C: clock::Clock>(
         self,
-        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, C>,
         jitter: Jitter,
-    ) -> RatelimitedStream<'a, Self, D>
+    ) -> RatelimitedStream<'a, Self, D, C>
     where
-        Self: Sized;
+        Self: Sized,
+        C: clock::ReasonablyRealtime;
 }
 
 impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
-    fn ratelimit_stream<D: DirectStateStore>(
+    fn ratelimit_stream<D: DirectStateStore, C: clock::Clock>(
         self,
-        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
-    ) -> RatelimitedStream<'a, Self, D>
+        limiter: &'a RateLimiter<NotKeyed, D, C>,
+    ) -> RatelimitedStream<'a, Self, D, C>
     where
         Self: Sized,
+        C: clock::ReasonablyRealtime,
     {
         self.ratelimit_stream_with_jitter(limiter, Jitter::NONE)
     }
 
-    fn ratelimit_stream_with_jitter<D: DirectStateStore>(
+    fn ratelimit_stream_with_jitter<D: DirectStateStore, C: clock::Clock>(
         self,
-        limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
+        limiter: &'a RateLimiter<NotKeyed, D, C>,
         jitter: Jitter,
-    ) -> RatelimitedStream<'a, Self, D>
+    ) -> RatelimitedStream<'a, Self, D, C>
     where
         Self: Sized,
+        C: clock::ReasonablyRealtime,
     {
         RatelimitedStream {
             inner: self,
@@ -81,9 +85,9 @@ enum State {
 ///
 /// This is produced by the [`StreamRateLimitExt::ratelimit_stream`] and
 /// [`StreamRateLimitExt::ratelimit_stream_with_jitter`] methods.
-pub struct RatelimitedStream<'a, S: Stream, D: DirectStateStore> {
+pub struct RatelimitedStream<'a, S: Stream, D: DirectStateStore, C: clock::Clock> {
     inner: S,
-    limiter: &'a RateLimiter<NotKeyed, D, clock::MonotonicClock>,
+    limiter: &'a RateLimiter<NotKeyed, D, C>,
     delay: Delay,
     buf: Option<S::Item>,
     jitter: Jitter,
@@ -91,7 +95,7 @@ pub struct RatelimitedStream<'a, S: Stream, D: DirectStateStore> {
 }
 
 /// Conversion methods for the stream combinator.
-impl<'a, S: Stream, D: DirectStateStore> RatelimitedStream<'a, S, D> {
+impl<'a, S: Stream, D: DirectStateStore, C: clock::Clock> RatelimitedStream<'a, S, D, C> {
     /// Acquires a reference to the underlying stream that this combinator is pulling from.
     pub fn get_ref(&self) -> &S {
         &self.inner
@@ -111,11 +115,12 @@ impl<'a, S: Stream, D: DirectStateStore> RatelimitedStream<'a, S, D> {
 }
 
 /// Implements the [`futures::Stream`] combinator.
-impl<'a, S: Stream, D: DirectStateStore> Stream for RatelimitedStream<'a, S, D>
+impl<'a, S: Stream, D: DirectStateStore, C: clock::Clock> Stream for RatelimitedStream<'a, S, D, C>
 where
     S: Unpin,
     S::Item: Unpin,
     Self: Unpin,
+    C: clock::ReasonablyRealtime,
 {
     type Item = S::Item;
 
@@ -137,8 +142,10 @@ where
                     }
                 }
                 State::NotReady => {
+                    let reference = self.limiter.reference_reading();
                     if let Err(negative) = self.limiter.check() {
-                        let earliest = self.jitter + negative.earliest_possible();
+                        let earliest = negative.earliest_possible_with_offset(self.jitter);
+                        let earliest = self.limiter.instant_from_reference(reference, earliest);
                         self.delay.reset(earliest);
                         let future = Pin::new(&mut self.delay);
                         match future.poll(cx) {
@@ -174,8 +181,8 @@ where
 }
 
 /// Pass-through implementation for [`futures::Sink`] if the Stream also implements it.
-impl<'a, Item, S: Stream + Sink<Item>, D: DirectStateStore> Sink<Item>
-    for RatelimitedStream<'a, S, D>
+impl<'a, Item, S: Stream + Sink<Item>, D: DirectStateStore, C: clock::Clock> Sink<Item>
+    for RatelimitedStream<'a, S, D, C>
 where
     S: Unpin,
     S::Item: Unpin,

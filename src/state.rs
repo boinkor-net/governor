@@ -1,5 +1,7 @@
 //! State stores for rate limiters
 
+use crate::lib::*;
+
 pub mod direct;
 mod in_memory;
 pub mod keyed;
@@ -79,5 +81,24 @@ where
             gcra,
             start,
         }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<K, S, C> RateLimiter<K, S, C>
+where
+    S: StateStore<Key = K>,
+    C: clock::ReasonablyRealtime,
+{
+    pub(crate) fn reference_reading(&self) -> (C::Instant, Instant) {
+        self.clock.reference_point()
+    }
+
+    pub(crate) fn instant_from_reference(
+        &self,
+        reference: (C::Instant, Instant),
+        reading: C::Instant,
+    ) -> Instant {
+        C::convert_from_reference(reference, reading)
     }
 }
