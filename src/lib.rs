@@ -29,17 +29,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
-extern crate alloc;
+extern crate no_std_compat as std;
 
 /// A facade around all the types we need from std/core crates, to
 /// avoid unnecessary cfg-conditionalization everywhere.
 mod lib {
     mod core {
-        #[cfg(not(feature = "std"))]
-        pub use core::*;
-
-        #[cfg(feature = "std")]
         pub use std::*;
     }
 
