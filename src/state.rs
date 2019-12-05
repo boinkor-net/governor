@@ -1,6 +1,6 @@
 //! State stores for rate limiters
 
-use crate::lib::*;
+use std::prelude::v1::*;
 
 pub mod direct;
 mod in_memory;
@@ -13,6 +13,7 @@ use crate::nanos::Nanos;
 use crate::{clock, Quota};
 
 pub use direct::*;
+use std::time::Instant;
 
 /// A way for rate limiters to keep state.
 ///

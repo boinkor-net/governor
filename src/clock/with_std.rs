@@ -1,8 +1,9 @@
-use crate::lib::*;
-
 use super::{Clock, Reference};
 
+use std::prelude::v1::*;
+
 use crate::nanos::Nanos;
+use std::ops::Add;
 use std::time::{Duration, Instant, SystemTime};
 
 /// The monotonic clock implemented by [`Instant`].

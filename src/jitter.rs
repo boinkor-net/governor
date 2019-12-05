@@ -1,8 +1,11 @@
-use crate::lib::*;
+use std::prelude::v1::*;
+
 use crate::nanos::Nanos;
 use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformInt, UniformSampler};
 use rand::distributions::{Distribution, Uniform};
 use rand::{thread_rng, Rng};
+use std::ops::Add;
+use std::time::{Duration, Instant};
 
 /// An interval specification for deviating from the nominal wait time.
 ///

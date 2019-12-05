@@ -1,12 +1,14 @@
 #![cfg(feature = "std")]
 
-use crate::lib::*;
+use std::prelude::v1::*;
+
 use crate::state::{DirectStateStore, NotKeyed};
 use crate::{clock, Jitter, RateLimiter};
 use futures::task::{Context, Poll};
 use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
 use std::pin::Pin;
+use std::time::Duration;
 
 /// Allows converting a [`futures::Stream`] combinator into a rate-limited stream.
 pub trait StreamRateLimitExt<'a>: Stream {

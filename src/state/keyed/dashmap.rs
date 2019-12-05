@@ -1,11 +1,12 @@
 #![cfg(all(feature = "std", feature = "dashmap"))]
 
-use crate::lib::*;
+use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
 use crate::state::{InMemoryState, StateStore};
 use crate::{clock, Quota, RateLimiter};
 use dashmap::DashMap;
+use std::hash::Hash;
 
 /// A concurrent, thread-safe and fairly performant hashmap based on [`DashMap`].
 pub type DashMapStateStore<K> = DashMap<K, InMemoryState>;

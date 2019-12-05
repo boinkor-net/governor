@@ -1,10 +1,12 @@
-use crate::lib::*;
+use std::prelude::v1::*;
+
 use crate::{
     clock::{self},
     state::keyed::KeyedStateStore,
     Jitter, RateLimiter,
 };
 use futures_timer::Delay;
+use std::hash::Hash;
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - `async`/`await`
