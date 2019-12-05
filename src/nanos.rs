@@ -19,7 +19,11 @@ impl Nanos {
     pub(crate) fn as_u64(self) -> u64 {
         self.0
     }
+}
 
+/// Nanos as used by Jitter and other std-only features.
+#[cfg(feature = "std")]
+impl Nanos {
     pub(crate) const fn new(u: u64) -> Self {
         Nanos(u)
     }
