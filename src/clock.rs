@@ -14,6 +14,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::nanos::Nanos;
+
 /// A measurement from a clock.
 pub trait Reference:
     Sized + Add<Nanos, Output = Self> + PartialEq + Eq + Ord + Copy + Clone + Send + Sync + Debug
@@ -106,11 +108,6 @@ impl Clock for FakeRelativeClock {
     }
 }
 
-#[cfg(not(feature = "std"))]
-mod no_std;
-#[cfg(not(feature = "std"))]
-pub use no_std::*;
-
 #[cfg(feature = "std")]
 mod with_std;
 #[cfg(feature = "std")]
@@ -123,5 +120,4 @@ pub use self::quanta::*;
 
 mod default;
 
-use crate::nanos::Nanos;
 pub use default::*;
