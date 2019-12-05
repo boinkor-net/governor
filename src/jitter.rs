@@ -5,7 +5,10 @@ use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformInt, Unif
 use rand::distributions::{Distribution, Uniform};
 use rand::{thread_rng, Rng};
 use std::ops::Add;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+#[cfg(feature = "std")]
+use std::time::Instant;
 
 /// An interval specification for deviating from the nominal wait time.
 ///

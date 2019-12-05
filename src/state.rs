@@ -13,6 +13,8 @@ use crate::nanos::Nanos;
 use crate::{clock, Quota};
 
 pub use direct::*;
+
+#[cfg(feature = "std")]
 use std::time::Instant;
 
 /// A way for rate limiters to keep state.
