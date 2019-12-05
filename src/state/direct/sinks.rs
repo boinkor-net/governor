@@ -1,4 +1,4 @@
-use crate::lib::*;
+use std::prelude::v1::*;
 
 use crate::{
     clock,
@@ -8,6 +8,7 @@ use crate::{
 use futures::task::{Context, Poll};
 use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
+use std::marker::PhantomData;
 use std::pin::Pin;
 
 /// Allows converting a [`futures::Sink`] combinator into a rate-limited sink.  

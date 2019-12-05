@@ -1,7 +1,11 @@
-use crate::lib::*;
+use std::prelude::v1::*;
+
 use crate::nanos::Nanos;
 use crate::state::StateStore;
 use crate::{clock, Jitter, NegativeMultiDecision, Quota};
+use std::num::NonZeroU32;
+use std::time::Duration;
+use std::{cmp, fmt};
 
 /// A negative rate-limiting outcome.
 ///

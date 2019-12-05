@@ -1,4 +1,4 @@
-use crate::lib::*;
+use std::fmt;
 
 /// Gives additional information about the negative outcome of a batch
 /// cell decision.

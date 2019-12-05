@@ -1,4 +1,7 @@
-use crate::lib::*;
+use std::prelude::v1::*;
+
+use std::num::NonZeroU32;
+use std::time::Duration;
 
 /// A rate-limiting quota.
 ///

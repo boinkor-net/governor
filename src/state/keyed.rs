@@ -7,7 +7,8 @@
 //! Rate limiters based on these types are constructed with
 //! [the `RateLimiter` constructors](../struct.RateLimiter.html#keyed-rate-limiters---default-constructors)
 
-use crate::lib::*;
+use std::num::NonZeroU32;
+use std::prelude::v1::*;
 
 use crate::state::StateStore;
 use crate::{clock, NegativeMultiDecision, NotUntil, Quota, RateLimiter};
@@ -119,8 +120,10 @@ pub use hashmap::HashMapStateStore;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
 mod dashmap;
+
 #[cfg(all(feature = "std", feature = "dashmap"))]
 pub use self::dashmap::DashMapStateStore;
+use std::hash::Hash;
 
 #[cfg(feature = "std")]
 mod future;

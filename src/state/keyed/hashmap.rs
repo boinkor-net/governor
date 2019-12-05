@@ -1,11 +1,13 @@
 #![cfg(feature = "std")]
 
-use crate::lib::*;
+use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
 use crate::state::{InMemoryState, StateStore};
 use crate::{clock, Quota, RateLimiter};
 use parking_lot::Mutex;
+use std::collections::HashMap;
+use std::hash::Hash;
 
 /// A thread-safe (but not very performant) implementation of a keyed rate limiter state
 /// store using [`HashMap`].

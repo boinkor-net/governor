@@ -1,7 +1,13 @@
-use crate::lib::*;
+use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
 use crate::state::{NotKeyed, StateStore};
+use std::fmt;
+use std::fmt::Debug;
+use std::num::NonZeroU64;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
 /// An in-memory representation of a GCRA's rate-limiting state.
 ///

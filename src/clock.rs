@@ -4,7 +4,15 @@
 //! to be (optionally) independent of std, and additionally
 //! allow mocking the passage of time.
 
-use crate::lib::*;
+use std::prelude::v1::*;
+
+use std::convert::TryInto;
+use std::fmt::Debug;
+use std::ops::Add;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::time::Duration;
 
 /// A measurement from a clock.
 pub trait Reference:
