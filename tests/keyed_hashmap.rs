@@ -1,5 +1,3 @@
-#![cfg(feature = "std")]
-
 use governor::{
     clock::{Clock, FakeRelativeClock},
     Quota, RateLimiter,

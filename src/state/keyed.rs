@@ -26,13 +26,11 @@ where
 {
 }
 
-#[cfg(feature = "std")]
 /// # Keyed rate limiters - default constructors
 impl<K> RateLimiter<K, DefaultKeyedStateStore<K>, clock::DefaultClock>
 where
     K: Clone + Hash + Eq,
 {
-    #[cfg(all(feature = "std", feature = "dashmap"))]
     /// Constructs a new keyed rate limiter backed by
     /// the [`DefaultKeyedStateStore`].
     pub fn keyed(quota: Quota) -> Self {
@@ -49,7 +47,7 @@ where
         RateLimiter::new(quota, state, &clock)
     }
 
-    #[cfg(all(feature = "std", not(feature = "dashmap")))]
+    #[cfg(any(all(feature = "std", not(feature = "dashmap")), not(feature = "std")))]
     /// Constructs a new keyed rate limiter explicitly backed by a
     /// [`HashMap`][std::collections::HashMap].
     pub fn hashmap(quota: Quota) -> Self {
@@ -113,9 +111,7 @@ where
     }
 }
 
-#[cfg(feature = "std")]
 mod hashmap;
-#[cfg(feature = "std")]
 pub use hashmap::HashMapStateStore;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
@@ -128,7 +124,7 @@ use std::hash::Hash;
 #[cfg(feature = "std")]
 mod future;
 
-#[cfg(all(feature = "std", not(feature = "dashmap")))]
+#[cfg(any(all(feature = "std", not(feature = "dashmap")), not(feature = "std")))]
 /// The default keyed rate limiter type: a mutex-wrapped [`HashMap`][std::collections::HashMap].
 pub type DefaultKeyedStateStore<K> = HashMapStateStore<K>;
 
