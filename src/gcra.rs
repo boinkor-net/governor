@@ -2,10 +2,13 @@ use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
 use crate::state::StateStore;
-use crate::{clock, Jitter, NegativeMultiDecision, Quota};
+use crate::{clock, NegativeMultiDecision, Quota};
 use std::num::NonZeroU32;
 use std::time::Duration;
 use std::{cmp, fmt};
+
+#[cfg(feature = "std")]
+use crate::Jitter;
 
 /// A negative rate-limiting outcome.
 ///
@@ -38,6 +41,7 @@ impl<'a, P: clock::Reference> NotUntil<'a, P> {
         earliest.duration_since(earliest.min(from)).into()
     }
 
+    #[cfg(feature = "std")] // not used unless we use Instant-compatible clocks.
     pub(crate) fn earliest_possible_with_offset(&self, jitter: Jitter) -> P {
         let tat = jitter + self.tat;
         self.start + tat
