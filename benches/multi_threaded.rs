@@ -6,10 +6,10 @@ use criterion::{black_box, BenchmarkId, Criterion, Throughput};
 use governor::state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore};
 use governor::{clock, Quota, RateLimiter};
 use nonzero_ext::*;
-use std::any::type_name;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use tynm::type_name;
 
 pub fn bench_all(c: &mut Criterion) {
     bench_direct(c);

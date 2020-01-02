@@ -2,8 +2,8 @@ use criterion::{black_box, BatchSize, BenchmarkId, Criterion, Throughput};
 use governor::state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore};
 use governor::{clock, Quota, RateLimiter};
 use nonzero_ext::*;
-use std::any::type_name;
 use std::time::Duration;
+use tynm::type_name;
 
 pub fn bench_all(c: &mut Criterion) {
     bench_direct(c);

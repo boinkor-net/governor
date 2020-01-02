@@ -50,6 +50,7 @@ harness = false
 
 [dev-dependencies]
 criterion = "0.3.0"
+tynm = "0.1.1"
 crossbeam = "0.7.3"
 libc = "0.2.41"
 futures = "0.3.1"
