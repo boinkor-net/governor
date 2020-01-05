@@ -71,7 +71,7 @@ impl GCRA {
     }
 
     /// Computes and returns a new ratelimiter state if none exists yet.
-    fn starting_state(&self, t0: Nanos) -> Nanos {
+    pub(crate) fn starting_state(&self, t0: Nanos) -> Nanos {
         t0 + self.t
     }
 

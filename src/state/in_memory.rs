@@ -43,6 +43,10 @@ impl InMemoryState {
         // can't see it.
         decision.map(|(result, _)| result)
     }
+
+    pub(crate) fn is_older_than(&self, nanos: Nanos) -> bool {
+        self.0.load(Ordering::Relaxed) < nanos.into()
+    }
 }
 
 /// The InMemoryState is the canonical "direct" state store.

@@ -11,7 +11,10 @@ use std::num::NonZeroU32;
 use std::prelude::v1::*;
 
 use crate::state::StateStore;
-use crate::{clock, NegativeMultiDecision, NotUntil, Quota, RateLimiter};
+use crate::{
+    clock::{self, Reference},
+    NegativeMultiDecision, NotUntil, Quota, RateLimiter,
+};
 
 /// A trait for state stores with one rate limiting state per key.
 ///
@@ -111,7 +114,42 @@ where
     }
 }
 
+/// Keyed rate limiters that can be "cleaned up".
+///
+/// Any keyed state store implementing this trait allows users to evict elements that are
+/// indistinguishable from fresh rate-limiting states (that is, if a key hasn't been used for
+/// rate-limiting decisions for as long as the bucket capacity).  
+pub trait ShrinkableKeyedStateStore<K: Hash>: KeyedStateStore<K> {
+    /// Remove those keys with state older than `drop_below`.
+    fn shrink(&self, drop_below: Nanos);
+}
+
+/// # Keyed rate limiters - Housekeeping
+///
+/// As the inputs to a keyed rate-limiter can be arbitrary keys, the set of retained keys retained
+/// grows, while the number of active keys may stay smaller. To save on space, a keyed rate-limiter
+/// allows removing those keys that are "stale", i.e., whose values are no different from keys' that
+/// aren't present in the rate limiter state store.
+impl<K, S, C> RateLimiter<K, S, C>
+where
+    S: ShrinkableKeyedStateStore<K>,
+    K: Hash,
+    C: clock::Clock,
+{
+    /// Retains all keys in the rate limiter that were used recently enough.
+    pub fn shrink(&self) {
+        // calculate the minimum retention parameter: Any key whose state store's theoretical
+        // arrival time is larger than a starting state for the bucket gets to stay, everything
+        // else (that's indistinguishable from a starting state) goes.
+        let now = self.clock.now();
+        let drop_below = self.gcra.starting_state(now.duration_since(self.start));
+
+        self.state.shrink(drop_below);
+    }
+}
+
 mod hashmap;
+
 pub use hashmap::HashMapStateStore;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
@@ -119,6 +157,7 @@ mod dashmap;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
 pub use self::dashmap::DashMapStateStore;
+use crate::nanos::Nanos;
 use std::hash::Hash;
 
 #[cfg(feature = "std")]
