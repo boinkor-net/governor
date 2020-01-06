@@ -1,10 +1,12 @@
 #![cfg(all(feature = "std", feature = "dashmap"))]
 
+use governor::state::keyed::DashMapStateStore;
 use governor::{
     clock::{Clock, FakeRelativeClock},
     Quota, RateLimiter,
 };
 use nonzero_ext::nonzero;
+use std::hash::Hash;
 use std::time::Duration;
 
 const KEYS: &[u32] = &[1u32, 2u32];
@@ -42,6 +44,57 @@ fn rejects_too_many() {
         clock.advance(ms);
         assert_ne!(Ok(()), lb.check_key(key), "{:?}", lb);
     }
+}
+
+fn retained_keys<T: Clone + Hash + Eq + Copy + Ord>(
+    keys: &[T],
+    limiter: RateLimiter<T, DashMapStateStore<T>, FakeRelativeClock>,
+) -> Vec<T> {
+    let state = limiter.into_state_store();
+    let mut keys: Vec<T> = keys
+        .iter()
+        .copied()
+        .filter(|&k| state.contains_key(&k))
+        .collect();
+    keys.sort();
+    keys
+}
+
+#[test]
+fn expiration() {
+    let clock = FakeRelativeClock::default();
+    let ms = Duration::from_millis(1);
+
+    let make_bucket = || {
+        let lim = RateLimiter::dashmap_with_clock(Quota::per_second(nonzero!(1u32)), &clock);
+        lim.check_key(&"foo").unwrap();
+        clock.advance(ms * 200);
+        lim.check_key(&"bar").unwrap();
+        clock.advance(ms * 600);
+        lim.check_key(&"baz").unwrap();
+        lim
+    };
+    let keys = &["bar", "baz", "foo"];
+
+    // clean up all keys that are indistinguishable from unoccupied keys:
+    let lim_shrunk = make_bucket();
+    lim_shrunk.shrink();
+    assert_eq!(retained_keys(keys, lim_shrunk), keys);
+
+    let lim_later = make_bucket();
+    clock.advance(ms * 1200);
+    lim_later.shrink();
+    assert_eq!(retained_keys(keys, lim_later), vec!["bar", "baz"]);
+
+    let lim_later = make_bucket();
+    clock.advance(ms * (1200 + 200));
+    lim_later.shrink();
+    assert_eq!(retained_keys(keys, lim_later), vec!["baz"]);
+
+    let lim_later = make_bucket();
+    clock.advance(ms * (1200 + 200 + 600));
+    lim_later.shrink();
+    assert_eq!(retained_keys(keys, lim_later), Vec::<&str>::new());
 }
 
 #[test]

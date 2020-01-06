@@ -45,7 +45,7 @@ impl InMemoryState {
     }
 
     pub(crate) fn is_older_than(&self, nanos: Nanos) -> bool {
-        self.0.load(Ordering::Relaxed) < nanos.into()
+        self.0.load(Ordering::Relaxed) <= nanos.into()
     }
 }
 
