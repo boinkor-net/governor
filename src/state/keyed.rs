@@ -128,6 +128,11 @@ where
 pub trait ShrinkableKeyedStateStore<K: Hash>: KeyedStateStore<K> {
     /// Remove those keys with state older than `drop_below`.
     fn retain_recent(&self, drop_below: Nanos);
+
+    /// Shrinks the capacity of the state store, if possible.
+    ///
+    /// If the state store does not support shrinking, this method is a no-op.   
+    fn shrink_to_fit(&self) {}
 }
 
 /// # Keyed rate limiters - Housekeeping
@@ -154,6 +159,10 @@ where
         let drop_below = now.duration_since(self.start);
 
         self.state.retain_recent(drop_below);
+    }
+
+    pub fn shrink_to_fit(&self) {
+        self.state.shrink_to_fit();
     }
 }
 
