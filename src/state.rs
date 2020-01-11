@@ -85,6 +85,13 @@ where
             start,
         }
     }
+
+    /// Consumes the `RateLimiter` and returns the state store.
+    ///
+    /// This is mostly useful for debugging and testing.
+    pub fn into_state_store(self) -> S {
+        self.state
+    }
 }
 
 #[cfg(feature = "std")]

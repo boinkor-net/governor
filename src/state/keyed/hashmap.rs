@@ -6,6 +6,7 @@ use crate::{clock, Quota, RateLimiter};
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use crate::state::keyed::ShrinkableKeyedStateStore;
 #[cfg(feature = "std")]
 use parking_lot::Mutex;
 #[cfg(not(feature = "std"))]
@@ -30,6 +31,18 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
             .entry(key.clone())
             .or_insert_with(InMemoryState::default);
         entry.measure_and_replace_one(f)
+    }
+}
+
+impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for HashMapStateStore<K> {
+    fn retain_recent(&self, drop_below: Nanos) {
+        let mut map = self.lock();
+        map.retain(|_, v| !v.is_older_than(drop_below));
+    }
+
+    fn shrink_to_fit(&self) {
+        let mut map = self.lock();
+        map.shrink_to_fit();
     }
 }
 

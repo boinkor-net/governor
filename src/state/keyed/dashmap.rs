@@ -3,6 +3,7 @@
 use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
+use crate::state::keyed::ShrinkableKeyedStateStore;
 use crate::state::{InMemoryState, StateStore};
 use crate::{clock, Quota, RateLimiter};
 use dashmap::DashMap;
@@ -34,5 +35,11 @@ where
     pub fn dashmap_with_clock(quota: Quota, clock: &C) -> Self {
         let state: DashMapStateStore<K> = DashMap::default();
         RateLimiter::new(quota, state, clock)
+    }
+}
+
+impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for DashMapStateStore<K> {
+    fn retain_recent(&self, drop_below: Nanos) {
+        self.retain(|_, v| !v.is_older_than(drop_below));
     }
 }
