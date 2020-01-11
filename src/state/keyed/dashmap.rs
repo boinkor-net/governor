@@ -39,7 +39,7 @@ where
 }
 
 impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for DashMapStateStore<K> {
-    fn shrink(&self, drop_below: Nanos) {
+    fn retain_recent(&self, drop_below: Nanos) {
         self.retain(|_, v| !v.is_older_than(drop_below));
     }
 }

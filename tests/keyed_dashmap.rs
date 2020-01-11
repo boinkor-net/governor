@@ -78,22 +78,22 @@ fn expiration() {
 
     // clean up all keys that are indistinguishable from unoccupied keys:
     let lim_shrunk = make_bucket();
-    lim_shrunk.shrink();
+    lim_shrunk.retain_recent();
     assert_eq!(retained_keys(keys, lim_shrunk), keys);
 
     let lim_later = make_bucket();
     clock.advance(ms * 1200);
-    lim_later.shrink();
+    lim_later.retain_recent();
     assert_eq!(retained_keys(keys, lim_later), vec!["bar", "baz"]);
 
     let lim_later = make_bucket();
     clock.advance(ms * (1200 + 200));
-    lim_later.shrink();
+    lim_later.retain_recent();
     assert_eq!(retained_keys(keys, lim_later), vec!["baz"]);
 
     let lim_later = make_bucket();
     clock.advance(ms * (1200 + 200 + 600));
-    lim_later.shrink();
+    lim_later.retain_recent();
     assert_eq!(retained_keys(keys, lim_later), Vec::<&str>::new());
 }
 

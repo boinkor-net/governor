@@ -35,7 +35,7 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
 }
 
 impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for HashMapStateStore<K> {
-    fn shrink(&self, drop_below: Nanos) {
+    fn retain_recent(&self, drop_below: Nanos) {
         let mut map = self.lock();
         map.retain(|_, v| !v.is_older_than(drop_below));
         map.shrink_to_fit();

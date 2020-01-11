@@ -7,12 +7,14 @@
 //! Rate limiters based on these types are constructed with
 //! [the `RateLimiter` constructors](../struct.RateLimiter.html#keyed-rate-limiters---default-constructors)
 
+use std::hash::Hash;
 use std::num::NonZeroU32;
 use std::prelude::v1::*;
 
 use crate::state::StateStore;
 use crate::{
     clock::{self, Reference},
+    nanos::Nanos,
     NegativeMultiDecision, NotUntil, Quota, RateLimiter,
 };
 
@@ -119,9 +121,13 @@ where
 /// Any keyed state store implementing this trait allows users to evict elements that are
 /// indistinguishable from fresh rate-limiting states (that is, if a key hasn't been used for
 /// rate-limiting decisions for as long as the bucket capacity).  
+///
+/// As this does not make sense for not all keyed state stores (e.g. stores that auto-expire like
+/// memcache), this is an optional trait. All the keyed state stores in this crate implement
+/// shrinking.  
 pub trait ShrinkableKeyedStateStore<K: Hash>: KeyedStateStore<K> {
     /// Remove those keys with state older than `drop_below`.
-    fn shrink(&self, drop_below: Nanos);
+    fn retain_recent(&self, drop_below: Nanos);
 }
 
 /// # Keyed rate limiters - Housekeeping
@@ -137,14 +143,17 @@ where
     C: clock::Clock,
 {
     /// Retains all keys in the rate limiter that were used recently enough.
-    pub fn shrink(&self) {
+    ///
+    /// Any key whose rate limiting state is indistinguishable from a "fresh" state (i.e., the
+    /// theoretical arrival time lies in the past).
+    pub fn retain_recent(&self) {
         // calculate the minimum retention parameter: Any key whose state store's theoretical
         // arrival time is larger than a starting state for the bucket gets to stay, everything
         // else (that's indistinguishable from a starting state) goes.
         let now = self.clock.now();
         let drop_below = now.duration_since(self.start);
 
-        self.state.shrink(drop_below);
+        self.state.retain_recent(drop_below);
     }
 }
 
@@ -157,8 +166,6 @@ mod dashmap;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
 pub use self::dashmap::DashMapStateStore;
-use crate::nanos::Nanos;
-use std::hash::Hash;
 
 #[cfg(feature = "std")]
 mod future;
