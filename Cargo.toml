@@ -40,6 +40,12 @@ run = true
 version = "stable"
 commandline = "cargo test --no-default-features --features no_std"
 
+[package.metadata.template_ci.additional_matrix_entries.cargo_deny]
+run = true
+version = "stable"
+install_commandline = "cargo install cargo-deny"
+commandline = "cargo deny check all"
+
 [badges]
 circle-ci = { repository = "antifuchs/governor", branch = "master" }
 maintenance = { status = "actively-developed" }
