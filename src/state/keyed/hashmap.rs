@@ -27,6 +27,11 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         let mut map = self.lock();
+        if let Some(v) = (*map).get(key) {
+            // fast path: a rate limiter is already present for the key.
+            return v.measure_and_replace_one(f);
+        }
+        // not-so-fast path: make a new entry and measure it.
         let entry = (*map)
             .entry(key.clone())
             .or_insert_with(InMemoryState::default);
