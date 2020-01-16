@@ -19,7 +19,12 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
-        let entry = self.get_or_insert_with(key, InMemoryState::default);
+        if let Some(v) = self.get(key) {
+            // fast path: measure existing entry
+            return v.measure_and_replace_one(f);
+        }
+        // make an entry and measure that:
+        let entry = self.entry(key.clone()).or_default();
         (*entry).measure_and_replace_one(f)
     }
 }
