@@ -1,4 +1,4 @@
-# TemplateCIConfig { bench: BenchEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: None, commandline: "cargo bench" }), clippy: ClippyEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("rustup component add clippy"), commandline: "cargo clippy -- -D warnings" }), rustfmt: RustfmtEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("rustup component add rustfmt"), commandline: "cargo fmt -v -- --check" }), additional_matrix_entries: {"no_std_stable": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: None, commandline: "cargo test --no-default-features --features no_std" }), "no_std_nightly": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "nightly", install_commandline: None, commandline: "cargo +nightly test --no-default-features --features no_std" })}, cache: "cargo", os: "linux", dist: "xenial", versions: ["stable", "nightly"], test_commandline: "cargo test --verbose --all", scheduled_test_branches: ["master"], test_schedule: "0 0 * * 0" }
+# TemplateCIConfig { bench: BenchEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: None, commandline: "cargo bench" }), clippy: ClippyEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("rustup component add clippy"), commandline: "cargo clippy -- -D warnings" }), rustfmt: RustfmtEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("rustup component add rustfmt"), commandline: "cargo fmt -v -- --check" }), additional_matrix_entries: {"cargo_deny": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("cargo install cargo-deny"), commandline: "cargo deny check all" }), "no_std_stable": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: None, commandline: "cargo test --no-default-features --features no_std" }), "no_std_nightly": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "nightly", install_commandline: None, commandline: "cargo +nightly test --no-default-features --features no_std" })}, cache: "cargo", os: "linux", dist: "xenial", versions: ["stable", "nightly"], test_commandline: "cargo test --verbose --all", scheduled_test_branches: ["master"], test_schedule: "0 0 * * 0" }
 version: "2.1"
 
 executors:
@@ -78,6 +78,23 @@ jobs:
       - run:
           name: Bench
           command: cargo bench
+  cargo_deny:
+    parameters:
+      version:
+        type: executor
+      version_name:
+        type: string
+    executor: << parameters.version >>
+    environment:
+      CI_RUST_VERSION: << parameters.version_name >>
+    steps:
+      - checkout
+      - run:
+          name: Install
+          command: cargo install cargo-deny
+      - run:
+          name: cargo deny check all
+          command: cargo deny check all
   no_std_stable:
     parameters:
       version:
@@ -192,6 +209,10 @@ workflows:
     ]
   }
 }
+      - cargo_deny:
+          name: "cargo_deny"
+          version: stable
+          version_name: stable
       - no_std_stable:
           name: "no_std_stable"
           version: stable
@@ -207,6 +228,7 @@ workflows:
           - rustfmt
           - clippy
           - bench
+          - cargo_deny
           - no_std_stable
           - no_std_nightly
   scheduled_tests:
