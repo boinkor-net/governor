@@ -25,6 +25,19 @@ fn pauses() {
 }
 
 #[test]
+fn pauses_n() {
+    let i = Instant::now();
+    let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+
+    for _ in 0..6 {
+        lim.check().unwrap();
+    }
+
+    block_on(lim.until_n_ready(nonzero!(5u32))).unwrap();
+    assert_ge!(i.elapsed(), Duration::from_millis(100));
+}
+
+#[test]
 fn pauses_keyed() {
     let i = Instant::now();
     let lim = RateLimiter::keyed(Quota::per_second(nonzero!(10u32)));
@@ -46,6 +59,15 @@ fn proceeds() {
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
 
     block_on(lim.until_ready());
+    assert_le!(i.elapsed(), Duration::from_millis(100));
+}
+
+#[test]
+fn proceeds_n() {
+    let i = Instant::now();
+    let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+
+    block_on(lim.until_n_ready(nonzero!(10u32))).unwrap();
     assert_le!(i.elapsed(), Duration::from_millis(100));
 }
 
@@ -108,4 +130,11 @@ fn multiple_keyed() {
         "Expected to wait some time, but waited: {:?}",
         elapsed
     );
+}
+
+#[test]
+fn errors_on_exceeded_capacity() {
+    let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+
+    block_on(lim.until_n_ready(nonzero!(11u32))).unwrap_err();
 }

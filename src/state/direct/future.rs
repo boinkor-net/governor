@@ -1,10 +1,29 @@
+use std::{error::Error, fmt, num::NonZeroU32};
+
 use super::RateLimiter;
 use crate::{
     clock,
     state::{DirectStateStore, NotKeyed},
-    Jitter,
+    Jitter, NegativeMultiDecision,
 };
 use futures_timer::Delay;
+
+/// An error that occurs when the number of cells required in `check_all`
+/// exceeds the maximum capacity of the limiter.
+#[derive(Debug, Clone)]
+pub struct InsufficientCapacity(pub u32);
+
+impl fmt::Display for InsufficientCapacity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "required number of cell {} exceeds bucket's capacity",
+            self.0
+        )
+    }
+}
+
+impl Error for InsufficientCapacity {}
 
 #[cfg(feature = "std")]
 /// # Direct rate limiters - `async`/`await`
@@ -42,5 +61,44 @@ where
             let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
             delay.await;
         }
+    }
+
+    /// Asynchronously resolves as soon as the rate limiter allows it.
+    ///
+    /// This is similar to `until_ready` except it waits for an abitrary number
+    /// of `n` cells to be available.
+    ///
+    /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
+    /// capacity of the rate limiter.
+    pub async fn until_n_ready(&self, n: NonZeroU32) -> Result<(), InsufficientCapacity> {
+        self.until_n_ready_with_jitter(n, Jitter::NONE).await
+    }
+
+    /// Asynchronously resolves as soon as the rate limiter allows it, with a
+    /// randomized wait period.
+    ///
+    /// This is similar to `until_ready_with_jitter` except it waits for an
+    /// abitrary number of `n` cells to be available.
+    ///
+    /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
+    /// capacity of the rate limiter.
+    pub async fn until_n_ready_with_jitter(
+        &self,
+        n: NonZeroU32,
+        jitter: Jitter,
+    ) -> Result<(), InsufficientCapacity> {
+        while let Err(err) = self.check_all(n) {
+            match err {
+                NegativeMultiDecision::BatchNonConforming(_, negative) => {
+                    let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
+                    delay.await;
+                }
+                NegativeMultiDecision::InsufficientCapacity(cap) => {
+                    return Err(InsufficientCapacity(cap))
+                }
+            }
+        }
+
+        Ok(())
     }
 }
