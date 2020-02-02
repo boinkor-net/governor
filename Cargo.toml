@@ -26,7 +26,7 @@ dev-version-ext = "dev"
 
 [package.metadata.template_ci.bench]
 run = true
-version = "stable"
+version = "nightly"
 
 [package.metadata.template_ci.additional_matrix_entries]
 

@@ -116,13 +116,25 @@ fn rejects_too_many_all() {
     // After 3 and 20 seconds, it should not allow 15 on that bucket either:
     clock.advance(ms * 3 * 1000);
     assert_ne!(Ok(()), lb.check_all(nonzero!(15u32)));
+}
 
-    clock.advance(ms * 17 * 1000);
-    let result = lb.check_all(nonzero!(15u32));
-    match result {
-        Err(NegativeMultiDecision::InsufficientCapacity(n)) => assert_eq!(n, 5),
-        _ => panic!("Did not expect {:?}", result),
-    }
+#[test]
+fn all_capacity_check_rejects_excess() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+
+    assert_eq!(
+        Err(NegativeMultiDecision::InsufficientCapacity(5)),
+        lb.check_all(nonzero!(15u32))
+    );
+    assert_eq!(
+        Err(NegativeMultiDecision::InsufficientCapacity(5)),
+        lb.check_all(nonzero!(6u32))
+    );
+    assert_eq!(
+        Err(NegativeMultiDecision::InsufficientCapacity(5)),
+        lb.check_all(nonzero!(7u32))
+    );
 }
 
 #[test]
