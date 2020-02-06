@@ -8,7 +8,7 @@ use crate::{
 };
 use futures_timer::Delay;
 
-/// An error that occurs when the number of cells required in `check_all`
+/// An error that occurs when the number of cells required in `check_n`
 /// exceeds the maximum capacity of the limiter.
 #[derive(Debug, Clone)]
 pub struct InsufficientCapacity(pub u32);
