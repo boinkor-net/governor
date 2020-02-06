@@ -51,7 +51,7 @@ circle-ci = { repository = "antifuchs/governor", branch = "master" }
 maintenance = { status = "actively-developed" }
 
 [[bench]]
-name = "criterion"
+name = "governor_criterion_benches"
 harness = false
 
 [dev-dependencies]
