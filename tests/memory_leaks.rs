@@ -60,7 +60,7 @@ fn memleak_gcra_multi() {
     let leak_check = LeakCheck::new(500_000);
 
     for _i in 0..leak_check.n_iter {
-        drop(bucket.check_all(nonzero!(2u32)));
+        drop(bucket.check_n(nonzero!(2u32)));
     }
 }
 

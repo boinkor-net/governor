@@ -87,7 +87,7 @@ where
         n: NonZeroU32,
         jitter: Jitter,
     ) -> Result<(), InsufficientCapacity> {
-        while let Err(err) = self.check_all(n) {
+        while let Err(err) = self.check_n(n) {
             match err {
                 NegativeMultiDecision::BatchNonConforming(_, negative) => {
                     let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));

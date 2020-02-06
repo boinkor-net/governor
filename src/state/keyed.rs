@@ -106,7 +106,7 @@ where
     /// This method diverges a little from the GCRA algorithm, using
     /// multiplication to determine the next theoretical arrival time, and so
     /// is not as fast as checking a single cell.
-    pub fn check_key_all(
+    pub fn check_key_n(
         &self,
         key: &K,
         n: NonZeroU32,
