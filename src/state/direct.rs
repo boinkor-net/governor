@@ -83,7 +83,7 @@ where
     /// This method diverges a little from the GCRA algorithm, using
     /// multiplication to determine the next theoretical arrival time, and so
     /// is not as fast as checking a single cell.  
-    pub fn check_all(
+    pub fn check_n(
         &self,
         n: NonZeroU32,
     ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
