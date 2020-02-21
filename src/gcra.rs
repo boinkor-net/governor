@@ -65,8 +65,8 @@ pub(crate) struct GCRA {
 
 impl GCRA {
     pub(crate) fn new(quota: Quota) -> Self {
-        let tau: Nanos = quota.per.into();
-        let t: Nanos = (quota.per / quota.max_burst.get()).into();
+        let tau: Nanos = (quota.replenish_1_per * quota.max_burst.get()).into();
+        let t: Nanos = quota.replenish_1_per.into();
         GCRA { tau, t }
     }
 
