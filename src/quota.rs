@@ -52,6 +52,8 @@ use std::time::Duration;
 /// let q = Quota::per_hour(nonzero!(2u32)).allow_burst(nonzero!(90u32));
 /// assert_eq!(q.replenish_interval(), Duration::from_secs(30 * 60));
 /// assert_eq!(q.burst_size().get(), 90);
+/// // The entire maximum burst size will be restored if no cells are let through for 45 hours:
+/// assert_eq!(q.burst_size_replenished_in(), Duration::from_secs(60 * 60 * (90 / 2)));
 /// ```
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Quota {
