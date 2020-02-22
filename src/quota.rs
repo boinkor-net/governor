@@ -18,7 +18,7 @@ use std::time::Duration;
 /// to accommodate 60 cells in one go, followed by a minute of waiting.
 ///
 /// Burst size gets really important when you construct a rate limiter that should allow multiple
-/// elements through at one time (using [`RadeLimiter.check_n`](struct.RateLimiter.html#method.check_n)
+/// elements through at one time (using [`RateLimiter.check_n`](struct.RateLimiter.html#method.check_n)
 /// and its related functions): Only
 /// at most as many cells can be let through in one call as are given as the burst size.
 ///
