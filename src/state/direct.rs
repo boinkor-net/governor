@@ -76,8 +76,8 @@ where
     /// * Failure (but ok): Not all cells can make it through at the current time.
     ///   The result is `Err(NegativeMultiDecision::BatchNonConforming(NotUntil))`, which can
     ///   be interrogated about when the batch might next conform.
-    /// * Failure (the batch can never go through): The rate limit is too low for the given number
-    ///   of cells.
+    /// * Failure (the batch can never go through): The rate limit quota's burst size is too low
+    ///   for the given number of cells to ever be allowed through.
     ///
     /// ### Performance
     /// This method diverges a little from the GCRA algorithm, using
