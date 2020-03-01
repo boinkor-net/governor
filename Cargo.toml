@@ -15,15 +15,6 @@ keywords = ["rate-limiting", "rate-limit", "no_std", "gcra"]
 # We use criterion, don't infer benchmark files.
 autobenches = false
 
-
-[package.metadata.release]
-sign-commit = false
-upload-doc = false
-pre-release-commit-message = "Release {{version}} 🎉🎉"
-pro-release-commit-message = "Start next development iteration {{version}}"
-tag-message = "Release {{prefix}}{{version}}"
-dev-version-ext = "dev"
-
 [package.metadata.template_ci.bench]
 run = true
 version = "nightly"
