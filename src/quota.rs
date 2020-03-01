@@ -1,5 +1,6 @@
 use std::prelude::v1::*;
 
+use nonzero_ext::nonzero;
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -29,7 +30,7 @@ use std::time::Duration;
 ///
 /// Construct a quota that allows 50 cells per second (replenishing at a rate of one cell
 /// per 20 milliseconds), with a burst size of 50 cells, allowing a full rate limiter to allow 50
-/// cells through at a time:   
+/// cells through at a time:
 /// ```rust
 /// # use governor::Quota;
 /// # use nonzero_ext::nonzero;
@@ -94,6 +95,36 @@ impl Quota {
         }
     }
 
+    /// Construct a quota that replenishes one cell in a given
+    /// interval.
+    ///
+    /// This constructor is meant to replace [`::new`](#method.new),
+    /// in cases where a longer refresh period than 1 cell/hour is
+    /// necessary.
+    ///
+    /// If the time interval is zero, returns `None`.
+    ///
+    /// # Example
+    /// ```rust
+    /// # use nonzero_ext::nonzero;
+    /// # use governor::Quota;
+    /// # use std::time::Duration;
+    /// // Replenish one cell per day, with a burst capacity of 10 cells:
+    /// let _quota = Quota::with_period(Duration::from_secs(60 * 60 * 24))
+    ///     .unwrap()
+    ///     .allow_burst(nonzero!(10u32));
+    /// ```
+    pub fn with_period(replenish_1_per: Duration) -> Option<Quota> {
+        if replenish_1_per.as_nanos() == 0 {
+            None
+        } else {
+            Some(Quota {
+                max_burst: nonzero!(1u32),
+                replenish_1_per,
+            })
+        }
+    }
+
     /// Adjusts the maximum burst size for a quota to construct a rate limiter with a capacity
     /// for at most the given number of cells.
     pub const fn allow_burst(self, max_burst: NonZeroU32) -> Quota {
@@ -105,15 +136,18 @@ impl Quota {
     ///
     /// Returns `None` if the duration is zero.
     ///
-    /// This constructor allows greater control over the resulting quota, but doesn't make
-    /// as much intuitive sense as other methods of constructing the same quotas. Unless your
-    /// quotas are given as "max burst size, and time it takes to replenish that burst size", you
-    /// are better served by the [`Quota::per_second`] (and similar) constructors with the
-    /// [`allow_burst`](#method.allow_burst) modifier.
+    /// This constructor allows greater control over the resulting
+    /// quota, but doesn't make as much intuitive sense as other
+    /// methods of constructing the same quotas. Unless your quotas
+    /// are given as "max burst size, and time it takes to replenish
+    /// that burst size", you are better served by the
+    /// [`Quota::per_second`](#method.per_second) (and similar)
+    /// constructors with the [`allow_burst`](#method.allow_burst)
+    /// modifier.
     #[deprecated(
         since = "0.2.0",
         note = "This constructor is often confusing and non-intuitive. \
-    Use the `per_(interval)` and `max_burst` constructors instead."
+    Use the `per_(interval)` / `with_period` and `max_burst` constructors instead."
     )]
     pub fn new(max_burst: NonZeroU32, replenish_all_per: Duration) -> Option<Quota> {
         if replenish_all_per.as_nanos() == 0 {

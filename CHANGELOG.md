@@ -24,9 +24,12 @@
   * [Instant](https://doc.rust-lang.org/nightly/std/time/struct.Instant.html), the stdlib monotonic clock
   * A fake releative clock, useful for tests or in non-std environments.
 
-* `Quota` constructors now support a separate `.allow_burst` function
+* `Quota` constructors now support a separate `.allow_burst` method
   that specifies a maximum burst capacity that diverges from the
   default.
+
+* New constructor `Quota::with_period` allows specifying the exact
+  amount of time it takes to replenish a single element.
 
 ### Deprecated
 
