@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.2.0](https://docs.rs/governor/0.2.0/governor/)] - 2020-03-01
+
 ### Added
 
 * This changelog!
