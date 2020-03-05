@@ -16,7 +16,7 @@ use crate::Jitter;
 /// rate-limiting result.
 #[derive(Debug, PartialEq)]
 pub struct NotUntil<'a, P: clock::Reference> {
-    limiter: &'a GCRA,
+    limiter: &'a Gcra,
     tat: Nanos,
     start: P,
 }
@@ -55,7 +55,7 @@ impl<'a, P: clock::Reference> fmt::Display for NotUntil<'a, P> {
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct GCRA {
+pub(crate) struct Gcra {
     // The "weight" of a single packet in units of time.
     t: Nanos,
 
@@ -63,11 +63,11 @@ pub(crate) struct GCRA {
     tau: Nanos,
 }
 
-impl GCRA {
+impl Gcra {
     pub(crate) fn new(quota: Quota) -> Self {
         let tau: Nanos = (quota.replenish_1_per * quota.max_burst.get()).into();
         let t: Nanos = quota.replenish_1_per.into();
-        GCRA { tau, t }
+        Gcra { tau, t }
     }
 
     /// Computes and returns a new ratelimiter state if none exists yet.
