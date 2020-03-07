@@ -4,6 +4,16 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+* The `MonotonicClock` and `SystemClock` struct definitions now are
+  proper "empty" structs. Any non-`Default` construction of these clocks
+  must now use `MonotonicClock` instead of `MonotonicClock()`.
+
+### Contributors
+
+* [@Restioson](https://github.com/Restioson)
+
 ## [[0.2.0](https://docs.rs/governor/0.2.0/governor/)] - 2020-03-01
 
 ### Added
