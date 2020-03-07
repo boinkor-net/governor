@@ -8,7 +8,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 /// The monotonic clock implemented by [`Instant`].
 #[derive(Clone, Debug, Default)]
-pub struct MonotonicClock();
+pub struct MonotonicClock;
 
 impl Add<Nanos> for Instant {
     type Output = Instant;
@@ -43,7 +43,7 @@ impl Clock for MonotonicClock {
 
 /// The non-monotonic clock implemented by [`SystemTime`].
 #[derive(Clone, Debug, Default)]
-pub struct SystemClock();
+pub struct SystemClock;
 
 impl Reference for SystemTime {
     /// Returns the difference in times between the two

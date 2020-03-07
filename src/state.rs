@@ -8,7 +8,7 @@ pub mod keyed;
 
 pub use self::in_memory::InMemoryState;
 
-use crate::gcra::GCRA;
+use crate::gcra::Gcra;
 use crate::nanos::Nanos;
 use crate::{clock, Quota};
 
@@ -60,7 +60,7 @@ where
     C: clock::Clock,
 {
     state: S,
-    gcra: GCRA,
+    gcra: Gcra,
     clock: C,
     start: C::Instant,
 }
@@ -75,7 +75,7 @@ where
     /// This is the most generic way to construct a rate-limiter; most users should prefer
     /// [`direct`] or other methods instead.
     pub fn new(quota: Quota, state: S, clock: &C) -> Self {
-        let gcra = GCRA::new(quota);
+        let gcra = Gcra::new(quota);
         let start = clock.now();
         let clock = clock.clone();
         RateLimiter {
