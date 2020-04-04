@@ -9,6 +9,8 @@
 * The `MonotonicClock` and `SystemClock` struct definitions now are
   proper "empty" structs. Any non-`Default` construction of these clocks
   must now use `MonotonicClock` instead of `MonotonicClock()`.
+* The `clock::ReasonablyRealtime` trait got simplified and no longer
+  has any required methods to implement, only one default method.
 
 ### Contributors
 

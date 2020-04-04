@@ -146,8 +146,7 @@ where
                 State::NotReady => {
                     let reference = self.limiter.reference_reading();
                     if let Err(negative) = self.limiter.check() {
-                        let earliest = negative.earliest_possible_with_offset(self.jitter);
-                        let earliest = self.limiter.instant_from_reference(reference, earliest);
+                        let earliest = negative.wait_time_with_offset(reference, self.jitter);
                         self.delay.reset(earliest);
                         let future = Pin::new(&mut self.delay);
                         match future.poll(cx) {

@@ -14,9 +14,6 @@ use crate::{clock, Quota};
 
 pub use direct::*;
 
-#[cfg(feature = "std")]
-use std::time::Instant;
-
 /// A way for rate limiters to keep state.
 ///
 /// There are two important kinds of state stores: Direct and keyed. The direct kind have only
@@ -42,7 +39,7 @@ pub trait StateStore {
     ///
     /// It is `measure_and_replace`'s job then to safely replace the value at the key - it must
     /// only update the value if the value hasn't changed. The implementations in this
-    /// crate use `AtomicU64` operations for this.    
+    /// crate use `AtomicU64` operations for this.
     fn measure_and_replace<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
@@ -52,7 +49,7 @@ pub trait StateStore {
 ///
 /// This is the structure that ties together the parameters (how many cells to allow in what time
 /// period) and the concrete state of rate limiting decisions. This crate ships in-memory state
-/// stores, but it's possible (by implementing the [`StateStore`] trait) to make others.  
+/// stores, but it's possible (by implementing the [`StateStore`] trait) to make others.
 #[derive(Debug)]
 pub struct RateLimiter<K, S, C>
 where
@@ -100,15 +97,7 @@ where
     S: StateStore<Key = K>,
     C: clock::ReasonablyRealtime,
 {
-    pub(crate) fn reference_reading(&self) -> (C::Instant, Instant) {
+    pub(crate) fn reference_reading(&self) -> C::Instant {
         self.clock.reference_point()
-    }
-
-    pub(crate) fn instant_from_reference(
-        &self,
-        reference: (C::Instant, Instant),
-        reading: C::Instant,
-    ) -> Instant {
-        C::convert_from_reference(reference, reading)
     }
 }
