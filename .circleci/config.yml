@@ -1,16 +1,28 @@
-# TemplateCIConfig { bench: BenchEntry(MatrixEntry { run: true, run_cron: false, version: "nightly", install_commandline: None, commandline: "cargo bench", timeout: None }), clippy: ClippyEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("rustup component add clippy"), commandline: "cargo clippy -- -D warnings", timeout: None }), rustfmt: RustfmtEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("rustup component add rustfmt"), commandline: "cargo fmt -v -- --check", timeout: None }), additional_matrix_entries: {"cargo_deny": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: Some("cargo install cargo-deny"), commandline: "cargo deny check all", timeout: None }), "no_std_nightly": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "nightly", install_commandline: None, commandline: "cargo +nightly test --no-default-features --features no_std", timeout: None }), "no_std_stable": CustomEntry(MatrixEntry { run: true, run_cron: false, version: "stable", install_commandline: None, commandline: "cargo test --no-default-features --features no_std", timeout: None })}, cache: "cargo", os: "linux", dist: "xenial", versions: ["stable", "nightly"], test_commandline: "cargo test --verbose --all", scheduled_test_branches: ["master"], test_schedule: "0 0 * * 0" }
 version: "2.1"
 
-executors:
-  stable:
-    docker:
-      - image: liuchong/rustup:stable
-  nightly:
-    docker:
-      - image: liuchong/rustup:nightly
-  beta:
-    docker:
-      - image: liuchong/rustup:beta
+executors: {
+  "beta": {
+    "docker": [
+      {
+        "image": "liuchong/rustup:beta"
+      }
+    ]
+  },
+  "nightly": {
+    "docker": [
+      {
+        "image": "liuchong/rustup:nightly"
+      }
+    ]
+  },
+  "stable": {
+    "docker": [
+      {
+        "image": "liuchong/rustup:stable"
+      }
+    ]
+  }
+}
 
 commands:
   cargo_test:
@@ -78,6 +90,20 @@ jobs:
       - run:
           name: Bench
           command: cargo bench
+  no_std_stable:
+    parameters:
+      version:
+        type: executor
+      version_name:
+        type: string
+    executor: << parameters.version >>
+    environment:
+      CI_RUST_VERSION: << parameters.version_name >>
+    steps:
+      - checkout
+      - run:
+          name: cargo test --no-default-features --features no_std
+          command: cargo test --no-default-features --features no_std
   cargo_deny:
     parameters:
       version:
@@ -109,28 +135,6 @@ jobs:
       - run:
           name: cargo +nightly test --no-default-features --features no_std
           command: cargo +nightly test --no-default-features --features no_std
-  no_std_stable:
-    parameters:
-      version:
-        type: executor
-      version_name:
-        type: string
-    executor: << parameters.version >>
-    environment:
-      CI_RUST_VERSION: << parameters.version_name >>
-    steps:
-      - checkout
-      - run:
-          name: cargo test --no-default-features --features no_std
-          command: cargo test --no-default-features --features no_std
-
-  ci_success:
-    docker:
-      - image: alpine:latest
-    steps:
-      - run:
-          name: Success
-          command: "echo yay"
 
 workflows:
   continuous_integration:
@@ -209,6 +213,10 @@ workflows:
     ]
   }
 }
+      - no_std_stable:
+          name: "no_std_stable"
+          version: stable
+          version_name: stable
       - cargo_deny:
           name: "cargo_deny"
           version: stable
@@ -217,20 +225,6 @@ workflows:
           name: "no_std_nightly"
           version: nightly
           version_name: nightly
-      - no_std_stable:
-          name: "no_std_stable"
-          version: stable
-          version_name: stable
-      - ci_success:
-          requires:
-          - test-stable
-          - test-nightly
-          - rustfmt
-          - clippy
-          - bench
-          - cargo_deny
-          - no_std_nightly
-          - no_std_stable
   scheduled_tests:
     jobs:
       - test:

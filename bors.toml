@@ -2,7 +2,7 @@
 # https://app.bors.tech/repositories so bors can see the new repo!
 
 status = [
-  "ci/circleci: ci_success",
+  "continuous_integration",
 ]
-timeout_sec = 300
+timeout_sec = 600
 delete_merged_branches = true
