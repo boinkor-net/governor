@@ -22,6 +22,12 @@ impl Default for QuantaClock {
     }
 }
 
+impl From<quanta::Instant> for Nanos {
+    fn from(instant: quanta::Instant) -> Self {
+        instant.as_u64().into()
+    }
+}
+
 impl Clock for QuantaClock {
     type Instant = QuantaInstant;
 
