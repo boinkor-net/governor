@@ -104,23 +104,6 @@ jobs:
       - run:
           name: cargo test --no-default-features --features no_std
           command: cargo test --no-default-features --features no_std
-  cargo_deny:
-    parameters:
-      version:
-        type: executor
-      version_name:
-        type: string
-    executor: << parameters.version >>
-    environment:
-      CI_RUST_VERSION: << parameters.version_name >>
-    steps:
-      - checkout
-      - run:
-          name: Install
-          command: cargo install cargo-deny
-      - run:
-          name: cargo deny check all
-          command: cargo deny check all
   no_std_nightly:
     parameters:
       version:
@@ -215,10 +198,6 @@ workflows:
 }
       - no_std_stable:
           name: "no_std_stable"
-          version: stable
-          version_name: stable
-      - cargo_deny:
-          name: "cargo_deny"
           version: stable
           version_name: stable
       - no_std_nightly:
