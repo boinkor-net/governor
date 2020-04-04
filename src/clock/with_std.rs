@@ -84,34 +84,11 @@ impl Clock for SystemClock {
 /// asynchronously.
 pub trait ReasonablyRealtime: Clock {
     /// Returns a reference point at the start of an operation.
-    fn reference_point(&self) -> (Self::Instant, Instant) {
-        (self.now(), Instant::now())
-    }
-
-    /// Converts a reference point and a value of this clock to an Instant in the future.
-    fn convert_from_reference(
-        reference: (Self::Instant, Instant),
-        reading: Self::Instant,
-    ) -> Instant;
-}
-
-impl ReasonablyRealtime for MonotonicClock {
-    fn convert_from_reference(
-        _reference: (Self::Instant, Instant),
-        reading: Self::Instant,
-    ) -> Instant {
-        reading
+    fn reference_point(&self) -> Self::Instant {
+        self.now()
     }
 }
 
-impl ReasonablyRealtime for SystemClock {
-    fn convert_from_reference(
-        reference: (Self::Instant, Instant),
-        reading: Self::Instant,
-    ) -> Instant {
-        let diff = reading
-            .duration_since(reference.0)
-            .unwrap_or_else(|_| Duration::new(0, 0));
-        reference.1 + diff
-    }
-}
+impl ReasonablyRealtime for MonotonicClock {}
+
+impl ReasonablyRealtime for SystemClock {}

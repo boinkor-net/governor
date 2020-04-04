@@ -5,7 +5,7 @@ use crate::nanos::Nanos;
 use quanta;
 use std::ops::Add;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// A clock using the default [`quanta::Clock`] structure.
 ///
@@ -99,13 +99,4 @@ impl Clock for QuantaUpkeepClock {
     }
 }
 
-impl ReasonablyRealtime for QuantaClock {
-    fn convert_from_reference(
-        reference: (Self::Instant, Instant),
-        reading: Self::Instant,
-    ) -> Instant {
-        let reference_ns = reference.0;
-        let diff = Duration::from_nanos(reading.0.as_u64() - reference_ns.0.as_u64());
-        reference.1 + diff
-    }
-}
+impl ReasonablyRealtime for QuantaClock {}
