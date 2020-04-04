@@ -1,0 +1,13 @@
+name: "Additional CI"
+# This workflow is triggered on pushes to the repository.
+on: [push]
+
+jobs:
+  cargo_deny:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: "cargo deny"
+      uses: EmbarkStudios/cargo-deny-action@v0
+      with:
+        command: "check all"
