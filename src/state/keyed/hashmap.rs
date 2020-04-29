@@ -7,10 +7,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::state::keyed::ShrinkableKeyedStateStore;
-#[cfg(feature = "std")]
 use parking_lot::Mutex;
-#[cfg(not(feature = "std"))]
-use spin::Mutex;
 
 /// A thread-safe (but not very performant) implementation of a keyed rate limiter state
 /// store using [`HashMap`].
