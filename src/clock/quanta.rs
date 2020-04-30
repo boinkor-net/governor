@@ -2,7 +2,6 @@ use std::prelude::v1::*;
 
 use crate::clock::{Clock, ReasonablyRealtime, Reference};
 use crate::nanos::Nanos;
-use quanta;
 use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
