@@ -11,10 +11,12 @@
   must now use `MonotonicClock` instead of `MonotonicClock()`.
 * The `clock::ReasonablyRealtime` trait got simplified and no longer
   has any required methods to implement, only one default method.
+* Replaced the `spin` crate with `parking_lot` for `no_std` contexts.
 
 ### Contributors
 
 * [@Restioson](https://github.com/Restioson)
+* [@korrat](https://github.com/korrat)
 
 ## [[0.2.0](https://docs.rs/governor/0.2.0/governor/)] - 2020-03-01
 
