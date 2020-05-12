@@ -27,7 +27,6 @@
 //! ```
 //!
 
-#![cfg_attr(feature = "docs", feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 // Clippy config: Deny warnings but allow unknown lint configuration (so I can use nightly)
 #![deny(warnings)]

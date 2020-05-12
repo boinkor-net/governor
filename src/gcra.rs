@@ -42,14 +42,12 @@ impl<'a, P: clock::Reference> NotUntil<'a, P> {
     }
 
     #[cfg(feature = "std")] // not used unless we use Instant-compatible clocks.
-    #[cfg_attr(feature = "docs", doc(cfg(feature = "jitter")))]
     pub(crate) fn earliest_possible_with_offset(&self, jitter: Jitter) -> P {
         let tat = jitter + self.tat;
         self.start + tat
     }
 
     #[cfg(feature = "std")] // not used unless we use Instant-compatible clocks.
-    #[cfg_attr(feature = "docs", doc(cfg(feature = "jitter")))]
     pub(crate) fn wait_time_with_offset(&self, from: P, jitter: Jitter) -> Duration {
         let earliest = self.earliest_possible_with_offset(jitter);
         earliest.duration_since(earliest.min(from)).into()
