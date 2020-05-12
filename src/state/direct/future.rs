@@ -56,6 +56,7 @@ where
     /// This method allows for a randomized additional delay between polls of the rate limiter,
     /// which can help reduce the likelihood of thundering herd effects if multiple tasks try to
     /// wait on the same rate limiter.
+    #[cfg_attr(feature = "docs", doc(cfg(feature = "jitter")))]
     pub async fn until_ready_with_jitter(&self, jitter: Jitter) {
         while let Err(negative) = self.check() {
             let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
@@ -82,6 +83,7 @@ where
     ///
     /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
     /// capacity of the rate limiter.
+    #[cfg_attr(feature = "docs", doc(cfg(feature = "jitter")))]
     pub async fn until_n_ready_with_jitter(
         &self,
         n: NonZeroU32,
