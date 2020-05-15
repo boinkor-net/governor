@@ -3,8 +3,9 @@ use super::{Clock, Reference};
 use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
+use instant::Instant;
 use std::ops::Add;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
 /// The monotonic clock implemented by [`Instant`].
 #[derive(Clone, Debug, Default)]

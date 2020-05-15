@@ -8,10 +8,11 @@ use governor::{
     middleware::NoOpMiddleware,
     state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore},
 };
+use instant::Instant;
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tynm::type_name;
 
 pub fn bench_all(c: &mut Criterion) {

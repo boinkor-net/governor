@@ -1,5 +1,5 @@
 #[cfg(all(feature = "std", not(feature = "quanta")))]
-/// The default clock that reports [`Instant`][std::time::Instant]s.
+/// The default clock that reports [`Instant`][instant::Instant]s.
 pub type DefaultClock = crate::clock::MonotonicClock;
 
 #[cfg(all(feature = "std", feature = "quanta"))]
