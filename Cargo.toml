@@ -38,6 +38,8 @@ all_asserts = "2.2.0"
 default = ["std", "dashmap", "jitter", "quanta"]
 std = ["no-std-compat/std", "nonzero_ext/std", "futures-timer", "futures"]
 jitter = ["rand"]
+stdweb = ["instant/stdweb"]
+wasm-bindgen = ["futures-timer/wasm-bindgen", "instant/wasm-bindgen"]
 no_std = []
 
 [dependencies]
