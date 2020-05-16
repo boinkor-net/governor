@@ -2,13 +2,14 @@
 
 use futures::executor::block_on;
 use futures::{stream, StreamExt};
-use governor::{prelude::*, Quota, RateLimiter};
+use governor::{clock, prelude::*, Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 #[test]
 fn stream() {
+    clock::calibrate_quanta_clock();
     let i = Instant::now();
     let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
     let mut stream = stream::repeat(()).ratelimit_stream(&lim);
