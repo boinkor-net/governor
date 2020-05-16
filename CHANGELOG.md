@@ -12,6 +12,16 @@
 * The `clock::ReasonablyRealtime` trait got simplified and no longer
   has any required methods to implement, only one default method.
 * Replaced the `spin` crate with `parking_lot` for `no_std` contexts.
+* The quanta clock (which is the default) now has a mandatory one-time
+  1 second calibration step. The function
+  `governor::clock::calibrate_quanta_clock` can be used to perform
+  that calibration at startup, otherwise the clock is calibrated the
+  first time that a rate limiter is constructed.
+
+### Added
+
+* New feature `enable_quanta` (on by default): This replaces the
+  `quanta` feature.
 
 ### Contributors
 
