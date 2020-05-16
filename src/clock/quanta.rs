@@ -2,9 +2,11 @@ use std::prelude::v1::*;
 
 use crate::clock::{Clock, ReasonablyRealtime, Reference};
 use crate::nanos::Nanos;
+use once_cell::sync;
 use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
+use sync::Lazy;
 
 /// A clock using the default [`quanta::Clock`] structure.
 ///
@@ -18,11 +20,23 @@ use std::time::Duration;
 /// quanta clock is calibrated, which can take up to 1 second of wall
 /// clock time. Any subsequent uses and constructions of a quanta
 /// clock in governor will use the already-calibrated clock.
+///
+/// The function [`calibrate_quanta_clock`] can be used to perform
+/// that calibration step at a time where it does not impede
+/// time-critical operations, e.g. at program initialization.
 #[derive(Debug, Clone)]
 pub struct QuantaClock(quanta::Clock);
 
-static CALIBRATED_CLOCK: once_cell::sync::Lazy<quanta::Clock> =
-    once_cell::sync::Lazy::new(|| quanta::Clock::new());
+static CALIBRATED_CLOCK: Lazy<quanta::Clock> = once_cell::sync::Lazy::new(|| quanta::Clock::new());
+
+/// Performs a calibration step for quanta clocks, which can take up to 1s.
+///
+/// If this function is not called, the first construction of a quanta
+/// clock (i.e., the first time a rate limiter is constructed) causes
+/// that calibration step to happen automatically.
+pub fn calibrate_quanta_clock() {
+    Lazy::force(&CALIBRATED_CLOCK);
+}
 
 impl Default for QuantaClock {
     fn default() -> Self {
@@ -85,6 +99,10 @@ impl Reference for QuantaInstant {
 /// quanta clock is calibrated, which can take up to 1 second of wall
 /// clock time. Any subsequent uses and constructions of a quanta
 /// clock in governor will use the already-calibrated clock.
+///
+/// The function [`calibrate_quanta_clock`] can be used to perform
+/// that calibration step at a time where it does not impede
+/// time-critical operations, e.g. at program initialization.
 #[derive(Debug, Clone)]
 pub struct QuantaUpkeepClock(quanta::Clock, Arc<quanta::Handle>);
 
