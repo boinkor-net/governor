@@ -12,12 +12,21 @@ use std::time::Duration;
 /// clock that uses a quanta background upkeep thread (which allows retrieving the time with an
 /// atomic read, but requires a background thread that wakes up continually),
 /// see [`QuantaUpkeepClock`].
+///
+/// # Calibration
+/// Upon first use (that is, when the rate limiter is constructed), a
+/// quanta clock is calibrated, which can take up to 1 second of wall
+/// clock time. Any subsequent uses and constructions of a quanta
+/// clock in governor will use the already-calibrated clock.
 #[derive(Debug, Clone)]
 pub struct QuantaClock(quanta::Clock);
 
+static CALIBRATED_CLOCK: once_cell::sync::Lazy<quanta::Clock> =
+    once_cell::sync::Lazy::new(|| quanta::Clock::new());
+
 impl Default for QuantaClock {
     fn default() -> Self {
-        QuantaClock(Default::default())
+        QuantaClock((*CALIBRATED_CLOCK).clone())
     }
 }
 
@@ -70,13 +79,19 @@ impl Reference for QuantaInstant {
 /// Whether this is faster than a [`QuantaClock`] depends on the utilization of the rate limiter
 /// and the upkeep interval that you pick; you should measure and compare performance before
 /// picking one or the other.
+///
+/// # Calibration
+/// Upon first use (that is, when the rate limiter is constructed), a
+/// quanta clock is calibrated, which can take up to 1 second of wall
+/// clock time. Any subsequent uses and constructions of a quanta
+/// clock in governor will use the already-calibrated clock.
 #[derive(Debug, Clone)]
 pub struct QuantaUpkeepClock(quanta::Clock, Arc<quanta::Handle>);
 
 impl QuantaUpkeepClock {
     /// Returns a new `QuantaUpkeepClock` with an upkeep thread that wakes up once in `interval`.
     pub fn from_interval(interval: Duration) -> Result<QuantaUpkeepClock, std::io::Error> {
-        let builder = quanta::Builder::new(interval);
+        let builder = quanta::Builder::new_with_clock(interval, (*CALIBRATED_CLOCK).clone());
         Self::from_builder(builder)
     }
 
@@ -84,7 +99,7 @@ impl QuantaUpkeepClock {
     pub fn from_builder(builder: quanta::Builder) -> Result<QuantaUpkeepClock, std::io::Error> {
         let handle = builder.start()?;
         Ok(QuantaUpkeepClock(
-            quanta::Clock::default(),
+            (*CALIBRATED_CLOCK).clone(),
             Arc::new(handle),
         ))
     }
