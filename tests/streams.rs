@@ -1,5 +1,6 @@
 #![cfg(feature = "std")]
 
+use all_asserts::*;
 use futures::{stream, StreamExt};
 use governor::{prelude::*, Quota, RateLimiter};
 use instant::Instant;
@@ -28,11 +29,9 @@ tests! {
         assert!(i.elapsed() <= Duration::from_millis(100));
 
         wait!(stream.next());
-        assert!(i.elapsed() >= Duration::from_millis(100));
-        assert!(i.elapsed() <= Duration::from_millis(200));
+        assert_range!((100..=200), i.elapsed().as_millis());
 
         wait!(stream.next());
-        assert!(i.elapsed() >= Duration::from_millis(200));
-        assert!(i.elapsed() <= Duration::from_millis(300));
+        assert_range!((200..=300), i.elapsed().as_millis());
     }
 }
