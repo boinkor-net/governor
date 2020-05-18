@@ -15,6 +15,30 @@ keywords = ["rate-limiting", "rate-limit", "no_std", "gcra"]
 # We use criterion, don't infer benchmark files.
 autobenches = false
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+bench = false
+
+[package.metadata.template_ci.bench]
+run = true
+version = "nightly"
+
+[package.metadata.template_ci.clippy]
+run = false
+version = "nightly"
+
+[package.metadata.template_ci.additional_matrix_entries]
+
+[package.metadata.template_ci.additional_matrix_entries.no_std_nightly]
+run = true
+version = "nightly"
+commandline = "cargo +nightly test --no-default-features --features no_std"
+
+[package.metadata.template_ci.additional_matrix_entries.no_std_stable]
+run = true
+version = "stable"
+commandline = "cargo test --no-default-features --features no_std"
+
 [badges]
 maintenance = { status = "actively-developed" }
 
@@ -22,17 +46,16 @@ maintenance = { status = "actively-developed" }
 name = "governor_criterion_benches"
 harness = false
 
-[lib]
-bench = false
-
 [dev-dependencies]
-criterion = {version = "0.3.2", features = ["html_reports"]}
+criterion = { version = "0.3.2", features = ["html_reports"] }
 tynm = "0.1.4"
 crossbeam = "0.8.0"
-libc = "0.2.70"
-futures = "0.3.5"
-proptest = "1.0.0"
+futures = "0.3.15"
 all_asserts = "2.2.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+libc = "0.2.70"
+proptest = "1.0.0"
 
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]
@@ -55,3 +78,7 @@ no-std-compat = { version = "0.4.0", features = [ "alloc", "compat_hash" ] }
 
 # To ensure we don't pull in vulnerable smallvec, see https://github.com/antifuchs/governor/issues/60
 smallvec = "1.6.1"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+wasm-bindgen-test = "0.3.24"

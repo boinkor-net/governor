@@ -7,6 +7,9 @@ use nonzero_ext::nonzero;
 use std::hash::Hash;
 use std::time::Duration;
 
+#[cfg(target_arch = "wasm32")]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
 const KEYS: &[u32] = &[1u32, 2u32];
 
 #[test]
@@ -96,6 +99,7 @@ fn expiration() {
     assert_eq!(retained_keys(lim_later), Vec::<&str>::new());
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn actual_threadsafety() {
     use crossbeam;
