@@ -45,7 +45,7 @@ tynm = "0.1.4"
 crossbeam = "0.7.3"
 libc = "0.2.70"
 futures = "0.3.5"
-proptest = "0.9.6"
+proptest = "0.10.0"
 more-asserts = "0.2.1"
 
 [features]
