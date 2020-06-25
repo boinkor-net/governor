@@ -1,0 +1,26 @@
+name: "Additional CI"
+# This workflow is triggered on pushes to the repository.
+on: [push]
+
+jobs:
+  ci_checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-audit
+        use-tool-cache: true
+    - name: "cargo deny"
+      uses: EmbarkStudios/cargo-deny-action@v1.0.1 # Effectively cargo-deny 0.6.7
+      with:
+        command: "check all"
+    - name: "cargo clippy"
+      uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: -- -D warnings
+    - name: "cargo audit"
+      uses: actions-rs/audit-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}

@@ -168,20 +168,6 @@ workflows:
     ]
   }
 }
-      - clippy:
-          version: stable
-          filters: {
-  "branches": {
-    "ignore": [
-      "/.*\\.tmp/"
-    ]
-  },
-  "tags": {
-    "only": [
-      "/^v\\d+\\.\\d+\\.\\d+.*$/"
-    ]
-  }
-}
       - bench:
           version: nightly
           filters: {

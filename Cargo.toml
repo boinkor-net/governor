@@ -19,6 +19,10 @@ autobenches = false
 run = true
 version = "nightly"
 
+[package.metadata.template_ci.clippy]
+run = false
+version = "nightly"
+
 [package.metadata.template_ci.additional_matrix_entries]
 
 [package.metadata.template_ci.additional_matrix_entries.no_std_nightly]
