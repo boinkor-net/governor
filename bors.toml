@@ -3,7 +3,9 @@
 
 status = [
   "continuous_integration",
-  "ci_checks",
+  "cargo_deny",
+  "cargo_audit",
+  "cargo_clippy",
 ]
 timeout_sec = 600
 delete_merged_branches = true
