@@ -4,7 +4,6 @@
 status = [
   "continuous_integration",
   "cargo_deny",
-  "cargo_audit",
   "cargo_clippy",
 ]
 timeout_sec = 600
