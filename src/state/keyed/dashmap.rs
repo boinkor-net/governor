@@ -51,4 +51,12 @@ impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for DashMapStateStore<K>
     fn shrink_to_fit(&self) {
         self.shrink_to_fit();
     }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
 }

@@ -120,19 +120,32 @@ where
 ///
 /// Any keyed state store implementing this trait allows users to evict elements that are
 /// indistinguishable from fresh rate-limiting states (that is, if a key hasn't been used for
-/// rate-limiting decisions for as long as the bucket capacity).  
+/// rate-limiting decisions for as long as the bucket capacity).
 ///
 /// As this does not make sense for not all keyed state stores (e.g. stores that auto-expire like
 /// memcache), this is an optional trait. All the keyed state stores in this crate implement
-/// shrinking.  
+/// shrinking.
 pub trait ShrinkableKeyedStateStore<K: Hash>: KeyedStateStore<K> {
     /// Remove those keys with state older than `drop_below`.
     fn retain_recent(&self, drop_below: Nanos);
 
     /// Shrinks the capacity of the state store, if possible.
     ///
-    /// If the state store does not support shrinking, this method is a no-op.   
+    /// If the state store does not support shrinking, this method is a no-op.
     fn shrink_to_fit(&self) {}
+
+    /// Returns the number of "live" keys stored in the state store.
+    ///
+    /// Depending on how the state store is implemented, this may
+    /// return an estimate or an out-of-date result.
+    fn len(&self) -> usize;
+
+    /// Returns `true` if `self` has no keys stored in it.
+    ///
+    /// As with [`len`](#tymethod.len), this method may return
+    /// imprecise results (indicating that the state store is empty
+    /// while a concurrent rate-limiting operation is taking place).
+    fn is_empty(&self) -> bool;
 }
 
 /// # Keyed rate limiters - Housekeeping
@@ -161,8 +174,26 @@ where
         self.state.retain_recent(drop_below);
     }
 
+    /// Shrinks the capacity of the rate limiter's state store, if possible.
     pub fn shrink_to_fit(&self) {
         self.state.shrink_to_fit();
+    }
+
+    /// Returns the number of "live" keys in the rate limiter's state store.
+    ///
+    /// Depending on how the state store is implemented, this may
+    /// return an estimate or an out-of-date result.
+    pub fn len(&self) -> usize {
+        self.state.len()
+    }
+
+    /// Returns `true` if the rate limiter has no keys in it.
+    ///
+    /// As with [`len`](#method.len), this method may return
+    /// imprecise results (indicating that the state store is empty
+    /// while a concurrent rate-limiting operation is taking place).
+    pub fn is_empty(&self) -> bool {
+        self.state.is_empty()
     }
 }
 

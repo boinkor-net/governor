@@ -115,3 +115,22 @@ fn actual_threadsafety() {
         assert_eq!(Ok(()), lim.check_key(key));
     }
 }
+
+#[test]
+fn hashmap_length() {
+    let lim = RateLimiter::hashmap(Quota::per_second(nonzero!(1u32)));
+    assert_eq!(lim.len(), 0);
+    assert!(lim.is_empty(), true);
+
+    lim.check_key(&"foo").unwrap();
+    assert_eq!(lim.len(), 1);
+    assert!(!lim.is_empty(),);
+
+    lim.check_key(&"bar").unwrap();
+    assert_eq!(lim.len(), 2);
+    assert!(!lim.is_empty());
+
+    lim.check_key(&"baz").unwrap();
+    assert_eq!(lim.len(), 3);
+    assert!(!lim.is_empty());
+}
