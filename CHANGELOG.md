@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.3.0](https://docs.rs/governor/0.3.0/governor/)] - 2020-07-25
+
 ### Added
 
 * The `ShrinkableKeyedStateStore` trait now has required `len` and
