@@ -4,6 +4,15 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* The `ShrinkableKeyedStateStore` trait now has required `len` and
+  `is_empty` methods, which are also made available on any
+  `RateLimiter` that uses a shrinkable (Hashmap / Dashmap backed)
+  state store. Thanks to [@lytefast](https://github.com/lytefast) for
+  the idea and [pull request](https://github.com/antifuchs/ratelimit_meter/pull/38)
+  on `ratelimit_meter`!
+
 ### Changed
 
 * The `MonotonicClock` and `SystemClock` struct definitions now are
@@ -17,6 +26,7 @@
 
 * [@Restioson](https://github.com/Restioson)
 * [@korrat](https://github.com/korrat)
+* [@lytefast](https://github.com/lytefast)
 
 ## [[0.2.0](https://docs.rs/governor/0.2.0/governor/)] - 2020-03-01
 

@@ -46,6 +46,15 @@ impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for HashMapStateStore<K>
         let mut map = self.lock();
         map.shrink_to_fit();
     }
+
+    fn len(&self) -> usize {
+        let map = self.lock();
+        (*map).len()
+    }
+    fn is_empty(&self) -> bool {
+        let map = self.lock();
+        (*map).is_empty()
+    }
 }
 
 /// # Keyed rate limiters - [`HashMap`]-backed
