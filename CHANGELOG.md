@@ -4,6 +4,12 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+  A little section to the
+  [guide](https://docs.rs/governor/0.3.1/governor/_guide/index.html)
+  explaining how to use keyed rate limiters.
+
 ## [[0.3.0](https://docs.rs/governor/0.3.0/governor/)] - 2020-07-25
 
 ### Added
