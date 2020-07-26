@@ -8,15 +8,20 @@
 //!
 //! # Constructing a rate limiter
 //!
-//! Currently, only "direct" rate-limiters are supported - that is,
-//! rate limiters that keep only a single state (most rate limiters in
-//! the wild expose a "keyed" interface, keeping one state per key).
+//! If you're used to `ratelimit_meter` parlance, both "direct" and
+//! "keyed" rate limiters are supported. Direct rate limiters keep only a
+//! single state (such as the rate of outflowing e-mail
+//! conversations). Keyed rate limiters on the other hand have one rate
+//! limiting state per key: e.g., the flow of API requests made by each
+//! customer.
 //!
-//! Construction of rate limiters is designed to be mostly infallible,
-//! given correctly-constructed parameters. To that end, `governor`
-//! makes heavy use of the [`NonZeroU32`][std::num::NonZeroU32] type.
+//! Construction of rate limiters is designed to be mostly infallible via
+//! types that ensure you can't pass the wrong parameters, mostly around
+//! non-zero integers. Since that kind of checking is a little tedious to
+//! do by hand, `governor` makes heavy use of the
+//! [`NonZeroU32`][std::num::NonZeroU32] type.
 //!
-//! To conveniently construct these nonzero numbers, use the
+//! To conveniently construct these nonzero numbers yourself, use the
 //! [`nonzero!`](../../nonzero_ext/macro.nonzero.html) macro.
 //!
 //! #### Quotas
@@ -60,6 +65,27 @@
 //! RateLimiter::direct_with_clock(Quota::per_second(nonzero!(50u32)), &clock);
 //! ```
 //!
+//! #### Constructing a keyed rate limiter
+//!
+//! For a keyed rate limiter, you have to specify the type of the key:
+//! Otherwise they function exactly as their direct counterpart. They are
+//! stored in a hash-table like state store. The default in `std` mode is
+//! provided by the [`dashmap`](https://docs.rs/dashmap) crate:
+//!
+//! ```rust
+//! # use nonzero_ext::*;
+//! # use governor::{clock::FakeRelativeClock, RateLimiter, Quota};
+//! let clock = FakeRelativeClock::default();
+//! let lim = RateLimiter::dashmap_with_clock(Quota::per_second(nonzero!(50u32)), &clock);
+//! lim.check_key(&"cus_1").unwrap(); // one key
+//! lim.check_key(&"cus_2").unwrap(); // another!
+//! ```
+//!
+//! You can supply your own keyed state store implementation if you
+//! wish. That requires implementing the
+//! [KeyedStateStore][crate::state::keyed::KeyedStateStore] trait, and optionally the
+//! [ShrinkableKeyedStateStore][crate::state::keyed::ShrinkableKeyedStateStore] trait.
+//!
 //! # Data ownership and references to rate limiters
 //!
 //! `governor`'s rate limiter state is not hidden behind an [interior
@@ -86,6 +112,7 @@
 //! [scopes](https://docs.rs/crossbeam/0.7.3/crossbeam/thread/struct.Scope.html#method.spawn)
 //! allow code to guarantee that a thread spawned in a scope
 //! terminates before the scope terminates. This allows using
+//!
 //! stack-allocated variables. Here is an example test using crossbeam
 //! scopes:
 //!
