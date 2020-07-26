@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.3.1](https://docs.rs/governor/0.3.1/governor/)] - 2020-07-26
+
 ### Added
 
   A little section to the
