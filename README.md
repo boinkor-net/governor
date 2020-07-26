@@ -1,3 +1,5 @@
+[![Build Status](https://circleci.com/gh/antifuchs/governor.svg?style=svg)](https://circleci.com/gh/antifuchs/governor) [![Docs](https://docs.rs/governor/badge.svg)](https://docs.rs/governor/) [![crates.io](https://img.shields.io/crates/v/governor.svg)](https://crates.io/crates/governor)
+
 # governor - a library for regulating the flow of data
 
 This library is an implementation of the [Generic Cell Rate
