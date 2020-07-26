@@ -74,9 +74,8 @@
 //!
 //! ```rust
 //! # use nonzero_ext::*;
-//! # use governor::{clock::FakeRelativeClock, RateLimiter, Quota};
-//! let clock = FakeRelativeClock::default();
-//! let lim = RateLimiter::dashmap_with_clock(Quota::per_second(nonzero!(50u32)), &clock);
+//! # use governor::{RateLimiter, Quota};
+//! let lim = RateLimiter::keyed(Quota::per_second(nonzero!(50u32)));
 //! lim.check_key(&"cus_1").unwrap(); // one key
 //! lim.check_key(&"cus_2").unwrap(); // another!
 //! ```
