@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: "cargo deny"
-      uses: EmbarkStudios/cargo-deny-action@v1.0.1 # Effectively cargo-deny 0.6.7
+      uses: EmbarkStudios/cargo-deny-action@v1
       with:
         command: "check all"
   cargo_clippy:
