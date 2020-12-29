@@ -14,6 +14,12 @@ which this library takes its name:
 
 ![a centrifugal governor](doc/centrifugal-governor.png)
 
+## Related projects
+
+ + [tide-governor](https://github.com/ohmree/tide-governor): A tide middleware that provides rate-limiting functionality backed by governor.
+ 
+ + [actix-governor](https://github.com/AaronErhardt/actix-governor): A middleware for actix-web that provides rate-limiting backed by governor.
+
 ## Implementation and constraints
 
 The rate-limiting algorithms in this crate are implemented using the
