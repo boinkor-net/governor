@@ -17,21 +17,21 @@ where
     S: Sink<Item>,
 {
     /// Limits the rate at which items can be put into the current sink.
-    fn ratelimit_sink<'a, D: DirectStateStore, C: clock::ReasonablyRealtime>(
+    fn ratelimit_sink<D: DirectStateStore, C: clock::ReasonablyRealtime>(
         self,
-        limiter: &'a RateLimiter<NotKeyed, D, C>,
-    ) -> RatelimitedSink<'a, Item, S, D, C>
+        limiter: &'_ RateLimiter<NotKeyed, D, C>,
+    ) -> RatelimitedSink<'_, Item, S, D, C>
     where
         Self: Sized;
 
     /// Limits the rate at which items can be put into the current sink, with a randomized wait
     /// period.
     #[cfg(feature = "jitter")]
-    fn ratelimit_sink_with_jitter<'a, D: DirectStateStore, C: clock::ReasonablyRealtime>(
+    fn ratelimit_sink_with_jitter<D: DirectStateStore, C: clock::ReasonablyRealtime>(
         self,
-        limiter: &'a RateLimiter<NotKeyed, D, C>,
+        limiter: &'_ RateLimiter<NotKeyed, D, C>,
         jitter: Jitter,
-    ) -> RatelimitedSink<'a, Item, S, D, C>
+    ) -> RatelimitedSink<'_, Item, S, D, C>
     where
         Self: Sized;
 }
