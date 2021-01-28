@@ -8,9 +8,22 @@
 
 ### Added
 
-  A little section to the
+* A little section to the
   [guide](https://docs.rs/governor/0.3.1/governor/_guide/index.html)
   explaining how to use keyed rate limiters.
+
+### Changed
+
+  Several dependencies' minimum versions were bumped, including a
+  version bump of
+  [`smallvec`](https://github.com/servo/rust-smallvec), a transitive
+  dependency which could previously result in trees using `governor`
+  pulling in a vulnerable smallvec version.
+
+### Contributors
+
+* [@AaronErhardt](https://github.com/AaronErhardt)
+* [@FintanH](https://github.com/FintanH)
 
 ## [[0.3.0](https://docs.rs/governor/0.3.0/governor/)] - 2020-07-25
 
