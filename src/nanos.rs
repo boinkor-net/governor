@@ -77,15 +77,15 @@ impl From<u64> for Nanos {
     }
 }
 
-impl Into<u64> for Nanos {
-    fn into(self) -> u64 {
-        self.0
+impl From<Nanos> for u64 {
+    fn from(n: Nanos) -> Self {
+        n.0
     }
 }
 
-impl Into<Duration> for Nanos {
-    fn into(self) -> Duration {
-        Duration::from_nanos(self.0)
+impl From<Nanos> for Duration {
+    fn from(n: Nanos) -> Self {
+        Duration::from_nanos(n.0)
     }
 }
 
