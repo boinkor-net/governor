@@ -45,7 +45,7 @@ where
     }
 
     #[cfg(all(feature = "std", feature = "dashmap"))]
-    /// Constructs a new keyed rate limiter explicitly backed by a [`DashMap`][dashmap::DashMap].
+    /// Constructs a new keyed rate limiter explicitly backed by a [`DashMap`][::dashmap::DashMap].
     pub fn dashmap(quota: Quota) -> Self {
         let state = DashMapStateStore::default();
         let clock = clock::DefaultClock::default();
@@ -215,5 +215,5 @@ mod future;
 pub type DefaultKeyedStateStore<K> = HashMapStateStore<K>;
 
 #[cfg(all(feature = "std", feature = "dashmap"))]
-/// The default keyed rate limiter type: the concurrent [`DashMap`][dashmap::DashMap].
+/// The default keyed rate limiter type: the concurrent [`DashMap`][::dashmap::DashMap].
 pub type DefaultKeyedStateStore<K> = DashMapStateStore<K>;
