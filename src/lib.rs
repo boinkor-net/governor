@@ -9,7 +9,7 @@
 //!
 //! # Quick example
 //!
-//! In this example, we set up a rate limiter to allow 5 elements per
+//! In this example, we set up a rate limiter to allow 50 elements per
 //! second, and check that a single element can pass through.
 //!
 //! ``` rust
