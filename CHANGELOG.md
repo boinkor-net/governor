@@ -4,6 +4,13 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+* Updated the [`Arc` guide section](https://docs.rs/governor/0.3.3/governor/_guide/index.html#wrapping-the-limiter-in-an-arc) to use `Arc::clone()` instead of `limiter.clone()`.
+
+### Contributors
+* [@izik1](https://github.com/izik1)
+
 ## [[0.3.2](https://docs.rs/governor/0.3.2/governor/)] - 2021-01-28
 
 ## [[0.3.1](https://docs.rs/governor/0.3.1/governor/)] - 2020-07-26
