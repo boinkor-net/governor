@@ -72,7 +72,7 @@ fn memleak_gcra_threaded() {
     let leak_check = LeakCheck::new(5_000);
 
     for _i in 0..leak_check.n_iter {
-        let bucket = bucket.clone();
+        let bucket = Arc::clone(&bucket);
         thread::spawn(move || {
             assert_eq!(Ok(()), bucket.check());
         })
