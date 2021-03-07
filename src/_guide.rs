@@ -142,11 +142,16 @@
 //! for as long as there exist references to it - perfect for passing
 //! to threads.
 //!
-//! In this example, note that we're cloning what looks like the
-//! limiter, once per thread -- but that is only what it looks
-//! like. The thing that actually gets cloned is the `Arc`; the rate
-//! limiter stays identical, only its references are duplicated (and
-//! refcounts incremented).
+//! In this example, note that we're cloning the
+//! [`Arc`][std::sync::Arc]; the rate limiter stays identical (rate
+//! limiters do not implement [`Clone`]), only its references are
+//! duplicated (and refcounts incremented atomically).
+//!
+//! Note also the placement of the clone: As we're creating a `move`
+//! closure, a binding that can be moved into the closure must be set
+//! up outside it. Rustc will be upset at you if you try to clone the
+//! Arc too early outside the closure, or even inside it. See the
+//! [`Arc`][std::sync::Arc] docs for some more usage examples.
 //!
 //! ```rust
 //! # #[cfg(feature = "std")] fn main() {
@@ -157,7 +162,7 @@
 //! # use std::thread;
 //! let bucket = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(20u32))));
 //! for _i in 0..20 {
-//!     let bucket = bucket.clone();
+//!     let bucket = Arc::clone(&bucket);
 //!     thread::spawn(move || {
 //!         assert_eq!(Ok(()), bucket.check());
 //!     })

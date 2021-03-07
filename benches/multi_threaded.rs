@@ -34,7 +34,7 @@ fn bench_direct(c: &mut Criterion) {
             let mut children = vec![];
             let start = Instant::now();
             for _i in 0..THREADS {
-                let lim = lim.clone();
+                let lim = Arc::clone(&lim);
                 children.push(thread::spawn(move || {
                     for _i in 0..iters {
                         black_box(lim.check().is_ok());
@@ -71,7 +71,7 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
             let mut children = vec![];
             let start = Instant::now();
             for _i in 0..THREADS {
-                let lim = lim.clone();
+                let lim = Arc::clone(&lim);
                 children.push(thread::spawn(move || {
                     for _i in 0..iters {
                         black_box(lim.check_key(&1u32).is_ok());

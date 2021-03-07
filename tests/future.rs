@@ -87,7 +87,7 @@ fn multiple() {
     let mut children = vec![];
 
     for _i in 0..20 {
-        let lim = lim.clone();
+        let lim = Arc::clone(&lim);
         children.push(thread::spawn(move || {
             block_on(lim.until_ready());
         }));
@@ -113,7 +113,7 @@ fn multiple_keyed() {
     let mut children = vec![];
 
     for _i in 0..20 {
-        let lim = lim.clone();
+        let lim = Arc::clone(&lim);
         children.push(thread::spawn(move || {
             block_on(lim.until_key_ready(&1u32));
         }));
