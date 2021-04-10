@@ -7,7 +7,9 @@ use std::prelude::v1::*;
 
 use std::num::NonZeroU32;
 
-use crate::{clock, state::InMemoryState, NegativeMultiDecision, Quota};
+use crate::{
+    clock, middleware::RateLimitingMiddleware, state::InMemoryState, NegativeMultiDecision, Quota,
+};
 use crate::{gcra::NotUntil, middleware::NoOpMiddleware};
 
 /// The "this state store does not use keys" key type.
@@ -35,15 +37,17 @@ impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
 /// or to ensure that an API client stays within a service's rate
 /// limit.
 #[cfg(feature = "std")]
-impl RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock> {
+impl RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware> {
     /// Constructs a new in-memory direct rate limiter for a quota with the default real-time clock.
-    pub fn direct(quota: Quota) -> RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock> {
+    pub fn direct(
+        quota: Quota,
+    ) -> RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware> {
         let clock = clock::DefaultClock::default();
         Self::direct_with_clock(quota, &clock)
     }
 }
 
-impl<C> RateLimiter<NotKeyed, InMemoryState, C>
+impl<C> RateLimiter<NotKeyed, InMemoryState, C, NoOpMiddleware>
 where
     C: clock::Clock,
 {
@@ -55,16 +59,17 @@ where
 }
 
 /// # Direct rate limiters - Manually checking cells
-impl<S, C> RateLimiter<NotKeyed, S, C>
+impl<S, C, MW> RateLimiter<NotKeyed, S, C, MW>
 where
     S: DirectStateStore,
     C: clock::Clock,
+    MW: RateLimitingMiddleware,
 {
     /// Allow a single cell through the rate limiter.
     ///
     /// If the rate limit is reached, `check` returns information about the earliest
     /// time that a cell might be allowed through again.
-    pub fn check(&self) -> Result<(), NotUntil<C::Instant, NoOpMiddleware>> {
+    pub fn check(&self) -> Result<MW::PositiveOutcome, NotUntil<C::Instant, MW>> {
         self.gcra
             .test_and_update(self.start, &NotKeyed::NonKey, &self.state, self.clock.now())
     }
@@ -86,7 +91,7 @@ where
     pub fn check_n(
         &self,
         n: NonZeroU32,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant, NoOpMiddleware>>> {
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<NotUntil<C::Instant, MW>>> {
         self.gcra.test_n_all_and_update(
             self.start,
             &NotKeyed::NonKey,

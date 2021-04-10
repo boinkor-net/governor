@@ -8,9 +8,12 @@ pub mod keyed;
 
 pub use self::in_memory::InMemoryState;
 
-use crate::gcra::Gcra;
 use crate::nanos::Nanos;
 use crate::{clock, Quota};
+use crate::{
+    gcra::Gcra,
+    middleware::{NoOpMiddleware, RateLimitingMiddleware},
+};
 
 pub use direct::*;
 
@@ -51,21 +54,23 @@ pub trait StateStore {
 /// period) and the concrete state of rate limiting decisions. This crate ships in-memory state
 /// stores, but it's possible (by implementing the [`StateStore`] trait) to make others.
 #[derive(Debug)]
-pub struct RateLimiter<K, S, C>
+pub struct RateLimiter<K, S, C, MW = NoOpMiddleware>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
+    MW: RateLimitingMiddleware,
 {
     state: S,
-    gcra: Gcra,
+    gcra: Gcra<MW>,
     clock: C,
     start: C::Instant,
 }
 
-impl<K, S, C> RateLimiter<K, S, C>
+impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
+    MW: RateLimitingMiddleware,
 {
     /// Creates a new rate limiter from components.
     ///
@@ -92,10 +97,11 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<K, S, C> RateLimiter<K, S, C>
+impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::ReasonablyRealtime,
+    MW: RateLimitingMiddleware,
 {
     pub(crate) fn reference_reading(&self) -> C::Instant {
         self.clock.reference_point()

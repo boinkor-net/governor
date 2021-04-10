@@ -130,7 +130,7 @@ where
         n: NonZeroU32,
         state: &impl StateStore<Key = K>,
         t0: P,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<P, MW>>> {
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<NotUntil<P, MW>>> {
         let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
@@ -147,16 +147,16 @@ where
             let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = (tat + additional_weight).saturating_sub(tau);
             if t0 < earliest_time {
-                Err(NegativeMultiDecision::BatchNonConforming(
-                    n.get(),
-                    NotUntil {
-                        limiter: self,
-                        tat: earliest_time,
-                        start,
-                    },
-                ))
+                let nope = NotUntil {
+                    limiter: self,
+                    tat: earliest_time,
+                    start,
+                };
+                MW::disallow(key, start, &nope);
+                Err(NegativeMultiDecision::BatchNonConforming(n.get(), nope))
             } else {
-                Ok(((), cmp::max(tat, t0) + t + additional_weight))
+                let next = cmp::max(tat, t0) + t + additional_weight;
+                Ok((MW::allow(key, start, next), next))
             }
         })
     }

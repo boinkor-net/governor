@@ -11,12 +11,13 @@ use std::hash::Hash;
 use std::num::NonZeroU32;
 use std::prelude::v1::*;
 
+use crate::state::StateStore;
 use crate::{
     clock::{self, Reference},
+    middleware::RateLimitingMiddleware,
     nanos::Nanos,
     NegativeMultiDecision, NotUntil, Quota, RateLimiter,
 };
-use crate::{middleware::NoOpMiddleware, state::StateStore};
 
 /// A trait for state stores with one rate limiting state per key.
 ///
@@ -77,17 +78,18 @@ where
 }
 
 /// # Keyed rate limiters - Manually checking cells
-impl<K, S, C> RateLimiter<K, S, C>
+impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: KeyedStateStore<K>,
     K: Hash,
     C: clock::Clock,
+    MW: RateLimitingMiddleware,
 {
     /// Allow a single cell through the rate limiter for the given key.
     ///
     /// If the rate limit is reached, `check_key` returns information about the earliest
     /// time that a cell might be allowed through again under that key.
-    pub fn check_key(&self, key: &K) -> Result<(), NotUntil<C::Instant, NoOpMiddleware>> {
+    pub fn check_key(&self, key: &K) -> Result<MW::PositiveOutcome, NotUntil<C::Instant, MW>> {
         self.gcra
             .test_and_update(self.start, key, &self.state, self.clock.now())
     }
@@ -110,7 +112,7 @@ where
         &self,
         key: &K,
         n: NonZeroU32,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant, NoOpMiddleware>>> {
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<NotUntil<C::Instant, MW>>> {
         self.gcra
             .test_n_all_and_update(self.start, key, n, &self.state, self.clock.now())
     }

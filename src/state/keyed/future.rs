@@ -1,20 +1,19 @@
 use std::prelude::v1::*;
 
 use crate::{
-    clock::{self},
-    state::keyed::KeyedStateStore,
-    Jitter, RateLimiter,
+    clock, middleware::RateLimitingMiddleware, state::keyed::KeyedStateStore, Jitter, RateLimiter,
 };
 use futures_timer::Delay;
 use std::hash::Hash;
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - `async`/`await`
-impl<K, S, C> RateLimiter<K, S, C>
+impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     K: Hash + Eq + Clone,
     S: KeyedStateStore<K>,
     C: clock::ReasonablyRealtime,
+    MW: RateLimitingMiddleware,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///

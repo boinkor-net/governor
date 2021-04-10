@@ -3,6 +3,7 @@ use std::{error::Error, fmt, num::NonZeroU32};
 use super::RateLimiter;
 use crate::{
     clock,
+    middleware::RateLimitingMiddleware,
     state::{DirectStateStore, NotKeyed},
     Jitter, NegativeMultiDecision,
 };
@@ -27,10 +28,11 @@ impl Error for InsufficientCapacity {}
 
 #[cfg(feature = "std")]
 /// # Direct rate limiters - `async`/`await`
-impl<S, C> RateLimiter<NotKeyed, S, C>
+impl<S, C, MW> RateLimiter<NotKeyed, S, C, MW>
 where
     S: DirectStateStore,
     C: clock::ReasonablyRealtime,
+    MW: RateLimitingMiddleware,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///
