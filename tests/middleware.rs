@@ -1,4 +1,8 @@
-use governor::{clock, Quota, RateLimiter, RateLimitingMiddleware};
+use governor::{
+    clock,
+    middleware::{RateLimitingMiddleware, StateSnapshot},
+    Quota, RateLimiter,
+};
 use nonzero_ext::nonzero;
 
 #[derive(Debug, PartialEq)]
@@ -7,18 +11,16 @@ struct MyMW {}
 impl RateLimitingMiddleware for MyMW {
     type PositiveOutcome = u16;
 
-    fn allow<K, P, F, Q>(_key: &K, _when: F, _quota: Q) -> Self::PositiveOutcome
+    fn allow<K, P>(_key: &K, _state: StateSnapshot<P>) -> Self::PositiveOutcome
     where
         P: clock::Reference,
-        F: Fn() -> P,
-        Q: Fn() -> Quota,
     {
         666
     }
 
     fn disallow<K, P: governor::clock::Reference>(
         _key: &K,
-        _decision_at: P,
+        _state: StateSnapshot<P>,
         _not_until: &governor::NotUntil<P, Self>,
     ) where
         Self: Sized,
