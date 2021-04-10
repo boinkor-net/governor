@@ -7,10 +7,11 @@ struct MyMW {}
 impl RateLimitingMiddleware for MyMW {
     type PositiveOutcome = u16;
 
-    fn allow<K, P, F>(_key: &K, _when: F) -> Self::PositiveOutcome
+    fn allow<K, P, F, Q>(_key: &K, _when: F, _quota: Q) -> Self::PositiveOutcome
     where
         P: clock::Reference,
         F: Fn() -> P,
+        Q: Fn() -> Quota,
     {
         666
     }

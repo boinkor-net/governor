@@ -4,6 +4,8 @@ use nonzero_ext::nonzero;
 use std::num::NonZeroU32;
 use std::time::Duration;
 
+use crate::nanos::Nanos;
+
 /// A rate-limiting quota.
 ///
 /// Quotas are expressed in a positive number of "cells" (the maximum number of positive decisions /
@@ -178,6 +180,29 @@ impl Quota {
     pub const fn burst_size_replenished_in(&self) -> Duration {
         let fill_in_ns = self.replenish_1_per.as_nanos() * self.max_burst.get() as u128;
         Duration::from_nanos(fill_in_ns as u64)
+    }
+}
+
+impl Quota {
+    /// A way to reconstruct a Quota from an in-use Gcra.
+    ///
+    /// This is useful mainly for [`crate::RateLimitingMiddleware`]
+    /// where custom code may want to construct information based on
+    /// the amount of burst balance remaining.
+    pub(crate) fn from_gcra_parameters(t: Nanos, tau: Nanos) -> Quota {
+        // Safety assurance: As we're calling this from this crate
+        // only, and we do not allow creating a Gcra from 0
+        // parameters, this is, in fact, safe.
+        //
+        // The casts may look a little sketch, but again, they're
+        // constructed from parameters that came from the crate
+        // exactly like that.
+        let max_burst = unsafe { NonZeroU32::new_unchecked((tau.as_u64() / t.as_u64()) as u32) };
+        let replenish_1_per = t.into();
+        Quota {
+            max_burst,
+            replenish_1_per,
+        }
     }
 }
 

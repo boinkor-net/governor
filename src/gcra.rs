@@ -117,7 +117,14 @@ where
                 Err(nope)
             } else {
                 let next = cmp::max(tat, t0) + t;
-                Ok((MW::allow(key, || start + next), next))
+                Ok((
+                    MW::allow(
+                        key,
+                        || start + next,
+                        || Quota::from_gcra_parameters(self.t, self.tau),
+                    ),
+                    next,
+                ))
             }
         })
     }
@@ -156,7 +163,14 @@ where
                 Err(NegativeMultiDecision::BatchNonConforming(n.get(), nope))
             } else {
                 let next = cmp::max(tat, t0) + t + additional_weight;
-                Ok((MW::allow(key, || start + next), next))
+                Ok((
+                    MW::allow(
+                        key,
+                        || start + next,
+                        || Quota::from_gcra_parameters(self.t, self.tau),
+                    ),
+                    next,
+                ))
             }
         })
     }
@@ -175,15 +189,18 @@ impl<MW: RateLimitingMiddleware> Gcra<MW> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Quota, RateLimiter};
+    use crate::{middleware::NoOpMiddleware, Quota, RateLimiter};
     use clock::FakeRelativeClock;
     use nonzero_ext::nonzero;
+    use std::num::NonZeroU32;
+
+    use proptest::prelude::*;
 
     /// Exercise derives and convenience impls on Gcra to make coverage happy
     #[test]
     fn gcra_derives() {
-        let g = Gcra::new(Quota::per_second(nonzero!(1u32)));
-        let g2 = Gcra::new(Quota::per_second(nonzero!(2u32)));
+        let g = Gcra::<NoOpMiddleware>::new(Quota::per_second(nonzero!(1u32)));
+        let g2 = Gcra::<NoOpMiddleware>::new(Quota::per_second(nonzero!(2u32)));
         assert_eq!(g, g);
         assert_ne!(g, g2);
         assert!(format!("{:?}", g).len() > 0);
@@ -200,5 +217,28 @@ mod test {
             assert!(format!("{:?}", nu).len() > 0);
             assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
         }
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct Count(NonZeroU32);
+    impl Arbitrary for Count {
+        type Parameters = ();
+        fn arbitrary_with(_args: ()) -> Self::Strategy {
+            (1..10000u32)
+                .prop_map(|x| Count(NonZeroU32::new(x).unwrap()))
+                .boxed()
+        }
+
+        type Strategy = BoxedStrategy<Count>;
+    }
+
+    #[test]
+    fn roundtrips_quota() {
+        proptest!(ProptestConfig::default(), |(per_second: Count, burst: Count)| {
+            let quota = Quota::per_second(per_second.0).allow_burst(burst.0);
+            let gcra: Gcra<NoOpMiddleware> = Gcra::new(quota);
+            let back = Quota::from_gcra_parameters(gcra.t, gcra.tau);
+            assert_eq!(quota, back);
+        })
     }
 }

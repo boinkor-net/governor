@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{clock, NotUntil};
+use crate::{clock, NotUntil, Quota};
 
 /// Implements additional behavior when rate-limiting decisions are made.
 pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
@@ -15,10 +15,11 @@ pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
     /// As arguments, it takes a `key` (the item we were testing for)
     /// and a `when` closure that, if called, returns the time at
     /// which the next cell is expected.
-    fn allow<K, P, F>(key: &K, when: F) -> Self::PositiveOutcome
+    fn allow<K, P, F, Q>(key: &K, when: F, quota: Q) -> Self::PositiveOutcome
     where
         P: clock::Reference,
-        F: Fn() -> P;
+        F: Fn() -> P,
+        Q: Fn() -> Quota;
 
     /// Called when a negative rate-limiting decision is made (the
     /// "not allowed but OK" case).
@@ -38,10 +39,11 @@ impl RateLimitingMiddleware for NoOpMiddleware {
 
     #[inline]
     /// Returns `()` and has no side-effects.
-    fn allow<K, P, F>(_key: &K, _when: F) -> Self::PositiveOutcome
+    fn allow<K, P, F, Q>(_key: &K, _when: F, _quota: Q) -> Self::PositiveOutcome
     where
         P: clock::Reference,
         F: Fn() -> P,
+        Q: Fn() -> Quota,
     {
     }
 
