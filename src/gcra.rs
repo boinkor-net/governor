@@ -41,6 +41,11 @@ impl<'a, P: clock::Reference, MW: RateLimitingMiddleware> NotUntil<'a, P, MW> {
         earliest.duration_since(earliest.min(from)).into()
     }
 
+    /// Returns the rate limiting [`Quota`] used to reach the decision.
+    pub fn quota(&self) -> Quota {
+        Quota::from_gcra_parameters(self.limiter.t, self.limiter.tau)
+    }
+
     #[cfg(feature = "std")] // not used unless we use Instant-compatible clocks.
     pub(crate) fn earliest_possible_with_offset(&self, jitter: Jitter) -> P {
         let tat = jitter + self.tat;
