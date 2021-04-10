@@ -1,8 +1,8 @@
-use std::prelude::v1::*;
+use std::{marker::PhantomData, prelude::v1::*};
 
-use crate::nanos::Nanos;
-use crate::state::StateStore;
 use crate::{clock, NegativeMultiDecision, Quota};
+use crate::{middleware::NoOpMiddleware, state::StateStore};
+use crate::{middleware::RateLimitingMiddleware, nanos::Nanos};
 use std::num::NonZeroU32;
 use std::time::Duration;
 use std::{cmp, fmt};
@@ -15,13 +15,13 @@ use crate::Jitter;
 /// `NotUntil`'s methods indicate when a caller can expect the next positive
 /// rate-limiting result.
 #[derive(Debug, PartialEq)]
-pub struct NotUntil<'a, P: clock::Reference> {
-    limiter: &'a Gcra,
+pub struct NotUntil<'a, P: clock::Reference, MW: RateLimitingMiddleware> {
+    limiter: &'a Gcra<MW>,
     tat: Nanos,
     start: P,
 }
 
-impl<'a, P: clock::Reference> NotUntil<'a, P> {
+impl<'a, P: clock::Reference, MW: RateLimitingMiddleware> NotUntil<'a, P, MW> {
     /// Returns the earliest time at which a decision could be
     /// conforming (excluding conforming decisions made by the Decider
     /// that are made in the meantime).
@@ -54,26 +54,38 @@ impl<'a, P: clock::Reference> NotUntil<'a, P> {
     }
 }
 
-impl<'a, P: clock::Reference> fmt::Display for NotUntil<'a, P> {
+impl<'a, P: clock::Reference, MW: RateLimitingMiddleware> fmt::Display for NotUntil<'a, P, MW> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "rate-limited until {:?}", self.start + self.tat)
     }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Gcra {
+pub(crate) struct Gcra<MW = NoOpMiddleware>
+where
+    MW: RateLimitingMiddleware,
+{
     // The "weight" of a single packet in units of time.
     t: Nanos,
 
     // The "capacity" of the bucket.
     tau: Nanos,
+
+    middleware: PhantomData<MW>,
 }
 
-impl Gcra {
+impl<MW> Gcra<MW>
+where
+    MW: RateLimitingMiddleware,
+{
     pub(crate) fn new(quota: Quota) -> Self {
         let tau: Nanos = (quota.replenish_1_per * quota.max_burst.get()).into();
         let t: Nanos = quota.replenish_1_per.into();
-        Gcra { tau, t }
+        Gcra {
+            tau,
+            t,
+            middleware: PhantomData,
+        }
     }
 
     /// Computes and returns a new ratelimiter state if none exists yet.
@@ -88,7 +100,7 @@ impl Gcra {
         key: &K,
         state: &impl StateStore<Key = K>,
         t0: P,
-    ) -> Result<(), NotUntil<P>> {
+    ) -> Result<(), NotUntil<P, MW>> {
         let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
@@ -115,7 +127,7 @@ impl Gcra {
         n: NonZeroU32,
         state: &impl StateStore<Key = K>,
         t0: P,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<P>>> {
+    ) -> Result<(), NegativeMultiDecision<NotUntil<P, MW>>> {
         let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;

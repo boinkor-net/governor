@@ -11,12 +11,12 @@ use std::hash::Hash;
 use std::num::NonZeroU32;
 use std::prelude::v1::*;
 
-use crate::state::StateStore;
 use crate::{
     clock::{self, Reference},
     nanos::Nanos,
     NegativeMultiDecision, NotUntil, Quota, RateLimiter,
 };
+use crate::{middleware::NoOpMiddleware, state::StateStore};
 
 /// A trait for state stores with one rate limiting state per key.
 ///
@@ -87,7 +87,7 @@ where
     ///
     /// If the rate limit is reached, `check_key` returns information about the earliest
     /// time that a cell might be allowed through again under that key.
-    pub fn check_key(&self, key: &K) -> Result<(), NotUntil<C::Instant>> {
+    pub fn check_key(&self, key: &K) -> Result<(), NotUntil<C::Instant, NoOpMiddleware>> {
         self.gcra
             .test_and_update(self.start, key, &self.state, self.clock.now())
     }
@@ -110,7 +110,7 @@ where
         &self,
         key: &K,
         n: NonZeroU32,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
+    ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant, NoOpMiddleware>>> {
         self.gcra
             .test_n_all_and_update(self.start, key, n, &self.state, self.clock.now())
     }

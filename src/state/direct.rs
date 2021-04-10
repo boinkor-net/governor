@@ -7,8 +7,8 @@ use std::prelude::v1::*;
 
 use std::num::NonZeroU32;
 
-use crate::gcra::NotUntil;
 use crate::{clock, state::InMemoryState, NegativeMultiDecision, Quota};
+use crate::{gcra::NotUntil, middleware::NoOpMiddleware};
 
 /// The "this state store does not use keys" key type.
 ///
@@ -64,7 +64,7 @@ where
     ///
     /// If the rate limit is reached, `check` returns information about the earliest
     /// time that a cell might be allowed through again.
-    pub fn check(&self) -> Result<(), NotUntil<C::Instant>> {
+    pub fn check(&self) -> Result<(), NotUntil<C::Instant, NoOpMiddleware>> {
         self.gcra
             .test_and_update(self.start, &NotKeyed::NonKey, &self.state, self.clock.now())
     }
@@ -86,7 +86,7 @@ where
     pub fn check_n(
         &self,
         n: NonZeroU32,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
+    ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant, NoOpMiddleware>>> {
         self.gcra.test_n_all_and_update(
             self.start,
             &NotKeyed::NonKey,
