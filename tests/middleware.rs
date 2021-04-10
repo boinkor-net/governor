@@ -1,5 +1,5 @@
 use governor::{
-    clock,
+    clock::{self, FakeRelativeClock},
     middleware::{RateLimitingMiddleware, StateSnapshot},
     Quota, RateLimiter,
 };
@@ -30,6 +30,8 @@ impl RateLimitingMiddleware for MyMW {
 
 #[test]
 fn changes_allowed_type() {
-    let lim = RateLimiter::direct(Quota::per_second(nonzero!(4u32))).with_middleware::<MyMW>();
+    let clock = FakeRelativeClock::default();
+    let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), &clock)
+        .with_middleware::<MyMW>();
     assert_eq!(Ok(666), lim.check());
 }
