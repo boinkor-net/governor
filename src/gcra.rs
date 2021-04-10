@@ -162,6 +162,16 @@ where
     }
 }
 
+impl<MW: RateLimitingMiddleware> Gcra<MW> {
+    pub(crate) fn with_middleware<MW2: RateLimitingMiddleware>(self) -> Gcra<MW2> {
+        Gcra {
+            t: self.t,
+            tau: self.tau,
+            middleware: PhantomData,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

@@ -96,6 +96,23 @@ where
     }
 }
 
+impl<K, S, C, MW> RateLimiter<K, S, C, MW>
+where
+    S: StateStore<Key = K>,
+    C: clock::Clock,
+    MW: RateLimitingMiddleware,
+{
+    /// Convert the given rate limiter into one that uses a different middleware.
+    pub fn with_middleware<Outer: RateLimitingMiddleware>(self) -> RateLimiter<K, S, C, Outer> {
+        RateLimiter {
+            state: self.state,
+            gcra: self.gcra.with_middleware(),
+            clock: self.clock,
+            start: self.start,
+        }
+    }
+}
+
 #[cfg(feature = "std")]
 impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
