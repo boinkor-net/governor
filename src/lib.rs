@@ -52,6 +52,8 @@ pub use gcra::NotUntil;
 pub use jitter::Jitter;
 #[cfg(all(not(feature = "std"), feature = "jitter"))]
 pub(crate) use jitter::Jitter;
+#[doc(inline)]
+pub use middleware::RateLimitingMiddleware;
 pub use quota::Quota;
 #[doc(inline)]
 pub use state::RateLimiter;

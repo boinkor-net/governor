@@ -65,10 +65,10 @@ pub(crate) struct Gcra<MW = NoOpMiddleware>
 where
     MW: RateLimitingMiddleware,
 {
-    // The "weight" of a single packet in units of time.
+    /// The "weight" of a single packet in units of time.
     t: Nanos,
 
-    // The "capacity" of the bucket.
+    /// The "burst capacity" of the bucket.
     tau: Nanos,
 
     middleware: PhantomData<MW>,
@@ -117,7 +117,7 @@ where
                 Err(nope)
             } else {
                 let next = cmp::max(tat, t0) + t;
-                Ok((MW::allow(key, start, next), next))
+                Ok((MW::allow(key, || start + next), next))
             }
         })
     }
@@ -156,7 +156,7 @@ where
                 Err(NegativeMultiDecision::BatchNonConforming(n.get(), nope))
             } else {
                 let next = cmp::max(tat, t0) + t + additional_weight;
-                Ok((MW::allow(key, start, next), next))
+                Ok((MW::allow(key, || start + next), next))
             }
         })
     }
