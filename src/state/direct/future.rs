@@ -43,8 +43,8 @@ where
     ///
     /// If multiple futures are dispatched against the rate limiter, it is advisable to use
     /// [`until_ready_with_jitter`](#method.until_ready_with_jitter), to avoid thundering herds.
-    pub async fn until_ready(&self) {
-        self.until_ready_with_jitter(Jitter::NONE).await;
+    pub async fn until_ready(&self) -> MW::PositiveOutcome {
+        self.until_ready_with_jitter(Jitter::NONE).await
     }
 
     /// Asynchronously resolves as soon as the rate limiter allows it, with a randomized wait
@@ -58,10 +58,17 @@ where
     /// This method allows for a randomized additional delay between polls of the rate limiter,
     /// which can help reduce the likelihood of thundering herd effects if multiple tasks try to
     /// wait on the same rate limiter.
-    pub async fn until_ready_with_jitter(&self, jitter: Jitter) {
-        while let Err(negative) = self.check() {
-            let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
-            delay.await;
+    pub async fn until_ready_with_jitter(&self, jitter: Jitter) -> MW::PositiveOutcome {
+        loop {
+            match self.check() {
+                Ok(x) => {
+                    return x;
+                }
+                Err(negative) => {
+                    let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
+                    delay.await;
+                }
+            }
         }
     }
 
@@ -72,7 +79,10 @@ where
     ///
     /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
     /// capacity of the rate limiter.
-    pub async fn until_n_ready(&self, n: NonZeroU32) -> Result<(), InsufficientCapacity> {
+    pub async fn until_n_ready(
+        &self,
+        n: NonZeroU32,
+    ) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
         self.until_n_ready_with_jitter(n, Jitter::NONE).await
     }
 
@@ -88,20 +98,21 @@ where
         &self,
         n: NonZeroU32,
         jitter: Jitter,
-    ) -> Result<(), InsufficientCapacity> {
-        while let Err(err) = self.check_n(n) {
-            match err {
-                NegativeMultiDecision::BatchNonConforming(_, negative) => {
+    ) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
+        loop {
+            match self.check_n(n) {
+                Ok(x) => {
+                    return Ok(x);
+                }
+                Err(NegativeMultiDecision::BatchNonConforming(_, negative)) => {
                     let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
                     delay.await;
                 }
-                NegativeMultiDecision::InsufficientCapacity(cap) => {
+                Err(NegativeMultiDecision::InsufficientCapacity(cap)) => {
                     return Err(InsufficientCapacity(cap))
                 }
             }
         }
-
-        Ok(())
     }
 }
 
