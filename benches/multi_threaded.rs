@@ -3,8 +3,11 @@
 //! amount of overhead in thread setup and teardown.
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use governor::state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore};
 use governor::{clock, Quota, RateLimiter};
+use governor::{
+    middleware::NoOpMiddleware,
+    state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore},
+};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::thread;
@@ -62,7 +65,7 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
 
         b.iter_custom(|iters| {
             let state: M = Default::default();
-            let lim = Arc::new(RateLimiter::new(
+            let lim: Arc<RateLimiter<_, _, _, NoOpMiddleware>> = Arc::new(RateLimiter::new(
                 Quota::per_second(nonzero!(50u32)),
                 state,
                 &clock,

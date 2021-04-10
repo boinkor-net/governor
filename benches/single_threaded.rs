@@ -1,6 +1,9 @@
 use criterion::{black_box, BatchSize, BenchmarkId, Criterion, Throughput};
-use governor::state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore};
 use governor::{clock, Quota, RateLimiter};
+use governor::{
+    middleware::NoOpMiddleware,
+    state::keyed::{DashMapStateStore, HashMapStateStore, KeyedStateStore},
+};
 use nonzero_ext::*;
 use std::time::Duration;
 use tynm::type_name;
@@ -40,7 +43,8 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
             let state: M = Default::default();
             let clock = clock::FakeRelativeClock::default();
             let step = Duration::from_millis(20);
-            let rl = RateLimiter::new(Quota::per_second(nonzero!(50u32)), state, &clock);
+            let rl: RateLimiter<_, _, _, NoOpMiddleware> =
+                RateLimiter::new(Quota::per_second(nonzero!(50u32)), state, &clock);
             b.iter_batched(
                 || {
                     clock.advance(step);
