@@ -30,7 +30,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // Clippy config: Deny warnings but allow unknown lint configuration (so I can use nightly)
 #![deny(warnings)]
-#![allow(clippy::unknown_clippy_lints)]
+#![allow(unknown_lints)]
 // Unfortunately necessary, otherwise features aren't supported in doctests:
 #![allow(clippy::needless_doctest_main)]
 
