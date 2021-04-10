@@ -118,16 +118,12 @@ where
                     tat: earliest_time,
                     start,
                 };
-                MW::disallow(
-                    key,
-                    StateSnapshot::new(start, self.t, self.tau, None),
-                    &nope,
-                );
+                MW::disallow(key, StateSnapshot::new(self.t, self.tau, None), &nope);
                 Err(nope)
             } else {
                 let next = cmp::max(tat, t0) + t;
                 Ok((
-                    MW::allow::<K, P>(key, StateSnapshot::new(start, self.t, self.tau, Some(next))),
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, Some(next))),
                     next,
                 ))
             }
@@ -164,16 +160,12 @@ where
                     tat: earliest_time,
                     start,
                 };
-                MW::disallow(
-                    key,
-                    StateSnapshot::new(start, self.t, self.tau, None),
-                    &nope,
-                );
+                MW::disallow(key, StateSnapshot::new(self.t, self.tau, None), &nope);
                 Err(NegativeMultiDecision::BatchNonConforming(n.get(), nope))
             } else {
                 let next = cmp::max(tat, t0) + t + additional_weight;
                 Ok((
-                    MW::allow::<K, P>(key, StateSnapshot::new(start, self.t, self.tau, Some(next))),
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, Some(next))),
                     next,
                 ))
             }

@@ -15,9 +15,7 @@ use crate::{clock, nanos::Nanos, NotUntil, Quota};
 
 /// Information about the rate-limiting state used to reach a decision.
 #[derive(Clone, PartialEq, Debug)]
-pub struct StateSnapshot<P: clock::Reference> {
-    start: P,
-
+pub struct StateSnapshot {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
 
@@ -28,10 +26,10 @@ pub struct StateSnapshot<P: clock::Reference> {
     tat: Option<Nanos>,
 }
 
-impl<P: clock::Reference> StateSnapshot<P> {
+impl StateSnapshot {
     #[inline]
-    pub(crate) fn new(start: P, t: Nanos, tau: Nanos, tat: Option<Nanos>) -> Self {
-        Self { start, t, tau, tat }
+    pub(crate) fn new(t: Nanos, tau: Nanos, tat: Option<Nanos>) -> Self {
+        Self { t, tau, tat }
     }
 
     /// Returns the quota used to make the rate limiting decision.
@@ -43,7 +41,7 @@ impl<P: clock::Reference> StateSnapshot<P> {
     /// addition to a (possible) positive outcome.
     ///
     /// Returns None if the rate limiting decision was not positive.
-    pub fn remaining_burst_capacity(&self) -> Option<u64> {
+    pub fn remaining_burst_capacity(&self) -> Option<u32> {
         self.tat.map(|tat| {
             // at this point we know that we're `tat` nanos after the
             // earliest arrival time, and so are using up some "burst
@@ -52,13 +50,21 @@ impl<P: clock::Reference> StateSnapshot<P> {
             // As one cell has already been used by the positive
             // decision, we're relying on the "round down" behavior of
             // unsigned integer division.
-            tat / self.t
+            self.quota().burst_size().get() + 1 - (tat / self.t) as u32
         })
     }
 }
 
 /// Implements additional behavior when rate-limiting decisions are made.
 pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
+    /// The type that's returned by the rate limiter when a cell is allowed.
+    ///
+    /// By default, rate limiters return `Ok(())`, which does not give
+    /// much information. By using custom middleware, users can obtain
+    /// more information about the rate limiter state that was used to
+    /// come to a decision. That state can then be used to pass
+    /// information downstream about, e.g. how much burst capacity is
+    /// remaining.
     type PositiveOutcome: Sized;
 
     /// Called when a positive rate-limiting decision is made.
@@ -70,18 +76,14 @@ pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
     /// As arguments, it takes a `key` (the item we were testing for)
     /// and a `when` closure that, if called, returns the time at
     /// which the next cell is expected.
-    fn allow<K, P>(key: &K, state: StateSnapshot<P>) -> Self::PositiveOutcome
-    where
-        P: clock::Reference;
+    fn allow<K>(key: &K, state: StateSnapshot) -> Self::PositiveOutcome;
 
     /// Called when a negative rate-limiting decision is made (the
     /// "not allowed but OK" case).
-    fn disallow<K, P: clock::Reference>(
-        key: &K,
-        state: StateSnapshot<P>,
-        not_until: &NotUntil<P, Self>,
-    ) where
-        Self: Sized;
+    fn disallow<K, P>(key: &K, state: StateSnapshot, not_until: &NotUntil<P, Self>)
+    where
+        Self: Sized,
+        P: clock::Reference;
 }
 
 #[derive(PartialEq, Debug)]
@@ -95,20 +97,37 @@ impl RateLimitingMiddleware for NoOpMiddleware {
 
     #[inline]
     /// Returns `()` and has no side-effects.
-    fn allow<K, P>(_key: &K, _state: StateSnapshot<P>) -> Self::PositiveOutcome
-    where
-        P: clock::Reference,
-    {
-    }
+    fn allow<K>(_key: &K, _state: StateSnapshot) -> Self::PositiveOutcome {}
 
     #[inline]
     /// Does nothing.
     fn disallow<K, P: clock::Reference>(
         _key: &K,
-        _state: StateSnapshot<P>,
+        _state: StateSnapshot,
         _not_until: &NotUntil<P, Self>,
     ) where
         Self: Sized,
+    {
+    }
+}
+
+/// Middleware that returns the state of the rate limiter if a
+/// positive decision is reached.
+#[derive(PartialEq, Debug)]
+pub struct StateInformationMiddleware {}
+
+impl RateLimitingMiddleware for StateInformationMiddleware {
+    /// The state snapshot returned from the limiter.
+    type PositiveOutcome = StateSnapshot;
+
+    fn allow<K>(_key: &K, state: StateSnapshot) -> Self::PositiveOutcome {
+        state
+    }
+
+    fn disallow<K, P>(_key: &K, _state: StateSnapshot, _not_until: &NotUntil<P, Self>)
+    where
+        Self: Sized,
+        P: clock::Reference,
     {
     }
 }
