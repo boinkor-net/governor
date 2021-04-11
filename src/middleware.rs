@@ -56,6 +56,12 @@ impl StateSnapshot {
 }
 
 /// Implements additional behavior when rate-limiting decisions are made.
+///
+/// Besides altering the return value in the positive outcome,
+/// middleware is not able to affect the decisions of the rate-limiter
+/// in any way: A rate-limiting decision will always be `Ok(...)` or
+/// `Err(NotUntil{...})`, but middleware can be set up to alter the
+/// return value in the Ok() case.
 pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
     /// The type that's returned by the rate limiter when a cell is allowed.
     ///
@@ -69,17 +75,24 @@ pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
 
     /// Called when a positive rate-limiting decision is made.
     ///
-    /// This function is able to affect the return type of `test` (and
-    /// others) in the Ok case: Whatever is returned here is the value
-    /// of the Ok result returned from the test functions.
+    /// This function is able to affect the return type of
+    /// [RateLimiter.check](../struct.RateLimiter.html#method.check)
+    /// (and others) in the Ok case: Whatever is returned here is the
+    /// value of the Ok result returned from the check functions.
     ///
-    /// As arguments, it takes a `key` (the item we were testing for)
-    /// and a `when` closure that, if called, returns the time at
-    /// which the next cell is expected.
+    /// The function is passed a snapshot of the rate-limiting state
+    /// updated to *after* the decision was reached: E.g., if there
+    /// was one cell left in the burst capacity before the decision
+    /// was reached, the [`StateSnapshot::remaining_burst_capacity`]
+    /// method will return 0.
     fn allow<K>(key: &K, state: StateSnapshot) -> Self::PositiveOutcome;
 
     /// Called when a negative rate-limiting decision is made (the
     /// "not allowed but OK" case).
+    ///
+    /// This method does not affect anything the rate limiter returns
+    /// to user code, but can be used to track counts for
+    /// rate-limiting outcomes on a key-by-key basis.
     fn disallow<K, P>(key: &K, state: StateSnapshot, not_until: &NotUntil<P, Self>)
     where
         Self: Sized,
