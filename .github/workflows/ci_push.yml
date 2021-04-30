@@ -14,25 +14,6 @@ on:
     - cron: '0 23 * * FRI'
 
 jobs:
-  cargo_deny:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2.3.4
-    - name: "cargo deny"
-      uses: EmbarkStudios/cargo-deny-action@v1
-      with:
-        command: "check all"
-
-  cargo_clippy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2.3.4
-    - name: "cargo clippy"
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: -- -D warnings
-
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -54,3 +35,43 @@ jobs:
           command: test
           args: ${{ matrix.cargo_args }}
           toolchain: ${{ matrix.rust_toolchain }}
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.3.4
+      - name: "cargo fmt"
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: "-v -- --check"
+
+  cargo_deny:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.3.4
+    - name: "cargo deny"
+      uses: EmbarkStudios/cargo-deny-action@v1
+      with:
+        command: "check all"
+
+  cargo_clippy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - uses: actions/checkout@v2.3.4
+    - name: "cargo clippy"
+      uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: -- -D warnings
+
+  cargo_bench:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v2.3.4
+      - name: "cargo bench"
+        uses: actions-rs/cargo@v1
+        with:
+          command: bench
