@@ -4,7 +4,7 @@
 status = [
   "cargo_deny",
   "cargo_clippy",
-  "test",
+  "all_tests",
   "rustfmt",
 ]
 timeout_sec = 600
