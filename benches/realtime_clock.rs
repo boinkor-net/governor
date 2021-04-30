@@ -37,7 +37,7 @@ fn bench_mostly_allow(c: &mut Criterion) {
     group.throughput(Throughput::Elements(1));
     with_realtime_clocks! {("mostly_allow", group) |b, clock| {
         let rl = RateLimiter::direct_with_clock(
-            Quota::new(nonzero!(u32::max_value()), Duration::from_nanos(1)).unwrap(),
+            #[allow(deprecated)] Quota::new(nonzero!(u32::max_value()), Duration::from_nanos(1)).unwrap(),
             clock
         );
         b.iter(|| {
