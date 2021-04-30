@@ -1,0 +1,56 @@
+name: "CI"
+# This workflow is triggered on all pushes to the repository, or on Friday night.
+on:
+  push:
+    paths:
+      - "src/**"
+      - "benches/**"
+      - "tests/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "deny.toml"
+      - ".github/workflows/**"
+  schedule:
+    - cron: '0 23 * * FRI'
+
+jobs:
+  cargo_deny:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.3.4
+    - name: "cargo deny"
+      uses: EmbarkStudios/cargo-deny-action@v1
+      with:
+        command: "check all"
+
+  cargo_clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.3.4
+    - name: "cargo clippy"
+      uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_toolchain: [nightly, stable]
+        cargo_args:
+          - "--no-default-features --features no_std"
+          - ""
+    steps:
+      - uses: actions/checkout@v2.3.4
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: ${{ matrix.rust_toolchain }}
+            override: true
+            profile: minimal
+      - name: "cargo test"
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: ${{ matrix.cargo_args }}
+          toolchain: ${{ matrix.rust_toolchain }}
