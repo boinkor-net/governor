@@ -120,7 +120,7 @@ fn actual_threadsafety() {
 fn hashmap_length() {
     let lim = RateLimiter::hashmap(Quota::per_second(nonzero!(1u32)));
     assert_eq!(lim.len(), 0);
-    assert!(lim.is_empty(), true);
+    assert!(lim.is_empty());
 
     lim.check_key(&"foo").unwrap();
     assert_eq!(lim.len(), 1);
