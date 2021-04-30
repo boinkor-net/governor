@@ -126,7 +126,7 @@ fn actual_threadsafety() {
 fn dashmap_length() {
     let lim = RateLimiter::dashmap(Quota::per_second(nonzero!(1u32)));
     assert_eq!(lim.len(), 0);
-    assert!(lim.is_empty(), true);
+    assert!(lim.is_empty());
 
     lim.check_key(&"foo").unwrap();
     assert_eq!(lim.len(), 1);

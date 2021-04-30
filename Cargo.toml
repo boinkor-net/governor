@@ -16,7 +16,6 @@ keywords = ["rate-limiting", "rate-limit", "no_std", "gcra"]
 autobenches = false
 
 [badges]
-circle-ci = { repository = "antifuchs/governor", branch = "master" }
 maintenance = { status = "actively-developed" }
 
 [[bench]]
