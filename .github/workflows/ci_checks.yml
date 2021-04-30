@@ -6,7 +6,7 @@ jobs:
   cargo_deny:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2.3.4
     - name: "cargo deny"
       uses: EmbarkStudios/cargo-deny-action@v1
       with:
@@ -14,7 +14,7 @@ jobs:
   cargo_clippy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2.3.4
     - name: "cargo clippy"
       uses: actions-rs/clippy-check@v1
       with:
