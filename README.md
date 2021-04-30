@@ -1,4 +1,4 @@
-[![Build Status](https://circleci.com/gh/antifuchs/governor.svg?style=svg)](https://circleci.com/gh/antifuchs/governor) [![Docs](https://docs.rs/governor/badge.svg)](https://docs.rs/governor/) [![crates.io](https://img.shields.io/crates/v/governor.svg)](https://crates.io/crates/governor)
+![Build status](https://github.com/antifuchs/governor/actions/workflows/ci_push.yml/badge.svg?branch=master) [![Docs](https://docs.rs/governor/badge.svg)](https://docs.rs/governor/) [![crates.io](https://img.shields.io/crates/v/governor.svg)](https://crates.io/crates/governor)
 
 # governor - a library for regulating the flow of data
 
@@ -17,7 +17,7 @@ which this library takes its name:
 ## Related projects
 
  + [tide-governor](https://github.com/ohmree/tide-governor): A tide middleware that provides rate-limiting functionality backed by governor.
- 
+
  + [actix-governor](https://github.com/AaronErhardt/actix-governor): A middleware for actix-web that provides rate-limiting backed by governor.
 
 ## Implementation and constraints
