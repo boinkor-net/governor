@@ -180,3 +180,35 @@ impl Quota {
         Duration::from_nanos(fill_in_ns as u64)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use nonzero_ext::nonzero;
+
+    #[test]
+    fn time_multiples() {
+        let hourly = Quota::per_hour(nonzero!(1u32));
+        let minutely = Quota::per_minute(nonzero!(1u32));
+        let secondly = Quota::per_second(nonzero!(1u32));
+
+        assert_eq!(
+            hourly.replenish_interval() / 60,
+            minutely.replenish_interval()
+        );
+        assert_eq!(
+            minutely.replenish_interval() / 60,
+            secondly.replenish_interval()
+        );
+    }
+
+    #[test]
+    fn period_error_cases() {
+        assert!(Quota::with_period(Duration::from_secs(0)).is_none());
+
+        #[allow(deprecated)]
+        {
+            assert!(Quota::new(nonzero!(1u32), Duration::from_secs(0)).is_none());
+        }
+    }
+}
