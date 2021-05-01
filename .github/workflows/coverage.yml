@@ -43,22 +43,22 @@ jobs:
       - name: Install grcov
         run: if [[ ! -e ~/.cargo/bin/grcov ]]; then cargo install grcov --vers=${{env.grcov_version}}; fi
 
-      # - name: Run tests
-      #   run: cargo test
-      #   env:
-      #     RUSTFLAGS: '-Zinstrument-coverage'
+      - name: Run tests
+        run: cargo test
+        env:
+          RUSTFLAGS: '-Zinstrument-coverage'
 
-      # - name: Run grcov
-      #   run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage.lcov
+      - name: Run grcov
+        run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage.lcov
 
-      # - name: Upload to codecov.io
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     files: coverage.lcov
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.lcov
 
-      # - name: Archive code coverage results
-      #   uses: actions/upload-artifact@v1
-      #   with:
-      #     name: code-coverage-report
-      #     path: coverage.lcov
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v1
+        with:
+          name: code-coverage-report
+          path: coverage.lcov
