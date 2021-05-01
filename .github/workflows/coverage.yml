@@ -46,7 +46,8 @@ jobs:
       - name: Run tests
         run: cargo test
         env:
-          RUSTFLAGS: '-Zinstrument-coverage'
+          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"
+          RUSTDOCFLAGS: "-Cpanic=abort"
           LLVM_PROFILE_FILE: "governor-%p-%m.profraw"
 
       - name: Run grcov
