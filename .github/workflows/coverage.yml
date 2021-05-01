@@ -9,31 +9,60 @@ jobs:
   code_coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: false
 
+      - name: Cache cargo-show
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/bin/cargo-show
+          key: ${{ runner.os }}-cargo-show-bin-0.5.9
+
+      - name: Install cargo-show
+        run: if [[ ! -e ~/.cargo/bin/cargo-show ]]; then cargo install cargo-show ; fi
+      - name: Install jq
+        run: apt-get install jq
+      - name: Set latest grcov version
+        run: echo "grcov_version=$(cargo show grcov --json | jql -r .crate.max_version)" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v2
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{env.grcov_version}}
+      - name: Cache cargo binaries
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-${{env.grcov_version}}
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           override: true
+          components: llvm-tools-preview
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-fail-fast
+      - name: Install grcov
+        run: if [[ ! -e ~/.cargo/bin/grcov ]]; then cargo install grcov --vers=${{env.grcov_version}}; fi
+
+      - name: Run tests
+        run: cargo test
         env:
-          CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-      - uses: actions-rs/grcov@v0.1
+          RUSTFLAGS: '-Zinstrument-coverage'
+
+      - name: Run grcov
+        run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage.lcov
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{ steps.coverage.outputs.report }}
+          files: coverage.lcov
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v1
         with:
           name: code-coverage-report
-          path: ${{ steps.coverage.outputs.report }}
+          path: coverage.lcov
