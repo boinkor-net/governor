@@ -47,7 +47,7 @@ jobs:
         run: cargo test
         env:
           CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"
+          RUSTFLAGS: "-Zinstrument-coverage"
           RUSTDOCFLAGS: "-Cpanic=abort -Zinstrument-coverage -Zunstable-options --persist-doctests target/debug/doctestbins"
           LLVM_PROFILE_FILE: "governor-%p-%m.profraw"
 
