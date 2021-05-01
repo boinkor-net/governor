@@ -57,14 +57,14 @@ jobs:
       - name: Run grcov for tests
         run: grcov . --binary-path target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage-doctests.lcov
 
-      - name: Upload to codecov.io
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.lcov,coverage-doctests.lcov
-
       - name: Archive code coverage results
         uses: actions/upload-artifact@v1
         with:
           name: code-coverage-report
           path: "*.lcov"
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.lcov,coverage-doctests.lcov
