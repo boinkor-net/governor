@@ -46,21 +46,27 @@ jobs:
       - name: Run tests
         run: cargo test
         env:
+          CARGO_INCREMENTAL: "0"
           RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"
-          RUSTDOCFLAGS: "-Cpanic=abort"
+          RUSTDOCFLAGS: "-Cpanic=abort -Zinstrument-coverage -Zunstable-options --persist-doctests target/debug/doctestbins"
           LLVM_PROFILE_FILE: "governor-%p-%m.profraw"
 
-      - name: Run grcov
+      - name: Run grcov for tests
         run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage.lcov
+
+      - name: Run grcov for tests
+        run: grcov . --binary-path target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage-doctests.lcov
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.lcov
+          files: |
+            coverage.lcov
+            coverage-doctests.lcov
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v1
         with:
           name: code-coverage-report
-          path: coverage.lcov
+          path: "*.lcov"
