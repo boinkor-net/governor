@@ -20,37 +20,28 @@ jobs:
           path: ~/.cargo/bin/cargo-show
           key: ${{ runner.os }}-cargo-show-bin-0.5.9
 
-      - name: Environment metainfo - pre
-        run: env; find ~/.cargo/ -ls
+      - name: Set grcov version
+        run: echo "grcov_version=0.8.0" >> $GITHUB_ENV
 
-      - name: Install cargo-show
-        run: if [[ ! -e ~/.cargo/bin/cargo-show ]]; then cargo install cargo-show ; fi
+      - uses: actions/checkout@v2
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{env.grcov_version}}
+      - name: Cache cargo binaries
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-${{env.grcov_version}}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: llvm-tools-preview
 
-      - name: Environment metainfo - post
-        run: env; find ~/.cargo/ -ls
-
-      - name: Set latest grcov version
-        run: echo "grcov_version=$(cargo show grcov | grep '^max_version:' | cut -f2 -d' ')" >> $GITHUB_ENV
-
-      # - uses: actions/checkout@v2
-      # - name: Cache cargo index
-      #   uses: actions/cache@v1
-      #   with:
-      #     path: ~/.cargo/git
-      #     key: ${{ runner.os }}-cargo-index-${{env.grcov_version}}
-      # - name: Cache cargo binaries
-      #   uses: actions/cache@v1
-      #   with:
-      #     path: ~/.cargo/bin
-      #     key: ${{ runner.os }}-cargo-bin-${{env.grcov_version}}
-      # - uses: actions-rs/toolchain@v1
-      #   with:
-      #     toolchain: nightly
-      #     override: true
-      #     components: llvm-tools-preview
-
-      # - name: Install grcov
-      #   run: if [[ ! -e ~/.cargo/bin/grcov ]]; then cargo install grcov --vers=${{env.grcov_version}}; fi
+      - name: Install grcov
+        run: if [[ ! -e ~/.cargo/bin/grcov ]]; then cargo install grcov --vers=${{env.grcov_version}}; fi
 
       # - name: Run tests
       #   run: cargo test
