@@ -20,8 +20,15 @@ jobs:
           path: ~/.cargo/bin/cargo-show
           key: ${{ runner.os }}-cargo-show-bin-0.5.9
 
+      - name: Environment metainfo - pre
+        run: env; find ~/.cargo/ -ls
+
       - name: Install cargo-show
         run: if [[ ! -e ~/.cargo/bin/cargo-show ]]; then cargo install cargo-show ; fi
+
+      - name: Environment metainfo - post
+        run: env; find ~/.cargo/ -ls
+
       - name: Set latest grcov version
         run: echo "grcov_version=$(cargo show grcov | grep '^max_version:' | cut -f2 -d' ')" >> $GITHUB_ENV
 
