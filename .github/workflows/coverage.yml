@@ -61,9 +61,7 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: |
-            coverage.lcov
-            coverage-doctests.lcov
+          files: coverage.lcov,coverage-doctests.lcov
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v1
