@@ -146,3 +146,34 @@ impl Gcra {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{Quota, RateLimiter};
+    use clock::FakeRelativeClock;
+    use nonzero_ext::nonzero;
+
+    /// Exercise derives and convenience impls on Gcra to make coverage happy
+    #[test]
+    fn gcra_derives() {
+        let g = Gcra::new(Quota::per_second(nonzero!(1u32)));
+        let g2 = Gcra::new(Quota::per_second(nonzero!(2u32)));
+        assert_eq!(g, g);
+        assert_ne!(g, g2);
+        assert!(format!("{:?}", g).len() > 0);
+    }
+
+    /// Exercise derives and convenience impls on NotUntil to make coverage happy
+    #[test]
+    fn notuntil_impls() {
+        let clock = FakeRelativeClock::default();
+        let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(1u32)), &clock);
+        assert!(lb.check().is_ok());
+        if let Err(nu) = lb.check() {
+            assert_eq!(nu, nu);
+            assert!(format!("{:?}", nu).len() > 0);
+            assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+        }
+    }
+}
