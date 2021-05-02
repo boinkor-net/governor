@@ -43,6 +43,18 @@ fn sink() {
     assert!(result.into_iter().all(|&elt| elt == ()));
 }
 
+#[test]
+fn auxilliary_sink_methods() {
+    let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
+    // TODO: use futures_ringbuf to build a Sink-that-is-a-Stream and
+    // use it as both
+    // (https://github.com/najamelan/futures_ringbuf/issues/5)
+    let mut sink = Vec::<u8>::new().ratelimit_sink(&lim);
+
+    // Closes the underlying sink:
+    assert!(block_on(sink.close()).is_ok());
+}
+
 #[cfg_attr(feature = "jitter", test)]
 fn sink_with_jitter() {
     let i = Instant::now();

@@ -14,12 +14,6 @@ jobs:
           toolchain: stable
           override: false
 
-      - name: Cache cargo-show
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/bin/cargo-show
-          key: ${{ runner.os }}-cargo-show-bin-0.5.9
-
       - name: Set grcov version
         run: echo "grcov_version=0.8.0" >> $GITHUB_ENV
 
