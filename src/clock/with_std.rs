@@ -92,3 +92,43 @@ pub trait ReasonablyRealtime: Clock {
 impl ReasonablyRealtime for MonotonicClock {}
 
 impl ReasonablyRealtime for SystemClock {}
+
+/// Some tests to ensure that the code above gets exercised. We don't
+/// rely on them in tests (being nastily tainted by realism), so we
+/// have to get creative.
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::clock::{Clock, MonotonicClock, Reference, SystemClock};
+    use crate::nanos::Nanos;
+    use std::time::Duration;
+
+    #[test]
+    fn instant_impls_coverage() {
+        let one_ns = Nanos::new(1);
+        let c = MonotonicClock::default();
+        let now = c.now();
+        assert_ne!(now + one_ns, now);
+        assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
+        assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
+        assert_eq!(
+            Reference::saturating_sub(&(now + Duration::from_nanos(1)), one_ns),
+            now
+        );
+    }
+
+    #[test]
+    fn system_clock_impls_coverage() {
+        let one_ns = Nanos::new(1);
+        let c = SystemClock::default();
+        let now = c.now();
+        assert_ne!(now + one_ns, now);
+        // Thankfully, we're not comparing two system clock readings
+        // here so that ought to be safe, I think:
+        assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
+        assert_eq!(
+            Reference::saturating_sub(&(now + Duration::from_nanos(1)), one_ns),
+            now
+        );
+    }
+}
