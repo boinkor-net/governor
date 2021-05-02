@@ -82,7 +82,7 @@ where
     /// ### Performance
     /// This method diverges a little from the GCRA algorithm, using
     /// multiplication to determine the next theoretical arrival time, and so
-    /// is not as fast as checking a single cell.  
+    /// is not as fast as checking a single cell.
     pub fn check_n(
         &self,
         n: NonZeroU32,
@@ -113,3 +113,13 @@ mod streams;
 use crate::state::{RateLimiter, StateStore};
 #[cfg(feature = "std")]
 pub use streams::*;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn not_keyed_impls_coverage() {
+        assert_eq!(NotKeyed::NonKey, NotKeyed::NonKey);
+    }
+}

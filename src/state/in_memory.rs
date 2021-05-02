@@ -67,3 +67,13 @@ impl Debug for InMemoryState {
         write!(f, "InMemoryState({:?})", d)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn in_memory_state_impls() {
+        let state = InMemoryState(AtomicU64::new(0));
+        assert!(format!("{:?}", state).len() > 0);
+    }
+}
