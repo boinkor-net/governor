@@ -54,7 +54,7 @@ jobs:
       - name: Run grcov for tests
         run: |
           mkdir coverage
-          grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/tests.lcov
+          grcov . --binary-path target/debug/deps/ -s . -t lcov --excl-line '!no_rcov!' --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/tests.lcov
           grcov . --binary-path target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/doctests.lcov
 
       - name: Upload to codecov.io

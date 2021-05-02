@@ -177,7 +177,7 @@ where
     fn start_send(mut self: Pin<&mut Self>, item: Item) -> Result<(), Self::Error> {
         match self.state {
             State::Wait | State::NotReady => {
-                unreachable!("Protocol violation: should not start_send before we say we can");
+                unreachable!("Must not start_send before we're ready"); // !no_rcov!
             }
             State::Ready => {
                 self.state = State::NotReady;
