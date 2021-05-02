@@ -114,7 +114,7 @@ impl Add<Duration> for Nanos {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "std", test))]
 mod test {
     use super::*;
     use std::time::Duration;

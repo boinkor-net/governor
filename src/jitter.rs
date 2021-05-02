@@ -182,7 +182,7 @@ impl Add<Instant> for Jitter {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "jitter", test))]
 mod test {
     use super::*;
 
