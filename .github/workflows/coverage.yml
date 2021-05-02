@@ -18,16 +18,19 @@ jobs:
         run: echo "grcov_version=0.8.0" >> $GITHUB_ENV
 
       - uses: actions/checkout@v2
+
       - name: Cache cargo index
         uses: actions/cache@v1
         with:
           path: ~/.cargo/git
           key: ${{ runner.os }}-cargo-index-${{env.grcov_version}}
+
       - name: Cache cargo binaries
         uses: actions/cache@v1
         with:
           path: ~/.cargo/bin
           key: ${{ runner.os }}-cargo-bin-${{env.grcov_version}}
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
