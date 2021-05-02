@@ -13,9 +13,10 @@ jobs:
         run: |
           cat <<EOT >> $GITHUB_ENV
           grcov_version=0.8.0
-          excl_line<<EOV
-          (unreachable!\(|#\[derive\(|(debug_)?assert(|_[a-z]+)!\()
+          excl_expr_start<<EOV
+          (unreachable!\(|(debug_)?assert(|_[a-z]+)!\()
           EOV
+          excl_expr_stop=\);
           EOT
 
       - uses: actions-rs/toolchain@v1
@@ -57,7 +58,7 @@ jobs:
       - name: Run grcov for tests
         run: |
           mkdir coverage
-          grcov . --binary-path target/debug/deps/ -s . -t lcov --excl-line '${{env.excl_line}}' --excl-br-line '${{env.excl_line}}' --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/tests.lcov
+          grcov . --binary-path target/debug/deps/ -s . -t lcov --excl-start '${{env.excl_expr_start}}' --excl-br-start '${{env.excl_expr_start}}' --excl-stop '${{env.excl_expr_stop}}' --excl-br-stop '${{env.excl_expr_stop}}' --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/tests.lcov
           grcov . --binary-path target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/doctests.lcov
 
       - name: Upload to codecov.io
