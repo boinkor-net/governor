@@ -1,0 +1,68 @@
+name: "Code coverage"
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  code_coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: false
+
+      - name: Set grcov version
+        run: echo "grcov_version=0.8.0" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v2
+
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{env.grcov_version}}
+
+      - name: Cache cargo binaries
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-${{env.grcov_version}}
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: llvm-tools-preview
+
+      - name: Install grcov
+        run: if [[ ! -e ~/.cargo/bin/grcov ]]; then cargo install grcov --vers=${{env.grcov_version}}; fi
+
+      - name: Run tests
+        run: cargo test
+        env:
+          CARGO_INCREMENTAL: "0"
+          RUSTFLAGS: "-Zinstrument-coverage"
+          RUSTDOCFLAGS: "-Cpanic=abort -Zinstrument-coverage -Zunstable-options --persist-doctests target/debug/doctestbins"
+          LLVM_PROFILE_FILE: "governor-%p-%m.profraw"
+
+      - name: Run grcov for tests
+        run: |
+          mkdir coverage
+          grcov . --binary-path target/debug/deps/ -s . -t lcov --excl-line '!no_rcov!' --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/tests.lcov
+          grcov . --binary-path target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/doctests.lcov
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/*.lcov
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: |
+            coverage/*.lcov

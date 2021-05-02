@@ -76,7 +76,6 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     }
 }
 
-#[derive(PartialEq, Debug)]
 enum State {
     ReadInner,
     NotReady,
@@ -99,11 +98,31 @@ pub struct RatelimitedStream<'a, S: Stream, D: DirectStateStore, C: clock::Clock
 /// Conversion methods for the stream combinator.
 impl<'a, S: Stream, D: DirectStateStore, C: clock::Clock> RatelimitedStream<'a, S, D, C> {
     /// Acquires a reference to the underlying stream that this combinator is pulling from.
+    /// ```rust
+    /// # use futures::{Stream, stream};
+    /// # use governor::{prelude::*, Quota, RateLimiter};
+    /// # use nonzero_ext::nonzero;
+    /// let inner = stream::repeat(());
+    /// let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+    /// let outer = inner.clone().ratelimit_stream(&lim);
+    /// assert!(outer.get_ref().size_hint().1.is_none());
+    /// assert_eq!(outer.size_hint(), outer.get_ref().size_hint());
+    /// ```
     pub fn get_ref(&self) -> &S {
         &self.inner
     }
 
     /// Acquires a mutable reference to the underlying stream that this combinator is pulling from.
+    /// ```rust
+    /// # use futures::{stream, StreamExt};
+    /// # use futures::executor::block_on;
+    /// # use governor::{prelude::*, Quota, RateLimiter};
+    /// # use nonzero_ext::nonzero;
+    /// let inner = stream::repeat(());
+    /// let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+    /// let mut outer = inner.clone().ratelimit_stream(&lim);
+    /// assert_eq!(block_on(outer.get_mut().next()), Some(()));
+    /// ```
     pub fn get_mut(&mut self) -> &mut S {
         &mut self.inner
     }
@@ -111,6 +130,17 @@ impl<'a, S: Stream, D: DirectStateStore, C: clock::Clock> RatelimitedStream<'a, 
     /// Consumes this combinator, returning the underlying stream and any item
     /// which it has already produced but which is still being held back
     /// in order to abide by the limiter.
+    /// ```rust
+    /// # use futures::{stream, StreamExt};
+    /// # use futures::executor::block_on;
+    /// # use governor::{prelude::*, Quota, RateLimiter};
+    /// # use nonzero_ext::nonzero;
+    /// let inner = stream::repeat(());
+    /// let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+    /// let mut outer = inner.clone().ratelimit_stream(&lim);
+    /// let (mut inner_again, _) = outer.into_inner();
+    /// assert_eq!(block_on(inner_again.next()), Some(()));
+    /// ```
     pub fn into_inner(self) -> (S, Option<S::Item>) {
         (self.inner, self.buf)
     }

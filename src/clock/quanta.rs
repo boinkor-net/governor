@@ -99,3 +99,45 @@ impl Clock for QuantaUpkeepClock {
 }
 
 impl ReasonablyRealtime for QuantaClock {}
+
+/// Some tests to ensure that the code above gets exercised. We don't
+/// rely on them in tests (being nastily tainted by realism), so we
+/// have to get creative.
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::clock::{Clock, QuantaClock, QuantaUpkeepClock, Reference};
+    use crate::nanos::Nanos;
+    use std::time::Duration;
+
+    #[test]
+    fn quanta_impls_coverage() {
+        let one_ns = Nanos::new(1);
+        let c = QuantaClock::default();
+        let now = c.now();
+        assert_ne!(now + one_ns, now);
+        assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
+        assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
+        assert_eq!(
+            Reference::saturating_sub(&(now + Duration::from_nanos(1).into()), one_ns),
+            now
+        );
+    }
+    #[test]
+    fn quanta_upkeep_impls_coverage() {
+        let one_ns = Nanos::new(1);
+        let _c1 =
+            QuantaUpkeepClock::from_builder(quanta::Builder::new(Duration::from_secs(1))).unwrap();
+        let c = QuantaUpkeepClock::from_interval(Duration::from_secs(1))
+            .unwrap()
+            .clone();
+        let now = c.now();
+        assert_ne!(now + one_ns, now);
+        assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
+        assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
+        assert_eq!(
+            Reference::saturating_sub(&(now + Duration::from_nanos(1).into()), one_ns),
+            now
+        );
+    }
+}

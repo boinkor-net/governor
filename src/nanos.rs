@@ -113,3 +113,27 @@ impl Add<Duration> for Nanos {
         self + other
     }
 }
+
+#[cfg(all(feature = "std", test))]
+mod test {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn nanos_impls() {
+        let n = Nanos::new(20);
+        assert_eq!("Nanos(20ns)", format!("{:?}", n));
+    }
+
+    #[test]
+    fn nanos_arith_coverage() {
+        let n = Nanos::new(20);
+        let n_half = Nanos::new(10);
+        assert_eq!(n / n_half, 2);
+        assert_eq!(30, (n + Duration::from_nanos(10)).as_u64());
+
+        assert_eq!(n_half.saturating_sub(n), Nanos::new(0));
+        assert_eq!(n.saturating_sub(n_half), n_half);
+        assert_eq!(clock::Reference::saturating_sub(&n_half, n), Nanos::new(0));
+    }
+}

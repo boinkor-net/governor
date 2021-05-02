@@ -42,12 +42,26 @@ pub trait Clock: Clone {
 }
 
 impl Reference for Duration {
+    /// The internal duration between this point and another.
+    /// ```rust
+    /// # use std::time::Duration;
+    /// # use governor::clock::Reference;
+    /// let diff = Duration::from_secs(20).duration_since(Duration::from_secs(10));
+    /// assert_eq!(diff, Duration::from_secs(10).into());
+    /// ```
     fn duration_since(&self, earlier: Self) -> Nanos {
         self.checked_sub(earlier)
             .unwrap_or_else(|| Duration::new(0, 0))
             .into()
     }
 
+    /// The internal duration between this point and another.
+    /// ```rust
+    /// # use std::time::Duration;
+    /// # use governor::clock::Reference;
+    /// let diff = Reference::saturating_sub(&Duration::from_secs(20), Duration::from_secs(10).into());
+    /// assert_eq!(diff, Duration::from_secs(10));
+    /// ```
     fn saturating_sub(&self, duration: Nanos) -> Self {
         self.checked_sub(duration.into()).unwrap_or(*self)
     }
@@ -95,6 +109,17 @@ impl FakeRelativeClock {
 }
 
 impl PartialEq for FakeRelativeClock {
+    /// Compares two fake relative clocks' current state, snapshotted.
+    ///
+    /// ```rust
+    /// # use std::time::Duration;
+    /// # use governor::clock::FakeRelativeClock;
+    /// let clock1 = FakeRelativeClock::default();
+    /// let clock2 = FakeRelativeClock::default();
+    /// assert_eq!(clock1, clock2);
+    /// clock1.advance(Duration::from_secs(1));
+    /// assert_ne!(clock1, clock2);
+    /// ```
     fn eq(&self, other: &Self) -> bool {
         self.now.load(Ordering::Relaxed) == other.now.load(Ordering::Relaxed)
     }
@@ -121,3 +146,41 @@ pub use self::quanta::*;
 mod default;
 
 pub use default::*;
+
+#[cfg(all(feature = "std", test))]
+mod test {
+    use super::*;
+    use crate::nanos::Nanos;
+    use std::iter::repeat;
+    use std::sync::Arc;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn fake_clock_parallel_advances() {
+        let clock = Arc::new(FakeRelativeClock::default());
+        let threads = repeat(())
+            .take(10)
+            .map(move |_| {
+                let clock = Arc::clone(&clock);
+                thread::spawn(move || {
+                    for _ in (0..1000000).into_iter() {
+                        let now = clock.now();
+                        clock.advance(Duration::from_nanos(1));
+                        assert!(clock.now() > now);
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        for t in threads {
+            t.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn duration_addition_coverage() {
+        let d = Duration::from_secs(1);
+        let one_ns = Nanos::new(1);
+        assert!(d + one_ns > d);
+    }
+}
