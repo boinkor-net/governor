@@ -146,3 +146,41 @@ pub use self::quanta::*;
 mod default;
 
 pub use default::*;
+
+#[cfg(all(feature = "std", test))]
+mod test {
+    use super::*;
+    use crate::nanos::Nanos;
+    use std::iter::repeat;
+    use std::sync::Arc;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn fake_clock_parallel_advances() {
+        let clock = Arc::new(FakeRelativeClock::default());
+        let threads = repeat(())
+            .take(10)
+            .map(move |_| {
+                let clock = Arc::clone(&clock);
+                thread::spawn(move || {
+                    for _ in (0..1000000).into_iter() {
+                        let now = clock.now();
+                        clock.advance(Duration::from_nanos(1));
+                        assert!(clock.now() > now);
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        for t in threads {
+            t.join().unwrap();
+        }
+    }
+
+    #[test]
+    fn duration_addition_coverage() {
+        let d = Duration::from_secs(1);
+        let one_ns = Nanos::new(1);
+        assert!(d + one_ns > d);
+    }
+}
