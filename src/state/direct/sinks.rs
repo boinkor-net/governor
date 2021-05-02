@@ -105,6 +105,18 @@ impl<'a, Item, S: Sink<Item>, D: DirectStateStore, C: clock::ReasonablyRealtime>
     }
 
     /// Acquires a mutable reference to the underlying sink that this combinator is sending into.
+    ///
+    /// ```
+    /// # futures::executor::block_on(async {
+    /// # use futures::sink::{self, SinkExt};
+    /// # use nonzero_ext::nonzero;
+    /// use governor::{prelude::*, RateLimiter, Quota};
+    /// let drain = sink::drain();
+    /// let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+    /// let mut limited = drain.ratelimit_sink(&lim);
+    /// limited.get_mut().send(5).await?;
+    /// # Ok::<(), futures::never::Never>(()) }).unwrap();
+    /// ```
     pub fn get_mut(&mut self) -> &mut S {
         &mut self.inner
     }

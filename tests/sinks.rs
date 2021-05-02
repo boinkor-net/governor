@@ -38,9 +38,9 @@ fn sink() {
     assert!(i.elapsed() > Duration::from_millis(200));
     assert!(i.elapsed() <= Duration::from_millis(300));
 
-    let result = sink.into_inner();
+    let result = sink.get_ref();
     assert_eq!(result.len(), 12);
-    assert!(result.into_iter().all(|elt| elt == ()));
+    assert!(result.into_iter().all(|&elt| elt == ()));
 }
 
 #[cfg_attr(feature = "jitter", test)]
