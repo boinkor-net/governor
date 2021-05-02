@@ -42,12 +42,26 @@ pub trait Clock: Clone {
 }
 
 impl Reference for Duration {
+    /// The internal duration between this point and another.
+    /// ```rust
+    /// # use std::time::Duration;
+    /// # use governor::clock::Reference;
+    /// let diff = Duration::from_secs(20).duration_since(Duration::from_secs(10));
+    /// assert_eq!(diff, Duration::from_secs(10).into());
+    /// ```
     fn duration_since(&self, earlier: Self) -> Nanos {
         self.checked_sub(earlier)
             .unwrap_or_else(|| Duration::new(0, 0))
             .into()
     }
 
+    /// The internal duration between this point and another.
+    /// ```rust
+    /// # use std::time::Duration;
+    /// # use governor::clock::Reference;
+    /// let diff = Reference::saturating_sub(&Duration::from_secs(20), Duration::from_secs(10).into());
+    /// assert_eq!(diff, Duration::from_secs(10));
+    /// ```
     fn saturating_sub(&self, duration: Nanos) -> Self {
         self.checked_sub(duration.into()).unwrap_or(*self)
     }
@@ -95,6 +109,17 @@ impl FakeRelativeClock {
 }
 
 impl PartialEq for FakeRelativeClock {
+    /// Compares two fake relative clocks' current state, snapshotted.
+    ///
+    /// ```rust
+    /// # use std::time::Duration;
+    /// # use governor::clock::FakeRelativeClock;
+    /// let clock1 = FakeRelativeClock::default();
+    /// let clock2 = FakeRelativeClock::default();
+    /// assert_eq!(clock1, clock2);
+    /// clock1.advance(Duration::from_secs(1));
+    /// assert_ne!(clock1, clock2);
+    /// ```
     fn eq(&self, other: &Self) -> bool {
         self.now.load(Ordering::Relaxed) == other.now.load(Ordering::Relaxed)
     }
