@@ -76,7 +76,6 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     }
 }
 
-#[derive(PartialEq, Debug)]
 enum State {
     ReadInner,
     NotReady,

@@ -102,7 +102,7 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "std", test))]
 mod test {
     use super::*;
     use crate::Quota;
