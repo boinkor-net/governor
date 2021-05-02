@@ -187,6 +187,13 @@ mod test {
     use super::*;
 
     #[test]
+    fn jitter_impl_coverage() {
+        let basic = Jitter::up_to(Duration::from_secs(20));
+        let verbose = Jitter::new(Duration::from_secs(0), Duration::from_secs(20));
+        assert_eq!(basic, verbose);
+    }
+
+    #[test]
     fn uniform_sampler_coverage() {
         let low = Duration::from_secs(0);
         let high = Duration::from_secs(20);
