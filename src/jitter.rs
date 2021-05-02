@@ -73,6 +73,14 @@ impl Jitter {
     };
 
     /// Constructs a new Jitter interval, waiting at most a duration of `max`.
+    ///
+    /// ```rust
+    /// # use std::time::Duration;
+    /// # use governor::Jitter;
+    /// let jitter = Jitter::up_to(Duration::from_secs(20));
+    /// let now = Duration::from_secs(0);
+    /// assert!(jitter + now <= Duration::from_secs(20)); // always.
+    /// ```
     #[cfg(feature = "jitter")]
     pub fn up_to(max: Duration) -> Jitter {
         Jitter {
@@ -171,5 +179,19 @@ impl Add<Instant> for Jitter {
     fn add(self, rhs: Instant) -> Instant {
         let amount: Duration = self.get().into();
         rhs + amount
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn uniform_sampler_coverage() {
+        let low = Duration::from_secs(0);
+        let high = Duration::from_secs(20);
+        let sampler = UniformJitter::new_inclusive(Nanos::from(low), Nanos::from(high));
+        assert!(format!("{:?}", sampler).len() > 0);
+        assert!(format!("{:?}", sampler.clone()).len() > 0);
     }
 }
