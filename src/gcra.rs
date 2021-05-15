@@ -170,16 +170,17 @@ impl From<(&Gcra, Nanos)> for StateSnapshot {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Quota, RateLimiter};
-    use clock::FakeRelativeClock;
-    use nonzero_ext::nonzero;
+    use crate::Quota;
     use std::num::NonZeroU32;
 
     use proptest::prelude::*;
 
     /// Exercise derives and convenience impls on Gcra to make coverage happy
+    #[cfg(feature = "std")]
     #[test]
     fn gcra_derives() {
+        use nonzero_ext::nonzero;
+
         let g = Gcra::new(Quota::per_second(nonzero!(1u32)));
         let g2 = Gcra::new(Quota::per_second(nonzero!(2u32)));
         assert_eq!(g, g);
@@ -188,8 +189,13 @@ mod test {
     }
 
     /// Exercise derives and convenience impls on NotUntil to make coverage happy
+    #[cfg(feature = "std")]
     #[test]
     fn notuntil_impls() {
+        use crate::RateLimiter;
+        use clock::FakeRelativeClock;
+        use nonzero_ext::nonzero;
+
         let clock = FakeRelativeClock::default();
         let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(1u32)), &clock);
         assert!(lb.check().is_ok());
