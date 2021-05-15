@@ -7,8 +7,8 @@ use governor::{
 };
 use nonzero_ext::nonzero;
 
-#[derive(Debug, PartialEq)]
-struct MyMW {}
+#[derive(Debug)]
+struct MyMW;
 
 #[derive(Debug, PartialEq)]
 struct NotAllowed;
@@ -74,4 +74,12 @@ fn state_information() {
             .map(|outcome| outcome.remaining_burst_capacity())
     );
     assert!(lim.check().is_err());
+}
+
+#[test]
+#[cfg(feature = "std")]
+fn mymw_derives() {
+    assert_eq!(NotAllowed, NotAllowed);
+    assert_eq!(format!("{}", NotAllowed), "Not allowed yet");
+    assert_eq!(format!("{:?}", MyMW), "MyMW");
 }

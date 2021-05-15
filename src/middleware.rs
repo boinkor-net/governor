@@ -62,7 +62,7 @@ impl StateSnapshot {
 /// in any way: A rate-limiting decision will always be `Ok(...)` or
 /// `Err(NotUntil{...})`, but middleware can be set up to alter the
 /// return value in the Ok() case.
-pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug + PartialEq {
+pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// The type that's returned by the rate limiter when a cell is allowed.
     ///
     /// By default, rate limiters return `Ok(())`, which does not give
@@ -109,7 +109,7 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug + PartialEq {
         Self: Sized;
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 /// A middleware that does nothing and returns `()` in the positive outcome.
 pub struct NoOpMiddleware<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
     phantom: PhantomData<P>,
@@ -142,8 +142,8 @@ impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
 
 /// Middleware that returns the state of the rate limiter if a
 /// positive decision is reached.
-#[derive(PartialEq, Debug)]
-pub struct StateInformationMiddleware {}
+#[derive(Debug)]
+pub struct StateInformationMiddleware;
 
 impl<P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddleware {
     /// The state snapshot returned from the limiter.
@@ -164,5 +164,29 @@ impl<P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddlewa
         Self: Sized,
     {
         NotUntil::new(state.into(), start_time)
+    }
+}
+
+#[cfg(all(feature = "std", test))]
+mod test {
+    use std::time::Duration;
+
+    use super::*;
+
+    #[test]
+    fn middleware_impl_derives() {
+        assert_eq!(
+            format!("{:?}", StateInformationMiddleware),
+            "StateInformationMiddleware"
+        );
+        assert_eq!(
+            format!(
+                "{:?}",
+                NoOpMiddleware {
+                    phantom: PhantomData::<Duration>,
+                }
+            ),
+            "NoOpMiddleware { phantom: PhantomData }"
+        );
     }
 }
