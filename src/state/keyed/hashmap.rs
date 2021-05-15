@@ -61,7 +61,7 @@ impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for HashMapStateStore<K>
 }
 
 /// # Keyed rate limiters - [`HashMap`]-backed
-impl<K, C> RateLimiter<K, HashMapStateStore<K>, C, NoOpMiddleware>
+impl<K, C> RateLimiter<K, HashMapStateStore<K>, C, NoOpMiddleware<C::Instant>>
 where
     K: Hash + Eq + Clone,
     C: clock::Clock,

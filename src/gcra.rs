@@ -1,7 +1,5 @@
-use std::{marker::PhantomData, prelude::v1::*};
-
+use crate::state::StateStore;
 use crate::{clock, middleware::StateSnapshot, NegativeMultiDecision, Quota};
-use crate::{middleware::NoOpMiddleware, state::StateStore};
 use crate::{middleware::RateLimitingMiddleware, nanos::Nanos};
 use std::num::NonZeroU32;
 use std::time::Duration;
@@ -15,18 +13,22 @@ use crate::Jitter;
 /// `NotUntil`'s methods indicate when a caller can expect the next positive
 /// rate-limiting result.
 #[derive(Debug, PartialEq)]
-pub struct NotUntil<'a, P: clock::Reference, MW: RateLimitingMiddleware> {
-    limiter: &'a Gcra<MW>,
-    tat: Nanos,
+pub struct NotUntil<P: clock::Reference> {
+    state: StateSnapshot,
     start: P,
 }
 
-impl<'a, P: clock::Reference, MW: RateLimitingMiddleware> NotUntil<'a, P, MW> {
+impl<'a, P: clock::Reference> NotUntil<P> {
+    /// Create a `NotUntil` as a negative rate-limiting result.
+    pub(crate) fn new(state: StateSnapshot, start: P) -> Self {
+        Self { state, start }
+    }
+
     /// Returns the earliest time at which a decision could be
     /// conforming (excluding conforming decisions made by the Decider
     /// that are made in the meantime).
     pub fn earliest_possible(&self) -> P {
-        let tat: Nanos = self.tat;
+        let tat: Nanos = self.state.tat;
         self.start + tat
     }
 
@@ -43,12 +45,12 @@ impl<'a, P: clock::Reference, MW: RateLimitingMiddleware> NotUntil<'a, P, MW> {
 
     /// Returns the rate limiting [`Quota`] used to reach the decision.
     pub fn quota(&self) -> Quota {
-        Quota::from_gcra_parameters(self.limiter.t, self.limiter.tau)
+        self.state.quota()
     }
 
     #[cfg(feature = "std")] // not used unless we use Instant-compatible clocks.
     pub(crate) fn earliest_possible_with_offset(&self, jitter: Jitter) -> P {
-        let tat = jitter + self.tat;
+        let tat = jitter + self.state.tat;
         self.start + tat
     }
 
@@ -59,38 +61,26 @@ impl<'a, P: clock::Reference, MW: RateLimitingMiddleware> NotUntil<'a, P, MW> {
     }
 }
 
-impl<'a, P: clock::Reference, MW: RateLimitingMiddleware> fmt::Display for NotUntil<'a, P, MW> {
+impl<'a, P: clock::Reference> fmt::Display for NotUntil<P> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "rate-limited until {:?}", self.start + self.tat)
+        write!(f, "rate-limited until {:?}", self.start + self.state.tat)
     }
 }
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct Gcra<MW = NoOpMiddleware>
-where
-    MW: RateLimitingMiddleware,
-{
+pub(crate) struct Gcra {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
 
     /// The "burst capacity" of the bucket.
     tau: Nanos,
-
-    middleware: PhantomData<MW>,
 }
 
-impl<MW> Gcra<MW>
-where
-    MW: RateLimitingMiddleware,
-{
+impl Gcra {
     pub(crate) fn new(quota: Quota) -> Self {
         let tau: Nanos = (quota.replenish_1_per * quota.max_burst.get()).into();
         let t: Nanos = quota.replenish_1_per.into();
-        Gcra {
-            tau,
-            t,
-            middleware: PhantomData,
-        }
+        Gcra { tau, t }
     }
 
     /// Computes and returns a new ratelimiter state if none exists yet.
@@ -99,13 +89,18 @@ where
     }
 
     /// Tests a single cell against the rate limiter state and updates it at the given key.
-    pub(crate) fn test_and_update<K, P: clock::Reference>(
+    pub(crate) fn test_and_update<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
         &self,
         start: P,
         key: &K,
-        state: &impl StateStore<Key = K>,
+        state: &S,
         t0: P,
-    ) -> Result<MW::PositiveOutcome, NotUntil<P, MW>> {
+    ) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
         let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
@@ -113,17 +108,11 @@ where
             let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = tat.saturating_sub(tau);
             if t0 < earliest_time {
-                let nope = NotUntil {
-                    limiter: self,
-                    tat: earliest_time,
-                    start,
-                };
-                MW::disallow(key, StateSnapshot::new(self.t, self.tau, None), &nope);
-                Err(nope)
+                Err(MW::disallow(key, (self, earliest_time), start))
             } else {
                 let next = cmp::max(tat, t0) + t;
                 Ok((
-                    MW::allow(key, StateSnapshot::new(self.t, self.tau, Some(next))),
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, next)),
                     next,
                 ))
             }
@@ -131,14 +120,19 @@ where
     }
 
     /// Tests whether all `n` cells could be accommodated and updates the rate limiter state, if so.
-    pub(crate) fn test_n_all_and_update<K, P: clock::Reference>(
+    pub(crate) fn test_n_all_and_update<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
         &self,
         start: P,
         key: &K,
         n: NonZeroU32,
-        state: &impl StateStore<Key = K>,
+        state: &S,
         t0: P,
-    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<NotUntil<P, MW>>> {
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
         let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
@@ -155,38 +149,28 @@ where
             let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = (tat + additional_weight).saturating_sub(tau);
             if t0 < earliest_time {
-                let nope = NotUntil {
-                    limiter: self,
-                    tat: earliest_time,
-                    start,
-                };
-                MW::disallow(key, StateSnapshot::new(self.t, self.tau, None), &nope);
-                Err(NegativeMultiDecision::BatchNonConforming(n.get(), nope))
+                Err(NegativeMultiDecision::BatchNonConforming(
+                    n.get(),
+                    MW::disallow(key, (self, earliest_time), start),
+                ))
             } else {
                 let next = cmp::max(tat, t0) + t + additional_weight;
-                Ok((
-                    MW::allow(key, StateSnapshot::new(self.t, self.tau, Some(next))),
-                    next,
-                ))
+                Ok((MW::allow(key, (self, next)), next))
             }
         })
     }
 }
 
-impl<MW: RateLimitingMiddleware> Gcra<MW> {
-    pub(crate) fn with_middleware<MW2: RateLimitingMiddleware>(self) -> Gcra<MW2> {
-        Gcra {
-            t: self.t,
-            tau: self.tau,
-            middleware: PhantomData,
-        }
+impl Into<StateSnapshot> for (&Gcra, Nanos) {
+    fn into(self) -> StateSnapshot {
+        StateSnapshot::new(self.0.t, self.0.tau, self.1)
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{middleware::NoOpMiddleware, Quota, RateLimiter};
+    use crate::{Quota, RateLimiter};
     use clock::FakeRelativeClock;
     use nonzero_ext::nonzero;
     use std::num::NonZeroU32;
@@ -196,8 +180,8 @@ mod test {
     /// Exercise derives and convenience impls on Gcra to make coverage happy
     #[test]
     fn gcra_derives() {
-        let g = Gcra::<NoOpMiddleware>::new(Quota::per_second(nonzero!(1u32)));
-        let g2 = Gcra::<NoOpMiddleware>::new(Quota::per_second(nonzero!(2u32)));
+        let g = Gcra::new(Quota::per_second(nonzero!(1u32)));
+        let g2 = Gcra::new(Quota::per_second(nonzero!(2u32)));
         assert_eq!(g, g);
         assert_ne!(g, g2);
         assert!(format!("{:?}", g).len() > 0);
@@ -233,7 +217,7 @@ mod test {
     fn roundtrips_quota() {
         proptest!(ProptestConfig::default(), |(per_second: Count, burst: Count)| {
             let quota = Quota::per_second(per_second.0).allow_burst(burst.0);
-            let gcra: Gcra<NoOpMiddleware> = Gcra::new(quota);
+            let gcra = Gcra::new(quota);
             let back = Quota::from_gcra_parameters(gcra.t, gcra.tau);
             assert_eq!(quota, back);
         })

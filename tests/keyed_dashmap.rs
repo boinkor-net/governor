@@ -1,10 +1,10 @@
 #![cfg(all(feature = "std", feature = "dashmap"))]
 
-use governor::state::keyed::DashMapStateStore;
 use governor::{
     clock::{Clock, FakeRelativeClock},
     Quota, RateLimiter,
 };
+use governor::{middleware::NoOpMiddleware, state::keyed::DashMapStateStore};
 use nonzero_ext::nonzero;
 use std::hash::Hash;
 use std::time::Duration;
@@ -48,7 +48,12 @@ fn rejects_too_many() {
 
 fn retained_keys<T: Clone + Hash + Eq + Copy + Ord>(
     keys: &[T],
-    limiter: RateLimiter<T, DashMapStateStore<T>, FakeRelativeClock>,
+    limiter: RateLimiter<
+        T,
+        DashMapStateStore<T>,
+        FakeRelativeClock,
+        NoOpMiddleware<<FakeRelativeClock as Clock>::Instant>,
+    >,
 ) -> Vec<T> {
     let state = limiter.into_state_store();
     let mut keys: Vec<T> = keys

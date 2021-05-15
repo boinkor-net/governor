@@ -1,7 +1,8 @@
 use std::prelude::v1::*;
 
 use crate::{
-    clock, middleware::RateLimitingMiddleware, state::keyed::KeyedStateStore, Jitter, RateLimiter,
+    clock, middleware::RateLimitingMiddleware, state::keyed::KeyedStateStore, Jitter, NotUntil,
+    RateLimiter,
 };
 use futures_timer::Delay;
 use std::hash::Hash;
@@ -13,7 +14,7 @@ where
     K: Hash + Eq + Clone,
     S: KeyedStateStore<K>,
     C: clock::ReasonablyRealtime,
-    MW: RateLimitingMiddleware,
+    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///

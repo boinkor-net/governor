@@ -1,3 +1,5 @@
+use core::fmt;
+
 use governor::{
     clock::{self, FakeRelativeClock},
     middleware::{RateLimitingMiddleware, StateInformationMiddleware, StateSnapshot},
@@ -8,20 +10,33 @@ use nonzero_ext::nonzero;
 #[derive(Debug, PartialEq)]
 struct MyMW {}
 
-impl RateLimitingMiddleware for MyMW {
+#[derive(Debug, PartialEq)]
+struct NotAllowed;
+
+impl fmt::Display for NotAllowed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Not allowed yet")
+    }
+}
+
+impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for MyMW {
     type PositiveOutcome = u16;
 
-    fn allow<K>(_key: &K, _state: StateSnapshot) -> Self::PositiveOutcome {
+    fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
         666
     }
 
-    fn disallow<K, P: clock::Reference>(
+    type NegativeOutcome = NotAllowed;
+
+    fn disallow<K>(
         _key: &K,
-        _state: StateSnapshot,
-        _not_until: &governor::NotUntil<P, Self>,
-    ) where
+        _limiter: impl Into<StateSnapshot>,
+        _start_time: <FakeRelativeClock as clock::Clock>::Instant,
+    ) -> Self::NegativeOutcome
+    where
         Self: Sized,
     {
+        NotAllowed
     }
 }
 
@@ -39,22 +54,22 @@ fn state_information() {
     let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), &clock)
         .with_middleware::<StateInformationMiddleware>();
     assert_eq!(
-        Ok(Some(3)),
+        Ok(3),
         lim.check()
             .map(|outcome| outcome.remaining_burst_capacity())
     );
     assert_eq!(
-        Ok(Some(2)),
+        Ok(2),
         lim.check()
             .map(|outcome| outcome.remaining_burst_capacity())
     );
     assert_eq!(
-        Ok(Some(1)),
+        Ok(1),
         lim.check()
             .map(|outcome| outcome.remaining_burst_capacity())
     );
     assert_eq!(
-        Ok(Some(0)),
+        Ok(0),
         lim.check()
             .map(|outcome| outcome.remaining_burst_capacity())
     );

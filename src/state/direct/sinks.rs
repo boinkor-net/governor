@@ -2,8 +2,9 @@ use std::prelude::v1::*;
 
 use crate::{
     clock,
+    middleware::RateLimitingMiddleware,
     state::{DirectStateStore, NotKeyed},
-    Jitter, RateLimiter,
+    Jitter, NotUntil, RateLimiter,
 };
 use futures::task::{Context, Poll};
 use futures::{Future, Sink, Stream};
@@ -17,30 +18,42 @@ where
     S: Sink<Item>,
 {
     /// Limits the rate at which items can be put into the current sink.
-    fn ratelimit_sink<D: DirectStateStore, C: clock::ReasonablyRealtime>(
+    fn ratelimit_sink<
+        D: DirectStateStore,
+        C: clock::ReasonablyRealtime,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    >(
         self,
-        limiter: &'_ RateLimiter<NotKeyed, D, C>,
-    ) -> RatelimitedSink<'_, Item, S, D, C>
+        limiter: &'_ RateLimiter<NotKeyed, D, C, MW>,
+    ) -> RatelimitedSink<'_, Item, S, D, C, MW>
     where
         Self: Sized;
 
     /// Limits the rate at which items can be put into the current sink, with a randomized wait
     /// period.
     #[cfg(feature = "jitter")]
-    fn ratelimit_sink_with_jitter<D: DirectStateStore, C: clock::ReasonablyRealtime>(
+    fn ratelimit_sink_with_jitter<
+        D: DirectStateStore,
+        C: clock::ReasonablyRealtime,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    >(
         self,
-        limiter: &'_ RateLimiter<NotKeyed, D, C>,
+        limiter: &'_ RateLimiter<NotKeyed, D, C, MW>,
         jitter: Jitter,
-    ) -> RatelimitedSink<'_, Item, S, D, C>
+    ) -> RatelimitedSink<'_, Item, S, D, C, MW>
     where
         Self: Sized;
 }
 
 impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
-    fn ratelimit_sink<D: DirectStateStore, C: clock::ReasonablyRealtime>(
+    fn ratelimit_sink<
+        D: DirectStateStore,
+        C: clock::ReasonablyRealtime,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    >(
         self,
-        limiter: &RateLimiter<NotKeyed, D, C>,
-    ) -> RatelimitedSink<Item, S, D, C>
+        limiter: &RateLimiter<NotKeyed, D, C, MW>,
+    ) -> RatelimitedSink<Item, S, D, C, MW>
     where
         Self: Sized,
     {
@@ -48,11 +61,15 @@ impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
     }
 
     #[cfg(feature = "jitter")]
-    fn ratelimit_sink_with_jitter<D: DirectStateStore, C: clock::ReasonablyRealtime>(
+    fn ratelimit_sink_with_jitter<
+        D: DirectStateStore,
+        C: clock::ReasonablyRealtime,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    >(
         self,
-        limiter: &RateLimiter<NotKeyed, D, C>,
+        limiter: &RateLimiter<NotKeyed, D, C, MW>,
         jitter: Jitter,
-    ) -> RatelimitedSink<Item, S, D, C>
+    ) -> RatelimitedSink<Item, S, D, C, MW>
     where
         Self: Sized,
     {
@@ -75,20 +92,27 @@ pub struct RatelimitedSink<
     S: Sink<Item>,
     D: DirectStateStore,
     C: clock::ReasonablyRealtime,
+    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
 > {
     inner: S,
     state: State,
-    limiter: &'a RateLimiter<NotKeyed, D, C>,
+    limiter: &'a RateLimiter<NotKeyed, D, C, MW>,
     delay: Delay,
     jitter: Jitter,
     phantom: PhantomData<Item>,
 }
 
 /// Conversion methods for the sink combinator.
-impl<'a, Item, S: Sink<Item>, D: DirectStateStore, C: clock::ReasonablyRealtime>
-    RatelimitedSink<'a, Item, S, D, C>
+impl<
+        'a,
+        Item,
+        S: Sink<Item>,
+        D: DirectStateStore,
+        C: clock::ReasonablyRealtime,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    > RatelimitedSink<'a, Item, S, D, C, MW>
 {
-    fn new(inner: S, limiter: &'a RateLimiter<NotKeyed, D, C>, jitter: Jitter) -> Self {
+    fn new(inner: S, limiter: &'a RateLimiter<NotKeyed, D, C, MW>, jitter: Jitter) -> Self {
         RatelimitedSink {
             inner,
             limiter,
@@ -127,8 +151,14 @@ impl<'a, Item, S: Sink<Item>, D: DirectStateStore, C: clock::ReasonablyRealtime>
     }
 }
 
-impl<'a, Item, S: Sink<Item>, D: DirectStateStore, C: clock::ReasonablyRealtime> Sink<Item>
-    for RatelimitedSink<'a, Item, S, D, C>
+impl<
+        'a,
+        Item,
+        S: Sink<Item>,
+        D: DirectStateStore,
+        C: clock::ReasonablyRealtime,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    > Sink<Item> for RatelimitedSink<'a, Item, S, D, C, MW>
 where
     S: Unpin,
     Item: Unpin,
@@ -199,8 +229,14 @@ where
 }
 
 /// Pass-through implementation for [`futures::Stream`] if the Sink also implements it.
-impl<'a, Item, S: Stream + Sink<Item>, D: DirectStateStore, C: clock::ReasonablyRealtime> Stream
-    for RatelimitedSink<'a, Item, S, D, C>
+impl<
+        'a,
+        Item,
+        S: Stream + Sink<Item>,
+        D: DirectStateStore,
+        C: clock::ReasonablyRealtime,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    > Stream for RatelimitedSink<'a, Item, S, D, C, MW>
 where
     S::Item: Unpin,
     S: Unpin,

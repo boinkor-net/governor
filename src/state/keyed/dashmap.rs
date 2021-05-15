@@ -30,7 +30,7 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed
-impl<K, C> RateLimiter<K, DashMapStateStore<K>, C, NoOpMiddleware>
+impl<K, C> RateLimiter<K, DashMapStateStore<K>, C, NoOpMiddleware<C::Instant>>
 where
     K: Hash + Eq + Clone,
     C: clock::Clock,

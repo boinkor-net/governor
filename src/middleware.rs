@@ -10,6 +10,7 @@
 // TODO: More docs.
 //
 use core::fmt;
+use std::marker::PhantomData;
 
 use crate::{clock, nanos::Nanos, NotUntil, Quota};
 
@@ -23,12 +24,12 @@ pub struct StateSnapshot {
     tau: Nanos,
 
     /// The next time a cell is expected to arrive
-    tat: Option<Nanos>,
+    pub(crate) tat: Nanos,
 }
 
 impl StateSnapshot {
     #[inline]
-    pub(crate) fn new(t: Nanos, tau: Nanos, tat: Option<Nanos>) -> Self {
+    pub(crate) fn new(t: Nanos, tau: Nanos, tat: Nanos) -> Self {
         Self { t, tau, tat }
     }
 
@@ -40,18 +41,17 @@ impl StateSnapshot {
     /// Returns the number of cells that can be let through in
     /// addition to a (possible) positive outcome.
     ///
-    /// Returns None if the rate limiting decision was not positive.
-    pub fn remaining_burst_capacity(&self) -> Option<u32> {
-        self.tat.map(|tat| {
-            // at this point we know that we're `tat` nanos after the
-            // earliest arrival time, and so are using up some "burst
-            // capacity".
-            //
-            // As one cell has already been used by the positive
-            // decision, we're relying on the "round down" behavior of
-            // unsigned integer division.
-            self.quota().burst_size().get() + 1 - (tat / self.t) as u32
-        })
+    /// If this state snapshot is based on a negative rate limiting
+    /// outcome, this method returns 0.
+    pub fn remaining_burst_capacity(&self) -> u32 {
+        // at this point we know that we're `tat` nanos after the
+        // earliest arrival time, and so are using up some "burst
+        // capacity".
+        //
+        // As one cell has already been used by the positive
+        // decision, we're relying on the "round down" behavior of
+        // unsigned integer division.
+        (self.quota().burst_size().get() + 1).saturating_sub((self.tat / self.t) as u32)
     }
 }
 
@@ -62,7 +62,7 @@ impl StateSnapshot {
 /// in any way: A rate-limiting decision will always be `Ok(...)` or
 /// `Err(NotUntil{...})`, but middleware can be set up to alter the
 /// return value in the Ok() case.
-pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
+pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug + PartialEq {
     /// The type that's returned by the rate limiter when a cell is allowed.
     ///
     /// By default, rate limiters return `Ok(())`, which does not give
@@ -72,6 +72,13 @@ pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
     /// information downstream about, e.g. how much burst capacity is
     /// remaining.
     type PositiveOutcome: Sized;
+
+    /// The type that's returned by the rate limiter when a cell is *not* allowed.
+    ///
+    /// By default, rate limiters return `Err(NotUntil{...})`, which
+    /// allows interrogating the minimum amount of time to wait until
+    /// a client can expect to have a cell allowed again.
+    type NegativeOutcome: Sized + fmt::Display;
 
     /// Called when a positive rate-limiting decision is made.
     ///
@@ -85,7 +92,7 @@ pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
     /// was one cell left in the burst capacity before the decision
     /// was reached, the [`StateSnapshot::remaining_burst_capacity`]
     /// method will return 0.
-    fn allow<K>(key: &K, state: StateSnapshot) -> Self::PositiveOutcome;
+    fn allow<K>(key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome;
 
     /// Called when a negative rate-limiting decision is made (the
     /// "not allowed but OK" case).
@@ -93,34 +100,43 @@ pub trait RateLimitingMiddleware: fmt::Debug + PartialEq {
     /// This method does not affect anything the rate limiter returns
     /// to user code, but can be used to track counts for
     /// rate-limiting outcomes on a key-by-key basis.
-    fn disallow<K, P>(key: &K, state: StateSnapshot, not_until: &NotUntil<P, Self>)
+    fn disallow<K>(
+        key: &K,
+        limiter: impl Into<StateSnapshot>,
+        start_time: P,
+    ) -> Self::NegativeOutcome
     where
-        Self: Sized,
-        P: clock::Reference;
+        Self: Sized;
 }
 
 #[derive(PartialEq, Debug)]
 /// A middleware that does nothing and returns `()` in the positive outcome.
-pub struct NoOpMiddleware {}
+pub struct NoOpMiddleware<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
+    phantom: PhantomData<P>,
+}
 
-impl RateLimitingMiddleware for NoOpMiddleware {
+impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
     /// By default, rate limiters return nothing other than an
     /// indicator that the element should be let through.
     type PositiveOutcome = ();
 
-    #[inline]
-    /// Returns `()` and has no side-effects.
-    fn allow<K>(_key: &K, _state: StateSnapshot) -> Self::PositiveOutcome {}
+    type NegativeOutcome = NotUntil<P>;
 
     #[inline]
-    /// Does nothing.
-    fn disallow<K, P: clock::Reference>(
+    /// Returns `()` and has no side-effects.
+    fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
+
+    #[inline]
+    /// Returns the error indicating what
+    fn disallow<K>(
         _key: &K,
-        _state: StateSnapshot,
-        _not_until: &NotUntil<P, Self>,
-    ) where
+        state: impl Into<StateSnapshot>,
+        start_time: P,
+    ) -> Self::NegativeOutcome
+    where
         Self: Sized,
     {
+        NotUntil::new(state.into(), start_time)
     }
 }
 
@@ -129,18 +145,24 @@ impl RateLimitingMiddleware for NoOpMiddleware {
 #[derive(PartialEq, Debug)]
 pub struct StateInformationMiddleware {}
 
-impl RateLimitingMiddleware for StateInformationMiddleware {
+impl<P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddleware {
     /// The state snapshot returned from the limiter.
     type PositiveOutcome = StateSnapshot;
 
-    fn allow<K>(_key: &K, state: StateSnapshot) -> Self::PositiveOutcome {
-        state
+    type NegativeOutcome = NotUntil<P>;
+
+    fn allow<K>(_key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
+        state.into()
     }
 
-    fn disallow<K, P>(_key: &K, _state: StateSnapshot, _not_until: &NotUntil<P, Self>)
+    fn disallow<K>(
+        _key: &K,
+        state: impl Into<StateSnapshot>,
+        start_time: P,
+    ) -> Self::NegativeOutcome
     where
         Self: Sized,
-        P: clock::Reference,
     {
+        NotUntil::new(state.into(), start_time)
     }
 }

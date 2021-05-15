@@ -1,6 +1,6 @@
 //! State stores for rate limiters
 
-use std::prelude::v1::*;
+use std::{marker::PhantomData, prelude::v1::*};
 
 pub mod direct;
 mod in_memory;
@@ -58,19 +58,20 @@ pub struct RateLimiter<K, S, C, MW = NoOpMiddleware>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
-    MW: RateLimitingMiddleware,
+    MW: RateLimitingMiddleware<C::Instant>,
 {
     state: S,
-    gcra: Gcra<MW>,
+    gcra: Gcra,
     clock: C,
     start: C::Instant,
+    middleware: PhantomData<MW>,
 }
 
 impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
-    MW: RateLimitingMiddleware,
+    MW: RateLimitingMiddleware<C::Instant>,
 {
     /// Creates a new rate limiter from components.
     ///
@@ -85,6 +86,7 @@ where
             clock,
             gcra,
             start,
+            middleware: PhantomData,
         }
     }
 
@@ -100,13 +102,16 @@ impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
-    MW: RateLimitingMiddleware,
+    MW: RateLimitingMiddleware<C::Instant>,
 {
     /// Convert the given rate limiter into one that uses a different middleware.
-    pub fn with_middleware<Outer: RateLimitingMiddleware>(self) -> RateLimiter<K, S, C, Outer> {
+    pub fn with_middleware<Outer: RateLimitingMiddleware<C::Instant>>(
+        self,
+    ) -> RateLimiter<K, S, C, Outer> {
         RateLimiter {
+            middleware: PhantomData,
             state: self.state,
-            gcra: self.gcra.with_middleware(),
+            gcra: self.gcra,
             clock: self.clock,
             start: self.start,
         }
@@ -118,7 +123,7 @@ impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::ReasonablyRealtime,
-    MW: RateLimitingMiddleware,
+    MW: RateLimitingMiddleware<C::Instant>,
 {
     pub(crate) fn reference_reading(&self) -> C::Instant {
         self.clock.reference_point()
