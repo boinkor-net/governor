@@ -80,7 +80,7 @@ impl Gcra {
     pub(crate) fn new(quota: Quota) -> Self {
         let tau: Nanos = (quota.replenish_1_per * quota.max_burst.get()).into();
         let t: Nanos = quota.replenish_1_per.into();
-        Gcra { tau, t }
+        Gcra { t, tau }
     }
 
     /// Computes and returns a new ratelimiter state if none exists yet.
@@ -161,9 +161,9 @@ impl Gcra {
     }
 }
 
-impl Into<StateSnapshot> for (&Gcra, Nanos) {
-    fn into(self) -> StateSnapshot {
-        StateSnapshot::new(self.0.t, self.0.tau, self.1)
+impl From<(&Gcra, Nanos)> for StateSnapshot {
+    fn from(pair: (&Gcra, Nanos)) -> Self {
+        StateSnapshot::new(pair.0.t, pair.0.tau, pair.1)
     }
 }
 
