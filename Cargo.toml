@@ -22,8 +22,11 @@ maintenance = { status = "actively-developed" }
 name = "governor_criterion_benches"
 harness = false
 
+[lib]
+bench = false
+
 [dev-dependencies]
-criterion = "0.3.2"
+criterion = {version = "0.3.2", features = ["html_reports"]}
 tynm = "0.1.4"
 crossbeam = "0.8.0"
 libc = "0.2.70"
