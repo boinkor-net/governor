@@ -20,6 +20,7 @@ pub struct NotUntil<P: clock::Reference> {
 
 impl<'a, P: clock::Reference> NotUntil<P> {
     /// Create a `NotUntil` as a negative rate-limiting result.
+    #[inline]
     pub(crate) fn new(state: StateSnapshot, start: P) -> Self {
         Self { state, start }
     }
@@ -27,6 +28,7 @@ impl<'a, P: clock::Reference> NotUntil<P> {
     /// Returns the earliest time at which a decision could be
     /// conforming (excluding conforming decisions made by the Decider
     /// that are made in the meantime).
+    #[inline]
     pub fn earliest_possible(&self) -> P {
         let tat: Nanos = self.state.tat;
         self.start + tat
@@ -38,23 +40,27 @@ impl<'a, P: clock::Reference> NotUntil<P> {
     ///
     /// If the time of the next expected positive result is in the past,
     /// `wait_time_from` returns a zero `Duration`.
+    #[inline]
     pub fn wait_time_from(&self, from: P) -> Duration {
         let earliest = self.earliest_possible();
         earliest.duration_since(earliest.min(from)).into()
     }
 
     /// Returns the rate limiting [`Quota`] used to reach the decision.
+    #[inline]
     pub fn quota(&self) -> Quota {
         self.state.quota()
     }
 
     #[cfg(feature = "std")] // not used unless we use Instant-compatible clocks.
+    #[inline]
     pub(crate) fn earliest_possible_with_offset(&self, jitter: Jitter) -> P {
         let tat = jitter + self.state.tat;
         self.start + tat
     }
 
     #[cfg(feature = "std")] // not used unless we use Instant-compatible clocks.
+    #[inline]
     pub(crate) fn wait_time_with_offset(&self, from: P, jitter: Jitter) -> Duration {
         let earliest = self.earliest_possible_with_offset(jitter);
         earliest.duration_since(earliest.min(from)).into()
@@ -162,6 +168,7 @@ impl Gcra {
 }
 
 impl From<(&Gcra, Nanos)> for StateSnapshot {
+    #[inline]
     fn from(pair: (&Gcra, Nanos)) -> Self {
         StateSnapshot::new(pair.0.t, pair.0.tau, pair.1)
     }
