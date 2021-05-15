@@ -204,16 +204,21 @@ mod test {
         use nonzero_ext::nonzero;
 
         let clock = FakeRelativeClock::default();
-        let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(1u32)), &clock);
+        let quota = Quota::per_second(nonzero!(1u32));
+        let lb = RateLimiter::direct_with_clock(quota, &clock);
         assert!(lb.check().is_ok());
-        if let Err(nu) = lb.check() {
-            assert_eq!(nu, nu);
-            assert!(format!("{:?}", nu).len() > 0);
-            assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
-        }
+        assert!(lb
+            .check()
+            .map_err(|nu| {
+                assert_eq!(nu, nu);
+                assert!(format!("{:?}", nu).len() > 0);
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug)]
     struct Count(NonZeroU32);
     impl Arbitrary for Count {
         type Parameters = ();
@@ -224,6 +229,15 @@ mod test {
         }
 
         type Strategy = BoxedStrategy<Count>;
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn cover_count_derives() {
+        assert_eq!(
+            format!("{:?}", Count(nonzero_ext::nonzero!(1_u32))),
+            "Count(1)"
+        );
     }
 
     #[test]
