@@ -132,7 +132,7 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// By default, rate limiters return `Err(NotUntil{...})`, which
     /// allows interrogating the minimum amount of time to wait until
     /// a client can expect to have a cell allowed again.
-    type NegativeOutcome: Sized + fmt::Display;
+    type NegativeOutcome: Sized;
 
     /// Called when a positive rate-limiting decision is made.
     ///

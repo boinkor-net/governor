@@ -1,5 +1,3 @@
-use core::fmt;
-
 use governor::{
     clock::{self, FakeRelativeClock},
     middleware::{RateLimitingMiddleware, StateInformationMiddleware, StateSnapshot},
@@ -10,15 +8,6 @@ use nonzero_ext::nonzero;
 #[derive(Debug)]
 struct MyMW;
 
-#[derive(Debug, PartialEq)]
-struct NotAllowed;
-
-impl fmt::Display for NotAllowed {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Not allowed yet")
-    }
-}
-
 impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for MyMW {
     type PositiveOutcome = u16;
 
@@ -26,7 +15,7 @@ impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for My
         666
     }
 
-    type NegativeOutcome = NotAllowed;
+    type NegativeOutcome = ();
 
     fn disallow<K>(
         _key: &K,
@@ -36,7 +25,7 @@ impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for My
     where
         Self: Sized,
     {
-        NotAllowed
+        ()
     }
 }
 
@@ -46,7 +35,7 @@ fn changes_allowed_type() {
     let lim = RateLimiter::direct_with_clock(Quota::per_hour(nonzero!(1_u32)), &clock)
         .with_middleware::<MyMW>();
     assert_eq!(Ok(666), lim.check());
-    assert_eq!(Err(NotAllowed), lim.check());
+    assert_eq!(Err(()), lim.check());
 }
 
 #[test]
@@ -80,7 +69,5 @@ fn state_information() {
 #[test]
 #[cfg(feature = "std")]
 fn mymw_derives() {
-    assert_eq!(NotAllowed, NotAllowed);
-    assert_eq!(format!("{}", NotAllowed), "Not allowed yet");
     assert_eq!(format!("{:?}", MyMW), "MyMW");
 }
