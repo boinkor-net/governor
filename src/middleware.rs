@@ -32,7 +32,7 @@
 //!
 //! Middlewares are attached to the
 //! [`RateLimiter`][crate::RateLimiter] at construction time using
-//! [`RateLimiter.with_middleware`](../struct.RateLimiter.html#method.with_middleware):
+//! [`RateLimiter::with_middleware`][crate::RateLimiter::with_middleware]:
 //!
 //! ```rust
 //! # #[cfg(feature = "std")]
@@ -109,13 +109,59 @@ impl StateSnapshot {
     }
 }
 
-/// Implements additional behavior when rate-limiting decisions are made.
+/// Defines the behavior and return values of rate limiting decisions.
 ///
-/// Besides altering the return value in the positive outcome,
-/// middleware is not able to affect the decisions of the rate-limiter
-/// in any way: A rate-limiting decision will always be `Ok(...)` or
-/// `Err(NotUntil{...})`, but middleware can be set up to alter the
-/// return value in the Ok() case.
+/// While the rate limiter defines whether a decision is positive, the
+/// middleware defines what additional values (other than `Ok` or `Err`)
+/// are returned from the [`RateLimiter`][crate::RateLimiter]'s check methods.
+///
+/// The default middleware in this crate is [`NoOpMiddleware`] (which does
+/// nothing in the positive case and returns [`NotUntil`] in the
+/// negative) - so it does only the smallest amount of work it needs to do
+/// in order to be useful to users.
+///
+/// Other middleware gets to adjust these trade-offs: The pre-made
+/// [`StateInformationMiddleware`] returns quota and burst capacity
+/// information, while custom middleware could return a set of HTTP
+/// headers or increment counters per each rate limiter key's decision.
+///
+/// # Defining your own middleware
+///
+/// Here's an example of a rate limiting middleware that does no
+/// computations at all on positive and negative outcomes: All the
+/// information that a caller will receive is that a request should be
+/// allowed or disallowed. This can allow for faster negative outcome
+/// handling, and is useful if you don't need to tell users when they
+/// can try again (or anything at all about their rate limiting
+/// status).
+///
+/// ```rust
+/// # use std::num::NonZeroU32;
+/// # use nonzero_ext::*;
+/// use governor::{middleware::{RateLimitingMiddleware, StateSnapshot},
+///                Quota, RateLimiter, clock::Reference};
+/// # #[cfg(feature = "std")]
+/// # fn main () {
+/// #[derive(Debug)]
+/// struct NullMiddleware;
+///
+/// impl<P: Reference> RateLimitingMiddleware<P> for NullMiddleware {
+///     type PositiveOutcome = ();
+///     type NegativeOutcome = ();
+///
+///     fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
+///     fn disallow<K>(_: &K, _: impl Into<StateSnapshot>, _: P) -> Self::NegativeOutcome {}
+/// }
+///
+/// let lim = RateLimiter::direct(Quota::per_hour(nonzero!(1_u32)))
+///     .with_middleware::<NullMiddleware>();
+///
+/// assert_eq!(lim.check(), Ok(()));
+/// assert_eq!(lim.check(), Err(()));
+/// # }
+/// # #[cfg(not(feature = "std"))]
+/// # fn main() {}
+/// ```
 pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// The type that's returned by the rate limiter when a cell is allowed.
     ///
@@ -129,7 +175,7 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
 
     /// The type that's returned by the rate limiter when a cell is *not* allowed.
     ///
-    /// By default, rate limiters return `Err(NotUntil{...})`, which
+    /// By default, rate limiters return `Err(NotUntil)`, which
     /// allows interrogating the minimum amount of time to wait until
     /// a client can expect to have a cell allowed again.
     type NegativeOutcome: Sized;
@@ -151,9 +197,9 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// Called when a negative rate-limiting decision is made (the
     /// "not allowed but OK" case).
     ///
-    /// This method does not affect anything the rate limiter returns
-    /// to user code, but can be used to track counts for
-    /// rate-limiting outcomes on a key-by-key basis.
+    /// This method returns whatever value is returned inside the
+    /// `Err` variant a [`RateLimiter`][crate::RateLimiter]'s check
+    /// method returns.
     fn disallow<K>(
         key: &K,
         limiter: impl Into<StateSnapshot>,
