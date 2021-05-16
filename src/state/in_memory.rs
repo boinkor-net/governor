@@ -111,16 +111,22 @@ mod test {
     /// Checks that many threads running simultaneously will collide,
     /// but result in the correct number being recorded in the state.
     fn stresstest_collisions() {
+        use all_asserts::assert_gt;
+
         const THREADS: u64 = 8;
         const MAX_TRIES: u64 = 20_000_000;
+        let (mut value, mut hits) = (0, 0);
         for tries in (0..MAX_TRIES).step_by((MAX_TRIES / 100) as usize) {
-            let (value, hits) = try_triggering_collisions(THREADS, tries);
+            let attempt = try_triggering_collisions(THREADS, tries);
+            value = attempt.0;
+            hits = attempt.1;
             assert_eq!(value, tries * THREADS);
             if hits > value {
-                return;
+                break;
             }
             println!("Didn't trigger a collision in {} iterations", tries);
         }
+        assert_gt!(hits, value);
     }
 
     #[test]

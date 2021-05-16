@@ -3,6 +3,7 @@
 // This test uses procinfo, so can only be run on Linux.
 extern crate libc;
 
+use all_asserts::*;
 use governor::{Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
@@ -24,13 +25,7 @@ struct LeakCheck {
 impl Drop for LeakCheck {
     fn drop(&mut self) {
         let usage_after = resident_memory_size();
-        assert!(
-            usage_after <= self.usage_before + LEAK_TOLERANCE,
-            "Plausible memory leak!\nAfter {} iterations, usage before: {}, usage after: {}",
-            self.n_iter,
-            self.usage_before,
-            usage_after
-        );
+        assert_le!(usage_after, self.usage_before + LEAK_TOLERANCE);
     }
 }
 
