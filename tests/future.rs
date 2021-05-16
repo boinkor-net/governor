@@ -1,8 +1,8 @@
 #![cfg(feature = "std")]
 
+use all_asserts::*;
 use futures::executor::block_on;
 use governor::{Quota, RateLimiter};
-use more_asserts::*;
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::thread;
@@ -98,12 +98,7 @@ fn multiple() {
     // by now we've waited for, on average, 10ms; but sometimes the
     // test finishes early; let's assume it takes at least 8ms:
     let elapsed = i.elapsed();
-    assert_ge!(
-        elapsed,
-        Duration::from_millis(8),
-        "Expected to wait some time, but waited: {:?}",
-        elapsed
-    );
+    assert_ge!(elapsed, Duration::from_millis(8),);
 }
 
 #[test]
@@ -124,12 +119,7 @@ fn multiple_keyed() {
     // by now we've waited for, on average, 10ms; but sometimes the
     // test finishes early; let's assume it takes at least 8ms:
     let elapsed = i.elapsed();
-    assert_ge!(
-        elapsed,
-        Duration::from_millis(8),
-        "Expected to wait some time, but waited: {:?}",
-        elapsed
-    );
+    assert_ge!(elapsed, Duration::from_millis(8),);
 }
 
 #[test]

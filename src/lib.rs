@@ -41,6 +41,7 @@ pub mod clock;
 mod errors;
 mod gcra;
 mod jitter;
+pub mod middleware;
 mod nanos;
 mod quota;
 pub mod state;

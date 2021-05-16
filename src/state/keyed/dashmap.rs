@@ -3,9 +3,9 @@
 use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
-use crate::state::keyed::ShrinkableKeyedStateStore;
 use crate::state::{InMemoryState, StateStore};
 use crate::{clock, Quota, RateLimiter};
+use crate::{middleware::NoOpMiddleware, state::keyed::ShrinkableKeyedStateStore};
 use dashmap::DashMap;
 use std::hash::Hash;
 
@@ -30,7 +30,7 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed
-impl<K, C> RateLimiter<K, DashMapStateStore<K>, C>
+impl<K, C> RateLimiter<K, DashMapStateStore<K>, C, NoOpMiddleware<C::Instant>>
 where
     K: Hash + Eq + Clone,
     C: clock::Clock,

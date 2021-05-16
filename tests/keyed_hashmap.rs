@@ -1,8 +1,8 @@
-use governor::state::keyed::HashMapStateStore;
 use governor::{
     clock::{Clock, FakeRelativeClock},
     Quota, RateLimiter,
 };
+use governor::{middleware::NoOpMiddleware, state::keyed::HashMapStateStore};
 use nonzero_ext::nonzero;
 use std::hash::Hash;
 use std::time::Duration;
@@ -45,7 +45,12 @@ fn rejects_too_many() {
 }
 
 fn retained_keys<T: Clone + Hash + Eq + Copy + Ord>(
-    limiter: RateLimiter<T, HashMapStateStore<T>, FakeRelativeClock>,
+    limiter: RateLimiter<
+        T,
+        HashMapStateStore<T>,
+        FakeRelativeClock,
+        NoOpMiddleware<<FakeRelativeClock as Clock>::Instant>,
+    >,
 ) -> Vec<T> {
     let state = limiter.into_state_store();
     let map = state.lock();

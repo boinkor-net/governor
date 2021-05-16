@@ -14,8 +14,9 @@ use std::prelude::v1::*;
 use crate::state::StateStore;
 use crate::{
     clock::{self, Reference},
+    middleware::RateLimitingMiddleware,
     nanos::Nanos,
-    NegativeMultiDecision, NotUntil, Quota, RateLimiter,
+    NegativeMultiDecision, Quota, RateLimiter,
 };
 
 /// A trait for state stores with one rate limiting state per key.
@@ -77,19 +78,24 @@ where
 }
 
 /// # Keyed rate limiters - Manually checking cells
-impl<K, S, C> RateLimiter<K, S, C>
+impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: KeyedStateStore<K>,
     K: Hash,
     C: clock::Clock,
+    MW: RateLimitingMiddleware<C::Instant>,
 {
     /// Allow a single cell through the rate limiter for the given key.
     ///
     /// If the rate limit is reached, `check_key` returns information about the earliest
     /// time that a cell might be allowed through again under that key.
-    pub fn check_key(&self, key: &K) -> Result<(), NotUntil<C::Instant>> {
-        self.gcra
-            .test_and_update(self.start, key, &self.state, self.clock.now())
+    pub fn check_key(&self, key: &K) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        self.gcra.test_and_update::<K, C::Instant, S, MW>(
+            self.start,
+            key,
+            &self.state,
+            self.clock.now(),
+        )
     }
 
     /// Allow *only all* `n` cells through the rate limiter for the given key.
@@ -110,9 +116,14 @@ where
         &self,
         key: &K,
         n: NonZeroU32,
-    ) -> Result<(), NegativeMultiDecision<NotUntil<C::Instant>>> {
-        self.gcra
-            .test_n_all_and_update(self.start, key, n, &self.state, self.clock.now())
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
+        self.gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
+            self.start,
+            key,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
     }
 }
 
@@ -154,11 +165,12 @@ pub trait ShrinkableKeyedStateStore<K: Hash>: KeyedStateStore<K> {
 /// grows, while the number of active keys may stay smaller. To save on space, a keyed rate-limiter
 /// allows removing those keys that are "stale", i.e., whose values are no different from keys' that
 /// aren't present in the rate limiter state store.
-impl<K, S, C> RateLimiter<K, S, C>
+impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: ShrinkableKeyedStateStore<K>,
     K: Hash,
     C: clock::Clock,
+    MW: RateLimitingMiddleware<C::Instant>,
 {
     /// Retains all keys in the rate limiter that were used recently enough.
     ///

@@ -8,7 +8,7 @@ use proptest::prelude::prop::test_runner::FileFailurePersistence;
 use std::num::NonZeroU32;
 use std::time::Duration;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 struct Count(NonZeroU32);
 impl Arbitrary for Count {
     type Parameters = ();
@@ -27,6 +27,14 @@ fn test_config() -> ProptestConfig {
     //cfg.timeout = 20;
     cfg.verbose = 0; // 2 for extra verbosity;
     cfg
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn cover_count_derives() {
+    use nonzero_ext::nonzero;
+    let count = Count(nonzero!(1u32));
+    assert_eq!(format!("{:?}", count), "Count(1)");
 }
 
 #[test]

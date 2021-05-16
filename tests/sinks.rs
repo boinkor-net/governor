@@ -1,5 +1,6 @@
 #![cfg(feature = "std")]
 
+use all_asserts::*;
 use futures::executor::block_on;
 use futures::SinkExt;
 use governor::{prelude::*, Jitter, Quota, RateLimiter};
@@ -16,27 +17,13 @@ fn sink() {
     for _ in 0..10 {
         block_on(sink.send(())).unwrap();
     }
-    assert!(
-        i.elapsed() <= Duration::from_millis(100),
-        "elapsed: {:?}",
-        i.elapsed()
-    );
+    assert_lt!(i.elapsed(), Duration::from_millis(100));
 
     block_on(sink.send(())).unwrap();
-    assert!(
-        i.elapsed() > Duration::from_millis(100),
-        "elapsed: {:?}",
-        i.elapsed()
-    );
-    assert!(
-        i.elapsed() <= Duration::from_millis(200),
-        "elapsed: {:?}",
-        i.elapsed()
-    );
+    assert_range!((100..=200), i.elapsed().as_millis());
 
     block_on(sink.send(())).unwrap();
-    assert!(i.elapsed() > Duration::from_millis(200));
-    assert!(i.elapsed() <= Duration::from_millis(300));
+    assert_range!((200..=300), i.elapsed().as_millis());
 
     let result = sink.get_ref();
     assert_eq!(result.len(), 12);
@@ -65,27 +52,13 @@ fn sink_with_jitter() {
     for _ in 0..10 {
         block_on(sink.send(())).unwrap();
     }
-    assert!(
-        i.elapsed() <= Duration::from_millis(100),
-        "elapsed: {:?}",
-        i.elapsed()
-    );
+    assert_le!(i.elapsed(), Duration::from_millis(100),);
 
     block_on(sink.send(())).unwrap();
-    assert!(
-        i.elapsed() > Duration::from_millis(100),
-        "elapsed: {:?}",
-        i.elapsed()
-    );
-    assert!(
-        i.elapsed() <= Duration::from_millis(200),
-        "elapsed: {:?}",
-        i.elapsed()
-    );
+    assert_range!((100..=200), i.elapsed().as_millis());
 
     block_on(sink.send(())).unwrap();
-    assert!(i.elapsed() > Duration::from_millis(200));
-    assert!(i.elapsed() <= Duration::from_millis(300));
+    assert_range!((200..=300), i.elapsed().as_millis());
 
     let result = sink.into_inner();
     assert_eq!(result.len(), 12);

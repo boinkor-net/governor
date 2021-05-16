@@ -90,16 +90,19 @@ impl From<Nanos> for Duration {
 }
 
 impl Nanos {
+    #[inline]
     pub(crate) fn saturating_sub(self, rhs: Nanos) -> Nanos {
         Nanos(self.0.saturating_sub(rhs.0))
     }
 }
 
 impl clock::Reference for Nanos {
+    #[inline]
     fn duration_since(&self, earlier: Self) -> Nanos {
         (*self as Nanos).saturating_sub(earlier)
     }
 
+    #[inline]
     fn saturating_sub(&self, duration: Nanos) -> Self {
         (*self as Nanos).saturating_sub(duration)
     }

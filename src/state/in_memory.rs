@@ -21,9 +21,9 @@ use std::time::Duration;
 pub struct InMemoryState(AtomicU64);
 
 impl InMemoryState {
-    pub(crate) fn measure_and_replace_one<T, F, E>(&self, f: F) -> Result<T, E>
+    pub(crate) fn measure_and_replace_one<T, F, E>(&self, mut f: F) -> Result<T, E>
     where
-        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
+        F: FnMut(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         let mut prev = self.0.load(Ordering::Acquire);
         let mut decision = f(NonZeroU64::new(prev).map(|n| n.get().into()));
@@ -70,7 +70,65 @@ impl Debug for InMemoryState {
 
 #[cfg(test)]
 mod test {
+
     use super::*;
+
+    #[cfg(feature = "std")]
+    fn try_triggering_collisions(n_threads: u64, tries_per_thread: u64) -> (u64, u64) {
+        use std::sync::Arc;
+        use std::thread;
+
+        let mut state = Arc::new(InMemoryState(AtomicU64::new(0)));
+        let threads: Vec<thread::JoinHandle<_>> = (0..n_threads)
+            .map(|_| {
+                thread::spawn({
+                    let state = Arc::clone(&state);
+                    move || {
+                        let mut hits = 0;
+                        for _ in 0..tries_per_thread {
+                            assert!(state
+                                .measure_and_replace_one(|old| {
+                                    hits += 1;
+                                    Ok::<((), Nanos), ()>((
+                                        (),
+                                        Nanos::from(old.map(Nanos::as_u64).unwrap_or(0) + 1),
+                                    ))
+                                })
+                                .is_ok());
+                        }
+                        hits
+                    }
+                })
+            })
+            .collect();
+        let hits: u64 = threads.into_iter().map(|t| t.join().unwrap()).sum();
+        let value = Arc::get_mut(&mut state).unwrap().0.get_mut();
+        (*value, hits)
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    /// Checks that many threads running simultaneously will collide,
+    /// but result in the correct number being recorded in the state.
+    fn stresstest_collisions() {
+        use all_asserts::assert_gt;
+
+        const THREADS: u64 = 8;
+        const MAX_TRIES: u64 = 20_000_000;
+        let (mut value, mut hits) = (0, 0);
+        for tries in (0..MAX_TRIES).step_by((MAX_TRIES / 100) as usize) {
+            let attempt = try_triggering_collisions(THREADS, tries);
+            value = attempt.0;
+            hits = attempt.1;
+            assert_eq!(value, tries * THREADS);
+            if hits > value {
+                break;
+            }
+            println!("Didn't trigger a collision in {} iterations", tries);
+        }
+        assert_gt!(hits, value);
+    }
+
     #[test]
     fn in_memory_state_impls() {
         let state = InMemoryState(AtomicU64::new(0));

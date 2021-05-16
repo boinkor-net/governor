@@ -1,5 +1,3 @@
-use std::fmt;
-
 /// Gives additional information about the negative outcome of a batch
 /// cell decision.
 ///
@@ -14,7 +12,7 @@ use std::fmt;
 ///     limite parameters can never accomodate the number of cells
 ///     queried for.
 #[derive(Debug, PartialEq)]
-pub enum NegativeMultiDecision<E: fmt::Display> {
+pub enum NegativeMultiDecision<E> {
     /// A batch of cells (the first argument) is non-conforming and
     /// can not be let through at this time. The second argument gives
     /// information about when that batch of cells might be let
