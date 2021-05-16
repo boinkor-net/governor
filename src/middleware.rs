@@ -1,14 +1,68 @@
-//! Additional and customizable behavior for rate limiters.
+//! Additional, customizable behavior for rate limiters.
 //!
 //! Rate-limiting middleware follows the principle that basic
 //! rate-limiting should be very cheap, and unless users desire more
 //! behavior, they should not pay any extra price.
 //!
-//! However, those who wish to get additional features should find the
-//! means to do so. The middleware module attempts to make this
-//! possible.
-// TODO: More docs.
-//
+//! However, if you do desire more information about what the
+//! rate-limiter does (or the ability to install hooks in the
+//! decision-making process), you can. The [`RateLimitingMiddleware`]
+//! trait in this module allows you to customize:
+//!
+//! * Any additional code that gets run when a rate-limiting decision is made.
+//! * What value is returned in the positive or negative case.
+//!
+//! Writing middleware does **not** let you override rate-limiting
+//! decisions: They remain either positive (returning `Ok`) or negative
+//! (returning `Err`). However, you can override the values returned
+//! inside the Result for either decision.
+//!
+//! This crate ships two middlewares (named after their behavior in the
+//! positive outcome):
+//!
+//! * The cheapest still-useful one, [`NoOpMiddleware`], named after its
+//!   behavior in the positive case. In the positive case it returns
+//!   `Ok(())`; in the negative case, `Err(`[`NotUntil`]`)`.
+//!
+//! * A more informative middleware, [`StateInformationMiddleware`], which
+//!   returns `Ok(`[`StateSnapshot`]`)`, or
+//!   `Err(`[`NotUntil`]`)`.
+//!
+//! ## Using a custom middleware
+//!
+//! Middlewares are attached to the
+//! [`RateLimiter`][crate::RateLimiter] at construction time using
+//! [`RateLimiter.with_middleware`](../struct.RateLimiter.html#method.with_middleware):
+//!
+//! ```rust
+//! # #[cfg(feature = "std")]
+//! # fn main () {
+//! # use nonzero_ext::nonzero;
+//! use governor::{RateLimiter, Quota, middleware::StateInformationMiddleware};
+//! let lim = RateLimiter::direct(Quota::per_hour(nonzero!(1_u32)))
+//!     .with_middleware::<StateInformationMiddleware>();
+//!
+//! // A positive outcome with additional information:
+//! assert!(
+//!     lim.check()
+//!         // Here we receive an Ok(StateSnapshot):
+//!         .map(|outcome| assert_eq!(outcome.remaining_burst_capacity(), 0))
+//!         .is_ok()
+//! );
+//!
+//! // The negative case:
+//! assert!(
+//!     lim.check()
+//!         // Here we receive Err(NotUntil):
+//!         .map_err(|outcome| assert_eq!(outcome.quota().burst_size().get(), 1))
+//!         .is_err()
+//! );
+//! # }
+//! # #[cfg(not(feature = "std"))]
+//! # fn main() {}
+//! ```
+//!
+//! You can define your own middleware by `impl`ing [`RateLimitingMiddleware`].
 use core::fmt;
 use std::marker::PhantomData;
 
