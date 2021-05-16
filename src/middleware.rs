@@ -158,9 +158,7 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
         key: &K,
         limiter: impl Into<StateSnapshot>,
         start_time: P,
-    ) -> Self::NegativeOutcome
-    where
-        Self: Sized;
+    ) -> Self::NegativeOutcome;
 }
 
 #[derive(Debug)]
@@ -186,10 +184,7 @@ impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
         _key: &K,
         state: impl Into<StateSnapshot>,
         start_time: P,
-    ) -> Self::NegativeOutcome
-    where
-        Self: Sized,
-    {
+    ) -> Self::NegativeOutcome {
         NotUntil::new(state.into(), start_time)
     }
 }
@@ -213,10 +208,7 @@ impl<P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddlewa
         _key: &K,
         state: impl Into<StateSnapshot>,
         start_time: P,
-    ) -> Self::NegativeOutcome
-    where
-        Self: Sized,
-    {
+    ) -> Self::NegativeOutcome {
         NotUntil::new(state.into(), start_time)
     }
 }
