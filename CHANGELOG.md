@@ -4,6 +4,17 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+* You can now alter&expand the information returned from a rate
+  limiter by attaching middleware to it using
+  `.with_middleware::<YourClass>()` at construction time.
+
+  This is an incompatible change, as the type signature of RateLimiter
+  gained an additional generic parameter. See the [pull
+  request](https://github.com/antifuchs/governor/pull/67) and
+  [issue #66](https://github.com/antifuchs/governor/issues/66) for
+  details.
+
 ### Changed
 
 * Updated the [`Arc` guide section](https://docs.rs/governor/0.3.3/governor/_guide/index.html#wrapping-the-limiter-in-an-arc) to use `Arc::clone()` instead of `limiter.clone()`.
