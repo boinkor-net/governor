@@ -27,7 +27,7 @@ jobs:
             override: true
             profile: minimal
       - name: "cargo test"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.3
         with:
           command: test
           args: ${{ matrix.cargo_args }}
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2.3.4
       - name: "cargo fmt"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.3
         with:
           command: fmt
           args: "-v -- --check"
@@ -76,6 +76,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2.3.4
       - name: "cargo bench"
-        uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1.0.3
         with:
           command: bench
