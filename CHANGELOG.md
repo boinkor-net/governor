@@ -18,6 +18,10 @@
 ### Changed
 
 * Updated the [`Arc` guide section](https://docs.rs/governor/0.3.3/governor/_guide/index.html#wrapping-the-limiter-in-an-arc) to use `Arc::clone()` instead of `limiter.clone()`.
+* Updated the [`quanta` dependency](https://crates.io/crates/quanta)
+  to 0.8.0, speeding up the quanta clock by a bit. This changes the
+  upkeep clock interface incompatibly: The quanta upkeep Builder
+  structure got renamed to `quanta::Upkeep`.
 
 ### Contributors
 * [@izik1](https://github.com/izik1)

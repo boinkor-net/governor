@@ -9,9 +9,9 @@ use std::time::{Duration, Instant};
 
 #[test]
 fn stream() {
-    let i = Instant::now();
     let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
     let mut stream = stream::repeat(()).ratelimit_stream(&lim);
+    let i = Instant::now();
 
     for _ in 0..10 {
         block_on(stream.next());
