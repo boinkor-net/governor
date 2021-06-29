@@ -33,6 +33,65 @@ jobs:
           args: ${{ matrix.cargo_args }}
           toolchain: ${{ matrix.rust_toolchain }}
 
+  wasm_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        build_features:
+          - '"std wasm-bindgen"'
+          - '"std wasm-bindgen jitter"'
+    steps:
+      - uses: actions/checkout@v2.3.4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+          target: wasm32-unknown-unknown
+          components: rust-src
+      - uses: browser-actions/setup-geckodriver@latest
+
+      - name: wasm_bindgen Cache
+        id: wasm_bindgen_cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+          key: ${{ runner.os }}-wasm-bindgen
+
+      - name: 'Install `wasm-pack`'
+        run: cargo install wasm-bindgen-cli --vers "0.2.74"
+        # `wasm-pack` normally handles installing the browser driver and wasm-bindgen-cli which matches the version in
+        # `Cargo.lock`. However, it doesn't yet correctly pass through features to `cargo`.
+        #
+        # See <https://github.com/rustwasm/wasm-pack/issues/698> and <https://github.com/rustwasm/wasm-pack/pull/851>.
+        #
+        # For WASM tests to work, we need to either:
+        #
+        # * Install a custom version of `wasm-pack`, commented out below, or
+        # * Manage the installation of the browser driver, and indicate the WASM bindgen test runner in `.cargo/config`.
+        #
+        # We are currently using the second option.
+
+        # Custom branch
+        #
+        # ```
+        # run: cargo install --git https://github.com/azriel91/wasm-pack.git --branch bugfix/698/build-tests-with-passthrough-args --force
+        # ```
+        #
+        # Ideally we would use:
+        #
+        # ```
+        # uses: jetli/wasm-pack-action@v0.3.0
+        # with:
+        #   version: 'latest'
+        # ```
+
+      - name: 'Run tests'
+        run: cargo test --target wasm32-unknown-unknown --no-default-features --features ${{ matrix.build_features }}
+
   all_tests:
     needs: test
     runs-on: ubuntu-latest

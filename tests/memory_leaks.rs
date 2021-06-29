@@ -1,3 +1,4 @@
+#![cfg(not(target_arch = "wasm32"))]
 #![cfg(feature = "std")]
 
 // This test uses procinfo, so can only be run on Linux.

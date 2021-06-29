@@ -5,6 +5,14 @@ use governor::{
 use nonzero_ext::nonzero;
 use std::time::Duration;
 
+// Trick so we don't have to annotate each test with:
+// #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_test::wasm_bindgen_test as test;
+
+#[cfg(target_arch = "wasm32")]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
 #[test]
 fn accepts_first_cell() {
     let clock = FakeRelativeClock::default();
@@ -141,6 +149,8 @@ fn correct_wait_time() {
     assert_eq!(20, conforming);
 }
 
+// Crossbeam scoped threads are not supported on WASM
+#[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn actual_threadsafety() {
     use crossbeam;

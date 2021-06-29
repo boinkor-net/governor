@@ -11,7 +11,7 @@ use std::ops::Add;
 use std::time::Duration;
 
 #[cfg(feature = "std")]
-use std::time::Instant;
+use instant::Instant;
 
 /// An interval specification for deviating from the nominal wait time.
 ///

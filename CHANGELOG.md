@@ -14,6 +14,9 @@
   request](https://github.com/antifuchs/governor/pull/67) and
   [issue #66](https://github.com/antifuchs/governor/issues/66) for
   details.
+* Support for the `wasm32-unknown-unknown` target. Default features have to be
+  disabled so that native dependencies are not built, and `Jitter` is not
+  available.
 
 ### Changed
 
@@ -25,6 +28,7 @@
 
 ### Contributors
 * [@izik1](https://github.com/izik1)
+* [@azriel91](https://github.com/azriel91)
 
 ## [[0.3.2](https://docs.rs/governor/0.3.2/governor/)] - 2021-01-28
 

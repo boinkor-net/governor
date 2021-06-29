@@ -1,3 +1,4 @@
+#![cfg(not(target_arch = "wasm32"))]
 #![cfg(all(feature = "std", feature = "dashmap"))]
 
 use governor::{

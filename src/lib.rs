@@ -50,7 +50,7 @@ pub use errors::*;
 pub use gcra::NotUntil;
 #[cfg(feature = "jitter")]
 pub use jitter::Jitter;
-#[cfg(all(not(feature = "std"), feature = "jitter"))]
+#[cfg(all(not(feature = "jitter"), feature = "std"))]
 pub(crate) use jitter::Jitter;
 pub use quota::Quota;
 #[doc(inline)]
