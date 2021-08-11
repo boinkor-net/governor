@@ -16,7 +16,7 @@ use std::time::Duration;
 pub struct Nanos(u64);
 
 impl Nanos {
-    pub(crate) fn as_u64(self) -> u64 {
+    pub fn as_u64(self) -> u64 {
         self.0
     }
 }
@@ -24,7 +24,7 @@ impl Nanos {
 /// Nanos as used by Jitter and other std-only features.
 #[cfg(feature = "std")]
 impl Nanos {
-    pub(crate) const fn new(u: u64) -> Self {
+    pub const fn new(u: u64) -> Self {
         Nanos(u)
     }
 }
@@ -91,7 +91,7 @@ impl From<Nanos> for Duration {
 
 impl Nanos {
     #[inline]
-    pub(crate) fn saturating_sub(self, rhs: Nanos) -> Nanos {
+    pub fn saturating_sub(self, rhs: Nanos) -> Nanos {
         Nanos(self.0.saturating_sub(rhs.0))
     }
 }
