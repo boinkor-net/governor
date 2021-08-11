@@ -3,6 +3,47 @@
 //! The time sources contained in this module allow the rate limiter
 //! to be (optionally) independent of std, and additionally
 //! allow mocking the passage of time.
+//!
+//! You can supply a custom time source by implementing both [`Reference`]
+//! and [`Clock`] for your own types, and by implementing `Add<Nanos>` for
+//! your [`Reference`] type:
+//! ```rust
+//! # use std::ops::Add;
+//! use governor::clock::{Reference, Clock};
+//! use governor::nanos::Nanos;
+//!
+//! #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+//! struct MyInstant(u64);
+//!
+//! impl Add<Nanos> for MyInstant {
+//!     type Output = Self;
+//!
+//!    fn add(self, other: Nanos) -> Self {
+//!        Self(self.0 + other.as_u64())
+//!    }
+//! }
+//!
+//! impl Reference for MyInstant {
+//!     fn duration_since(&self, earlier: Self) -> Nanos {
+//!         self.0.checked_sub(earlier.0).unwrap_or(0).into()
+//!     }
+//!
+//!     fn saturating_sub(&self, duration: Nanos) -> Self {
+//!         Self(self.0.checked_sub(duration.into()).unwrap_or(self.0))
+//!     }
+//! }
+//!
+//! #[derive(Clone)]
+//! struct MyCounter(u64);
+//!
+//! impl Clock for MyCounter {
+//!     type Instant = MyInstant;
+//!
+//!     fn now(&self) -> Self::Instant {
+//!         MyInstant(self.0)
+//!     }
+//! }
+//! ```
 
 use std::prelude::v1::*;
 

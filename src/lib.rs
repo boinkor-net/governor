@@ -42,7 +42,7 @@ mod errors;
 mod gcra;
 mod jitter;
 pub mod middleware;
-mod nanos;
+pub mod nanos;
 mod quota;
 pub mod state;
 
