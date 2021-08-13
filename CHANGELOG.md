@@ -22,9 +22,15 @@
   to 0.8.0, speeding up the quanta clock by a bit. This changes the
   upkeep clock interface incompatibly: The quanta upkeep Builder
   structure got renamed to `quanta::Upkeep`.
+* The `nanos` module is now public, allowing other crates to implement
+  the `Clock` trait.
+* When using the `std` feature, governor will no longer pull in the
+  `hashbrown` crate.
 
 ### Contributors
+* [@bradfier](https://github.com/bradfier)
 * [@izik1](https://github.com/izik1)
+* [@ldm0](https://github.com/ldm0)
 
 ## [[0.3.2](https://docs.rs/governor/0.3.2/governor/)] - 2021-01-28
 
