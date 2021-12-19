@@ -12,14 +12,8 @@ use std::time::Duration;
 /// clock that uses a quanta background upkeep thread (which allows retrieving the time with an
 /// atomic read, but requires a background thread that wakes up continually),
 /// see [`QuantaUpkeepClock`].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct QuantaClock(quanta::Clock);
-
-impl Default for QuantaClock {
-    fn default() -> Self {
-        QuantaClock(Default::default())
-    }
-}
 
 impl From<quanta::Instant> for Nanos {
     fn from(instant: quanta::Instant) -> Self {
