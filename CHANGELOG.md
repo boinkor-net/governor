@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.4.0](https://docs.rs/governor/0.4.0/governor/)] - 2021-12-28
+
 ### Added
 * You can now alter&expand the information returned from a rate
   limiter by attaching middleware to it using
