@@ -1,8 +1,10 @@
-use std::prelude::v1::*;
+use std::{num::NonZeroU32, prelude::v1::*};
 
 use crate::{
-    clock, middleware::RateLimitingMiddleware, state::keyed::KeyedStateStore, Jitter, NotUntil,
-    RateLimiter,
+    clock,
+    middleware::RateLimitingMiddleware,
+    state::{keyed::KeyedStateStore, InsufficientCapacity},
+    Jitter, NegativeMultiDecision, NotUntil, RateLimiter,
 };
 use futures_timer::Delay;
 use std::hash::Hash;
@@ -24,7 +26,7 @@ where
     /// on what other measurements are made on the rate limiter).
     ///
     /// If multiple futures are dispatched against the rate limiter, it is advisable to use
-    /// [`until_ready_with_jitter`](#method.until_ready_with_jitter), to avoid thundering herds.
+    /// [`until_key_ready_with_jitter`](#method.until_key_ready_with_jitter), to avoid thundering herds.
     pub async fn until_key_ready(&self, key: &K) -> MW::PositiveOutcome {
         self.until_key_ready_with_jitter(key, Jitter::NONE).await
     }
@@ -53,6 +55,52 @@ where
                 Err(negative) => {
                     let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
                     delay.await;
+                }
+            }
+        }
+    }
+
+    /// Asynchronously resolves as soon as the rate limiter allows it.
+    ///
+    /// This is similar to `until_key_ready` except it waits for an abitrary number
+    /// of `n` cells to be available.
+    ///
+    /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
+    /// capacity of the rate limiter.
+    pub async fn until_key_n_ready(
+        &self,
+        key: &K,
+        n: NonZeroU32,
+    ) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
+        self.until_key_n_ready_with_jitter(key, n, Jitter::NONE)
+            .await
+    }
+
+    /// Asynchronously resolves as soon as the rate limiter allows it, with a
+    /// randomized wait period.
+    ///
+    /// This is similar to `until_key_ready_with_jitter` except it waits for an
+    /// abitrary number of `n` cells to be available.
+    ///
+    /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
+    /// capacity of the rate limiter.
+    pub async fn until_key_n_ready_with_jitter(
+        &self,
+        key: &K,
+        n: NonZeroU32,
+        jitter: Jitter,
+    ) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
+        loop {
+            match self.check_key_n(key, n) {
+                Ok(x) => {
+                    return Ok(x);
+                }
+                Err(NegativeMultiDecision::BatchNonConforming(_, negative)) => {
+                    let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
+                    delay.await;
+                }
+                Err(NegativeMultiDecision::InsufficientCapacity(cap)) => {
+                    return Err(InsufficientCapacity(cap))
                 }
             }
         }
