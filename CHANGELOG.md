@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.4.1](https://docs.rs/governor/0.4.1/governor/)] - 2022-01-21
+
 ### Changed
 * Downgraded `dashmap` to 4.0.2 as a remediation for
   [RUSTSEC-2022-0002](https://rustsec.org/advisories/RUSTSEC-2022-0002)
