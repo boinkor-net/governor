@@ -4,6 +4,14 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+* Downgraded `dashmap` to 4.0.2 as a remediation for
+  [RUSTSEC-2022-0002](https://rustsec.org/advisories/RUSTSEC-2022-0002)
+  via [#104](https://github.com/antifuchs/governor/pull/104).
+
+### Contributors
+* [@kim](https://github.com/kim)
+
 ## [[0.4.0](https://docs.rs/governor/0.4.0/governor/)] - 2021-12-28
 
 ### Added
