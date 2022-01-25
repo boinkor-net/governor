@@ -64,7 +64,7 @@
 //!
 //! You can define your own middleware by `impl`ing [`RateLimitingMiddleware`].
 use core::fmt;
-use std::marker::PhantomData;
+use std::{cmp, marker::PhantomData};
 
 use crate::{clock, nanos::Nanos, NotUntil, Quota};
 
@@ -77,14 +77,22 @@ pub struct StateSnapshot {
     /// The "burst capacity" of the bucket.
     tau: Nanos,
 
+    /// The time at which the measurement was taken.
+    pub(crate) time_of_measurement: Nanos,
+
     /// The next time a cell is expected to arrive
     pub(crate) tat: Nanos,
 }
 
 impl StateSnapshot {
     #[inline]
-    pub(crate) fn new(t: Nanos, tau: Nanos, tat: Nanos) -> Self {
-        Self { t, tau, tat }
+    pub(crate) fn new(t: Nanos, tau: Nanos, time_of_measurement: Nanos, tat: Nanos) -> Self {
+        Self {
+            t,
+            tau,
+            time_of_measurement,
+            tat,
+        }
     }
 
     /// Returns the quota used to make the rate limiting decision.
@@ -98,14 +106,15 @@ impl StateSnapshot {
     /// If this state snapshot is based on a negative rate limiting
     /// outcome, this method returns 0.
     pub fn remaining_burst_capacity(&self) -> u32 {
-        // at this point we know that we're `tat` nanos after the
-        // earliest arrival time, and so are using up some "burst
-        // capacity".
-        //
-        // As one cell has already been used by the positive
-        // decision, we're relying on the "round down" behavior of
-        // unsigned integer division.
-        (self.quota().burst_size().get() + 1).saturating_sub((self.tat / self.t) as u32)
+        let t0 = if self.time_of_measurement.as_u64() == 0 {
+            self.time_of_measurement + self.t
+        } else {
+            self.time_of_measurement
+        };
+        (cmp::min(
+            (t0 + self.tau).saturating_sub(self.tat).as_u64(),
+            self.tau.as_u64(),
+        ) / self.t.as_u64()) as u32
     }
 }
 
