@@ -4,6 +4,14 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+* Upgraded `dashmap` back [to 5.1.0](https://github.com/antifuchs/governor/pull/110).
+* Upgraded `parking_lot` [to 0.12.0](https://github.com/antifuchs/governor/pull/109).
+
+## Internal
+* Migrated the `governor` code base to [cargo
+  workspaces](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html).
+
 ## [[0.4.1](https://docs.rs/governor/0.4.1/governor/)] - 2022-01-21
 
 ### Changed
