@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.4.2](https://docs.rs/governor/0.4.2/governor/)] - 2022-02-09
+
 ### Changed
 * Upgraded `dashmap` back [to 5.1.0](https://github.com/antifuchs/governor/pull/110).
 * Upgraded `parking_lot` [to 0.12.0](https://github.com/antifuchs/governor/pull/109).
