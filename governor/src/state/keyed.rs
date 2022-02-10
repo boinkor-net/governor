@@ -229,3 +229,63 @@ pub type DefaultKeyedStateStore<K> = HashMapStateStore<K>;
 #[cfg(all(feature = "std", feature = "dashmap"))]
 /// The default keyed rate limiter type: the concurrent [`DashMap`][::dashmap::DashMap].
 pub type DefaultKeyedStateStore<K> = DashMapStateStore<K>;
+
+#[cfg(test)]
+mod test {
+    use std::marker::PhantomData;
+
+    use nonzero_ext::nonzero;
+
+    use crate::{
+        clock::{Clock, FakeRelativeClock},
+        middleware::NoOpMiddleware,
+    };
+
+    use super::*;
+
+    #[test]
+    fn default_nonshrinkable_state_store_coverage() {
+        #[derive(Default)]
+        struct NaiveKeyedStateStore<K>(PhantomData<K>);
+
+        impl<K: Hash + Eq + Clone> StateStore for NaiveKeyedStateStore<K> {
+            type Key = K;
+
+            fn measure_and_replace<T, F, E>(&self, _key: &Self::Key, f: F) -> Result<T, E>
+            where
+                F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
+            {
+                f(None).map(|(res, _)| res)
+            }
+        }
+
+        impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for NaiveKeyedStateStore<K> {
+            fn retain_recent(&self, _drop_below: Nanos) {
+                // nothing to do
+            }
+
+            fn len(&self) -> usize {
+                0
+            }
+            fn is_empty(&self) -> bool {
+                true
+            }
+        }
+
+        let lim: RateLimiter<
+            u32,
+            NaiveKeyedStateStore<u32>,
+            FakeRelativeClock,
+            NoOpMiddleware<<FakeRelativeClock as Clock>::Instant>,
+        > = RateLimiter::new(
+            Quota::per_second(nonzero!(1_u32)),
+            NaiveKeyedStateStore::default(),
+            &FakeRelativeClock::default(),
+        );
+        assert_eq!(lim.check_key(&1u32), Ok(()));
+        assert!(lim.is_empty());
+        assert_eq!(lim.len(), 0);
+        lim.retain_recent();
+        lim.shrink_to_fit();
+    }
+}
