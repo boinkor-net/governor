@@ -139,3 +139,24 @@ fn hashmap_length() {
     assert_eq!(lim.len(), 3);
     assert!(!lim.is_empty());
 }
+
+#[test]
+fn hashmap_shrink_to_fit() {
+    let clock = FakeRelativeClock::default();
+    // a steady rate of 3ms between elements:
+    let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    assert_eq!(
+        lim.check_key_n(&"long-lived".to_string(), nonzero!(10_u32)),
+        Ok(())
+    );
+    assert_eq!(lim.check_key(&"short-lived".to_string()), Ok(()));
+
+    // Move the clock forward far enough that the short-lived key gets dropped:
+    clock.advance(ms * 300);
+    lim.retain_recent();
+    lim.shrink_to_fit();
+
+    assert_eq!(lim.len(), 1);
+}
