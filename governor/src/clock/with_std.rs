@@ -99,22 +99,30 @@ impl ReasonablyRealtime for SystemClock {}
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::clock::{Clock, MonotonicClock, Reference, SystemClock};
+    use crate::clock::{Clock, Reference, SystemClock};
     use crate::nanos::Nanos;
     use std::time::Duration;
 
-    #[test]
-    fn instant_impls_coverage() {
-        let one_ns = Nanos::new(1);
-        let c = MonotonicClock::default();
-        let now = c.now();
-        assert_ne!(now + one_ns, now);
-        assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
-        assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
-        assert_eq!(
-            Reference::saturating_sub(&(now + Duration::from_nanos(1)), one_ns),
-            now
-        );
+    cfg_if::cfg_if! {
+        // This test is broken on macOS on M1 machines, due to
+        // https://github.com/rust-lang/rust/issues/91417:
+        if #[cfg(not(all(target_arch = "aarch64", target_os = "macos")))] {
+            use crate::clock::MonotonicClock;
+            #[test]
+            fn instant_impls_coverage() {
+                let one_ns = Nanos::new(1);
+                let c = MonotonicClock::default();
+                let now = c.now();
+                let ns_dur = Duration::from(one_ns);
+                assert_ne!(now + ns_dur, now, "{:?} + {:?}", ns_dur, now);
+                assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
+                assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
+                assert_eq!(
+                    Reference::saturating_sub(&(now + Duration::from_nanos(1)), one_ns),
+                    now
+                );
+            }
+        }
     }
 
     #[test]
