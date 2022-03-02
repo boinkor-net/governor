@@ -17,7 +17,7 @@ jobs:
       - name: Set grcov version
         run: echo "grcov_version=0.8.0" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
 
       - name: Cache cargo index
         uses: actions/cache@v2.1.7

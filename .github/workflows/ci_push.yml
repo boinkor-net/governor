@@ -20,7 +20,7 @@ jobs:
           - "--no-default-features --features no_std"
           - ""
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
             toolchain: ${{ matrix.rust_toolchain }}
@@ -43,7 +43,7 @@ jobs:
   rustfmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
       - name: "cargo fmt"
         uses: actions-rs/cargo@v1.0.3
         with:
@@ -53,7 +53,7 @@ jobs:
   cargo_deny:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2.4.0
+    - uses: actions/checkout@v3
     - name: "cargo deny"
       uses: EmbarkStudios/cargo-deny-action@v1
       with:
@@ -62,7 +62,7 @@ jobs:
   cargo_clippy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2.4.0
+    - uses: actions/checkout@v3
     - name: "cargo clippy"
       uses: actions-rs/clippy-check@v1
       with:
@@ -74,7 +74,7 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: test
     steps:
-      - uses: actions/checkout@v2.4.0
+      - uses: actions/checkout@v3
       - name: "cargo bench"
         uses: actions-rs/cargo@v1.0.3
         with:
