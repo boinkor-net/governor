@@ -20,13 +20,13 @@ jobs:
       - uses: actions/checkout@v2.4.0
 
       - name: Cache cargo index
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3
         with:
           path: ~/.cargo/git
           key: ${{ runner.os }}-cargo-index-${{env.grcov_version}}
 
       - name: Cache cargo binaries
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3
         with:
           path: ~/.cargo/bin
           key: ${{ runner.os }}-cargo-bin-${{env.grcov_version}}
