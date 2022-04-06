@@ -55,7 +55,7 @@ jobs:
           grcov . --binary-path target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/doctests.lcov
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/*.lcov
