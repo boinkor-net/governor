@@ -4,6 +4,14 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+* Fixed a bug in `StateSnapshot::remaining_burst_capacity`: Now
+  returns the correct number of cells after enough time has
+  passed. Thanks to [@holmesmr](https://github.com/holmesmr) for
+  reporting [#102](https://github.com/antifuchs/governor/issues/102)!
+
+* Dropped a `From<(&_ Gcra, Nanos)>` impl for `StateSnapshot`.
+
 ## [[0.4.2](https://docs.rs/governor/0.4.2/governor/)] - 2022-02-09
 
 ### Changed
