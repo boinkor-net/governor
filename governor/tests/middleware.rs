@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use governor::{
     clock::{self, FakeRelativeClock},
     middleware::{RateLimitingMiddleware, StateInformationMiddleware, StateSnapshot},
@@ -67,4 +69,35 @@ fn state_information() {
 #[cfg(feature = "std")]
 fn mymw_derives() {
     assert_eq!(format!("{:?}", MyMW), "MyMW");
+}
+
+#[test]
+fn state_snapshot_tracks_quota_accurately() {
+    use crate::clock::FakeRelativeClock;
+    use crate::RateLimiter;
+    use nonzero_ext::*;
+
+    let clock = FakeRelativeClock::default();
+
+    let lim = RateLimiter::direct_with_clock(Quota::per_minute(nonzero!(5_u32)), &clock)
+        .with_middleware::<StateInformationMiddleware>();
+
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(4));
+    assert_eq!(
+        lim.check_n(nonzero!(3_u32))
+            .map(|s| s.remaining_burst_capacity()),
+        Ok(1)
+    );
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(0));
+    assert_eq!(lim.check().map_err(|_| ()), Err(()), "should rate limit");
+
+    clock.advance(Duration::from_secs(120));
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(4));
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(3));
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(2));
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(1));
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(0));
+    // TODO: this is incorrect:
+    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(0));
+    assert_eq!(lim.check().map_err(|_| ()), Err(()));
 }

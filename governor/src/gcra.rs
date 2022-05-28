@@ -114,11 +114,15 @@ impl Gcra {
             let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = tat.saturating_sub(tau);
             if t0 < earliest_time {
-                Err(MW::disallow(key, (self, earliest_time), start))
+                Err(MW::disallow(
+                    key,
+                    StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
+                    start,
+                ))
             } else {
                 let next = cmp::max(tat, t0) + t;
                 Ok((
-                    MW::allow(key, StateSnapshot::new(self.t, self.tau, next)),
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
                     next,
                 ))
             }
@@ -157,20 +161,20 @@ impl Gcra {
             if t0 < earliest_time {
                 Err(NegativeMultiDecision::BatchNonConforming(
                     n.get(),
-                    MW::disallow(key, (self, earliest_time), start),
+                    MW::disallow(
+                        key,
+                        StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
+                        start,
+                    ),
                 ))
             } else {
                 let next = cmp::max(tat, t0) + t + additional_weight;
-                Ok((MW::allow(key, (self, next)), next))
+                Ok((
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
+                    next,
+                ))
             }
         })
-    }
-}
-
-impl From<(&Gcra, Nanos)> for StateSnapshot {
-    #[inline]
-    fn from(pair: (&Gcra, Nanos)) -> Self {
-        StateSnapshot::new(pair.0.t, pair.0.tau, pair.1)
     }
 }
 
