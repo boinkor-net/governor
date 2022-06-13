@@ -28,7 +28,7 @@ use std::time::Instant;
 /// Jitter can be added manually to a `Duration`:
 ///
 /// ```rust
-/// # #[cfg(feature = "jitter")]
+/// # #[cfg(all(feature = "jitter", not(feature = "no_std")))]
 /// # fn main() {
 /// # use governor::Jitter;
 /// # use std::time::Duration;
@@ -38,7 +38,7 @@ use std::time::Instant;
 /// assert!(result >= reference + Duration::from_secs(1));
 /// assert!(result < reference + Duration::from_secs(2))
 /// # }
-/// # #[cfg(not(feature = "jitter"))]
+/// # #[cfg(not(all(feature = "jitter", not(feature = "no_std"))))]
 /// # fn main() {}
 /// ```
 ///
@@ -75,13 +75,18 @@ impl Jitter {
     /// Constructs a new Jitter interval, waiting at most a duration of `max`.
     ///
     /// ```rust
+    /// # #[cfg(all(feature = "jitter", not(feature = "no_std")))]
+    /// # fn main() {
     /// # use std::time::Duration;
     /// # use governor::Jitter;
     /// let jitter = Jitter::up_to(Duration::from_secs(20));
     /// let now = Duration::from_secs(0);
     /// assert!(jitter + now <= Duration::from_secs(20)); // always.
+    /// # }
+    /// # #[cfg(not(all(feature = "jitter", not(feature = "no_std"))))]
+    /// # fn main() {}
     /// ```
-    #[cfg(feature = "jitter")]
+    #[cfg(any(all(feature = "jitter", not(feature = "no_std")), feature = "std"))]
     pub fn up_to(max: Duration) -> Jitter {
         Jitter {
             min: Nanos::from(0),
@@ -90,7 +95,7 @@ impl Jitter {
     }
 
     /// Constructs a new Jitter interval, waiting at least `min` and at most `min+interval`.
-    #[cfg(feature = "jitter")]
+    #[cfg(any(all(feature = "jitter", not(feature = "no_std")), feature = "std"))]
     pub fn new(min: Duration, interval: Duration) -> Jitter {
         let min: Nanos = min.into();
         let max: Nanos = min + Nanos::from(interval);
@@ -182,7 +187,7 @@ impl Add<Instant> for Jitter {
     }
 }
 
-#[cfg(all(feature = "jitter", test))]
+#[cfg(all(feature = "jitter", not(feature = "no_std"), test))]
 mod test {
     use super::*;
 

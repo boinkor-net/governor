@@ -3,10 +3,13 @@
 use all_asserts::*;
 use futures::executor::block_on;
 use futures::SinkExt;
-use governor::{prelude::*, Jitter, Quota, RateLimiter};
+use governor::{prelude::*, Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+
+#[cfg(feature = "jitter")]
+use governor::Jitter;
 
 #[test]
 fn sink() {
@@ -42,6 +45,7 @@ fn auxilliary_sink_methods() {
     assert!(block_on(sink.close()).is_ok());
 }
 
+#[cfg(all(feature = "jitter", test))]
 #[cfg_attr(feature = "jitter", test)]
 fn sink_with_jitter() {
     let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
