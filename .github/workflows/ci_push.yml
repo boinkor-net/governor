@@ -18,6 +18,8 @@ jobs:
         rust_toolchain: [nightly, stable]
         cargo_args:
           - "--no-default-features --features no_std"
+          - "--no-default-features --features 'jitter no_std'"
+          - "--no-default-features --features std"
           - ""
     steps:
       - uses: actions/checkout@v3.0.2
