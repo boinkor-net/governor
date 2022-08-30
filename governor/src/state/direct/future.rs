@@ -124,6 +124,6 @@ mod test {
     fn insufficient_capacity_impl_coverage() {
         let i = InsufficientCapacity(1);
         assert_eq!(i.0, i.clone().0);
-        assert!(format!("{}", i).len() > 0);
+        assert!(!format!("{}", i).is_empty());
     }
 }

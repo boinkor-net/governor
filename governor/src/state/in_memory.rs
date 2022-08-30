@@ -79,7 +79,8 @@ mod test {
         use std::thread;
 
         let mut state = Arc::new(InMemoryState(AtomicU64::new(0)));
-        let threads: Vec<thread::JoinHandle<_>> = (0..n_threads)
+
+        let hits: u64 = (0..n_threads)
             .map(|_| {
                 thread::spawn({
                     let state = Arc::clone(&state);
@@ -99,9 +100,7 @@ mod test {
                         hits
                     }
                 })
-            })
-            .collect();
-        let hits: u64 = threads.into_iter().map(|t| t.join().unwrap()).sum();
+            }).map(|t| t.join().unwrap()).sum();
         let value = Arc::get_mut(&mut state).unwrap().0.get_mut();
         (*value, hits)
     }
@@ -132,6 +131,6 @@ mod test {
     #[test]
     fn in_memory_state_impls() {
         let state = InMemoryState(AtomicU64::new(0));
-        assert!(format!("{:?}", state).len() > 0);
+        assert!(!format!("{:?}", state).is_empty());
     }
 }

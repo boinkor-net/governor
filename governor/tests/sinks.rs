@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 #[cfg(feature = "jitter")]
 use governor::Jitter;
-
+#[allow(clippy::unit_cmp)]
 #[test]
 fn sink() {
     let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
@@ -30,7 +30,7 @@ fn sink() {
 
     let result = sink.get_ref();
     assert_eq!(result.len(), 12);
-    assert!(result.into_iter().all(|&elt| elt == ()));
+    assert!(result.iter().all(|&elt| elt == ()));
 }
 
 #[test]
@@ -47,6 +47,7 @@ fn auxilliary_sink_methods() {
 
 #[cfg(all(feature = "jitter", test))]
 #[cfg_attr(feature = "jitter", test)]
+#[allow(clippy::unit_cmp)]
 fn sink_with_jitter() {
     let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
     let mut sink =

@@ -205,7 +205,7 @@ mod test {
             .map(move |_| {
                 let clock = Arc::clone(&clock);
                 thread::spawn(move || {
-                    for _ in (0..1000000).into_iter() {
+                    for _ in 0..1000000 {
                         let now = clock.now();
                         clock.advance(Duration::from_nanos(1));
                         assert!(clock.now() > now);
