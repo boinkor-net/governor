@@ -129,6 +129,40 @@ impl Gcra {
         })
     }
 
+    pub(crate) fn peek_test<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        state: &S,
+        t0: P,
+    ) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        let t0 = t0.duration_since(start);
+        let tau = self.tau;
+        let t = self.t;
+        state.measure_and_replace(key, |tat| {
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+            let earliest_time = tat.saturating_sub(tau);
+            if t0 < earliest_time {
+                Err(MW::disallow(
+                    key,
+                    StateSnapshot::new(self.t, self.tau, t0, tat),
+                    start,
+                ))
+            } else {
+                let next = cmp::max(tat, t0) + t;
+                Ok((
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tat)),
+                    next,
+                ))
+            }
+        })
+    }
+
     /// Tests whether all `n` cells could be accommodated and updates the rate limiter state, if so.
     pub(crate) fn test_n_all_and_update<
         K,

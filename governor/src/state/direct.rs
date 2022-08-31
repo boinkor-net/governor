@@ -80,6 +80,15 @@ where
         )
     }
 
+    pub fn peek(&self) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        self.gcra.peek_test::<NotKeyed, C::Instant, S, MW>(
+            self.start,
+            &NotKeyed::NonKey,
+            &self.state,
+            self.clock.now(),
+        )
+    }
+
     /// Allow *only all* `n` cells through the rate limiter.
     ///
     /// This method can succeed in only one way and fail in two ways:
