@@ -126,7 +126,7 @@ where
         key: &K,
         n: NonZeroU32,
     ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
-        self.gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
+        self.gcra.test_n_all_peek::<K, C::Instant, S, MW>(
             self.start,
             key,
             n,
@@ -134,6 +134,21 @@ where
             self.clock.now(),
         )
     }
+
+    pub fn peek_key_n(
+        &self,
+        key: &K,
+        n: NonZeroU32,
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
+        self.gcra.test_n_all_peek::<K, C::Instant, S, MW>(
+            self.start,
+            key,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
+    }
+
 }
 
 /// Keyed rate limiters that can be "cleaned up".

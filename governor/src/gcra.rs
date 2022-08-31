@@ -210,6 +210,53 @@ impl Gcra {
             }
         })
     }
+
+    pub(crate) fn test_n_all_peek<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        n: NonZeroU32,
+        state: &S,
+        t0: P,
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
+        let t0 = t0.duration_since(start);
+        let tau = self.tau;
+        let t = self.t;
+        let additional_weight = t * (n.get() - 1) as u64;
+
+        // check that we can allow enough cells through. Note that `additional_weight` is the
+        // value of the cells *in addition* to the first cell - so add that first cell back.
+        if additional_weight + t > tau {
+            return Err(NegativeMultiDecision::InsufficientCapacity(
+                (tau.as_u64() / t.as_u64()) as u32,
+            ));
+        }
+        state.measure_and_replace(key, |tat| {
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+            let earliest_time = (tat + additional_weight).saturating_sub(tau);
+            if t0 < earliest_time {
+                Err(NegativeMultiDecision::BatchNonConforming(
+                    n.get(),
+                    MW::disallow(
+                        key,
+                        StateSnapshot::new(self.t, self.tau, t0, tat),
+                        start,
+                    ),
+                ))
+            } else {
+                let next = cmp::max(tat, t0) + t + additional_weight;
+                Ok((
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tat)),
+                    next,
+                ))
+            }
+        })
+    }
 }
 
 #[cfg(test)]

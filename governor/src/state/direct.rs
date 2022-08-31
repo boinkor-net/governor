@@ -116,6 +116,20 @@ where
                 self.clock.now(),
             )
     }
+
+    pub fn peek_n(
+        &self,
+        n: NonZeroU32,
+    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
+        self.gcra
+            .test_n_all_peek::<NotKeyed, C::Instant, S, MW>(
+                self.start,
+                &NotKeyed::NonKey,
+                n,
+                &self.state,
+                self.clock.now(),
+            )
+    }
 }
 
 #[cfg(feature = "std")]
