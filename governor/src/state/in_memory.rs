@@ -69,7 +69,10 @@ impl Debug for InMemoryState {
 }
 
 #[cfg(test)]
+#[allow(clippy::needless_collect)]
 mod test {
+
+    use all_asserts::assert_gt;
 
     use super::*;
 
@@ -132,6 +135,6 @@ mod test {
     #[test]
     fn in_memory_state_impls() {
         let state = InMemoryState(AtomicU64::new(0));
-        assert!(format!("{:?}", state).len() > 0);
+        assert_gt!(format!("{:?}", state).len(), 0);
     }
 }

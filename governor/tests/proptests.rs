@@ -4,7 +4,7 @@ use governor::{
     clock::{Clock, FakeRelativeClock},
     Quota, RateLimiter,
 };
-use proptest::prelude::prop::test_runner::FileFailurePersistence;
+use proptest::prelude::prop::test_runner::{Config, FileFailurePersistence};
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -22,11 +22,12 @@ impl Arbitrary for Count {
 }
 
 fn test_config() -> ProptestConfig {
-    let mut cfg = ProptestConfig::default();
-    cfg.failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions")));
-    //cfg.timeout = 20;
-    cfg.verbose = 0; // 2 for extra verbosity;
-    cfg
+    Config {
+        failure_persistence: Some(Box::new(FileFailurePersistence::WithSource("regressions"))),
+        verbose: 0,
+        timeout: 20,
+        ..Default::default()
+    }
 }
 
 #[cfg(feature = "std")]
