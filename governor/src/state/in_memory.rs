@@ -74,13 +74,13 @@ mod test {
     use super::*;
 
     #[cfg(feature = "std")]
+    #[allow(clippy::needless_collect)]
     fn try_triggering_collisions(n_threads: u64, tries_per_thread: u64) -> (u64, u64) {
         use std::sync::Arc;
         use std::thread;
 
         let mut state = Arc::new(InMemoryState(AtomicU64::new(0)));
-
-        let hits: u64 = (0..n_threads)
+        let threads: Vec<thread::JoinHandle<_>> = (0..n_threads)
             .map(|_| {
                 thread::spawn({
                     let state = Arc::clone(&state);
@@ -100,7 +100,9 @@ mod test {
                         hits
                     }
                 })
-            }).map(|t| t.join().unwrap()).sum();
+            })
+            .collect();
+        let hits: u64 = threads.into_iter().map(|t| t.join().unwrap()).sum();
         let value = Arc::get_mut(&mut state).unwrap().0.get_mut();
         (*value, hits)
     }
