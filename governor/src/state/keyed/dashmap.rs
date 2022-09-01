@@ -27,6 +27,19 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
         let entry = self.entry(key.clone()).or_default();
         (*entry).measure_and_replace_one(f)
     }
+
+    fn measure_and_peek<T, F, E>(&self, key: &Self::Key, f: F) -> Option<Result<T, E>>
+    where
+        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
+    {
+        if let Some(v) = self.get(key) {
+            // fast path: measure existing entry
+            return Some(v.measure_and_peek_one(f));
+        }
+        // make an entry and measure that:
+        let entry = self.entry(key.clone()).or_default();
+        Some((*entry).measure_and_peek_one(f))
+    }
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed

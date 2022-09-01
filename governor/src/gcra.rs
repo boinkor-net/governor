@@ -122,8 +122,10 @@ impl Gcra {
             } else {
                 let next = cmp::max(tat, t0) + t;
                 Ok((
-                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
-                    next,
+                    MW::allow(
+                        key,
+                        StateSnapshot::new(self.t, self.tau, t0, next)),
+                        next,
                 ))
             }
         })
@@ -144,23 +146,26 @@ impl Gcra {
         let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
-        state.measure_and_replace(key, |tat| {
+        match state.measure_and_peek(key, |tat| {
             let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = tat.saturating_sub(tau);
             if t0 < earliest_time {
                 Err(MW::disallow(
                     key,
-                    StateSnapshot::new(self.t, self.tau, t0, tat),
+                    StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
                     start,
                 ))
             } else {
                 let next = cmp::max(tat, t0) + t;
                 Ok((
-                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tat)),
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
                     next,
                 ))
             }
-        })
+        }) {
+            Some(outcome) => outcome,
+            None => Ok(MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tau))),
+        }
     }
 
     /// Tests whether all `n` cells could be accommodated and updates the rate limiter state, if so.

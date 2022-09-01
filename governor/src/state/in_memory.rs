@@ -44,6 +44,33 @@ impl InMemoryState {
         decision.map(|(result, _)| result)
     }
 
+    pub(crate) fn measure_and_peek_one<T, F, E>(&self, mut f: F) -> Result<T, E>
+    where
+        F: FnMut(Option<Nanos>) -> Result<(T, Nanos), E>,
+    {
+        let mut prev = self.0.load(Ordering::Acquire);
+        let original_prev = prev;
+        let mut decision = f(NonZeroU64::new(prev).map(|n| n.get().into()));
+        while let Ok((result, new_data)) = decision {
+            match self.0.compare_exchange_weak(
+                prev,
+                new_data.into(),
+                Ordering::Release,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    self.0.store(original_prev, Ordering::Release);
+                    return Ok(result);
+                }
+                Err(next_prev) => prev = next_prev,
+            }
+            decision = f(NonZeroU64::new(prev).map(|n| n.get().into()));
+        }
+        // This map shouldn't be needed, as we only get here in the error case, but the compiler
+        // can't see it.
+        decision.map(|(result, _)| result)
+    }
+
     pub(crate) fn is_older_than(&self, nanos: Nanos) -> bool {
         self.0.load(Ordering::Relaxed) <= nanos.into()
     }
@@ -58,6 +85,13 @@ impl StateStore for InMemoryState {
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         self.measure_and_replace_one(f)
+    }
+
+    fn measure_and_peek<T, F, E>(&self, _key: &Self::Key, f: F) -> Option<Result<T, E>>
+    where
+        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
+    {
+        Some(self.measure_and_peek_one(f))
     }
 }
 

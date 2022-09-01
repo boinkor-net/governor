@@ -281,6 +281,13 @@ mod test {
             {
                 f(None).map(|(res, _)| res)
             }
+
+            fn measure_and_peek<T, F, E>(&self, _key: &Self::Key, f: F) -> Option<Result<T, E>>
+            where
+                F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
+            {
+                Some(f(None).map(|(res, _)| res))
+            }
         }
 
         impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for NaiveKeyedStateStore<K> {
