@@ -95,6 +95,51 @@ fn peek_does_not_change_the_decision() {
 }
 
 #[test]
+fn rejects_too_many_n() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    assert!(lb.check_n(nonzero!(3u32)).is_err());
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(()), lb.check_n(nonzero!(2u32)), "Now: {:?}", clock.now());
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(()), lb.check_n(nonzero!(2u32)), "Now: {:?}", clock.now());
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert!(lb.check_n(nonzero!(3u32)).is_err());
+}
+
+#[test]
+fn peek_does_not_change_the_decision_n() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    assert!(lb.peek_n(nonzero!(3u32)).is_err());
+    assert!(lb.peek_n(nonzero!(3u32)).is_err());
+
+    assert_eq!(Ok(()), lb.check_n(nonzero!(2u32)), "Now: {:?}", clock.now());
+    assert!(lb.check_n(nonzero!(3u32)).is_err());
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(()), lb.check_n(nonzero!(2u32)), "Now: {:?}", clock.now());
+    assert_ne!(Ok(()), lb.peek_n(nonzero!(2u32)), "Now: {:?}", clock.now());
+}
+
+#[test]
 fn all_1_identical_to_1() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
