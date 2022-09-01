@@ -126,7 +126,7 @@ where
         key: &K,
         n: NonZeroU32,
     ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
-        self.gcra.test_n_all_peek::<K, C::Instant, S, MW>(
+        self.gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
             self.start,
             key,
             n,

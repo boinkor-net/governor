@@ -241,7 +241,7 @@ impl Gcra {
                 (tau.as_u64() / t.as_u64()) as u32,
             ));
         }
-        state.measure_and_replace(key, |tat| {
+        match state.measure_and_peek(key, |tat| {
             let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = (tat + additional_weight).saturating_sub(tau);
             if t0 < earliest_time {
@@ -249,18 +249,21 @@ impl Gcra {
                     n.get(),
                     MW::disallow(
                         key,
-                        StateSnapshot::new(self.t, self.tau, t0, tat),
+                        StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
                         start,
                     ),
                 ))
             } else {
                 let next = cmp::max(tat, t0) + t + additional_weight;
                 Ok((
-                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tat)),
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
                     next,
                 ))
             }
-        })
+        }) {
+            Some(outcome) => outcome,
+            None => Ok(MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tau))),
+        }
     }
 }
 
