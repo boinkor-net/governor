@@ -69,7 +69,7 @@ use std::{cmp, marker::PhantomData};
 use crate::{clock, nanos::Nanos, NotUntil, Quota};
 
 /// Information about the rate-limiting state used to reach a decision.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StateSnapshot {
     /// The "weight" of a single packet in units of time.
     t: Nanos,

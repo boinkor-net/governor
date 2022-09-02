@@ -11,7 +11,7 @@
 ///   * `InsufficientCapacity` - the query was invalid as the rate
 ///     limite parameters can never accomodate the number of cells
 ///     queried for.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum NegativeMultiDecision<E> {
     /// A batch of cells (the first argument) is non-conforming and
     /// can not be let through at this time. The second argument gives
