@@ -107,6 +107,10 @@ where
         )
     }
 
+    pub fn reset_key(&self, key: &K) {
+        self.state.reset(key);
+    }
+    
     /// Allow *only all* `n` cells through the rate limiter for the given key.
     ///
     /// This method can succeed in only one way and fail in two ways:
@@ -288,6 +292,8 @@ mod test {
             {
                 Some(f(None).map(|(res, _)| res))
             }
+
+            fn reset(&self, _key: &Self::Key) {}
         }
 
         impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for NaiveKeyedStateStore<K> {

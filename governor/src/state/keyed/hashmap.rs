@@ -54,9 +54,12 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
             std::collections::hash_map::Entry::Occupied(occupied) => Some(occupied.get().measure_and_peek_one(f)),
             std::collections::hash_map::Entry::Vacant(_) => None,
         }
-        // entry.measure_and_peek_one(f)
     }
 
+    fn reset(&self, key: &Self::Key) {
+        let mut map = self.lock();
+        map.remove(key);
+    }
 }
 
 impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for HashMapStateStore<K> {

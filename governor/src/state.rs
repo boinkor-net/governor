@@ -46,10 +46,13 @@ pub trait StateStore {
     fn measure_and_replace<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
-
+    /// `measure_and_peek` does the same as `measure_and_replace` except
+    /// it will not change the state. This is useful if you need to know the next
+    /// decision in advance
     fn measure_and_peek<T, F, E>(&self, key: &Self::Key, f: F) -> Option<Result<T, E>>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
+    fn reset(&self, key: &Self::Key);
 }
 
 /// A rate limiter.

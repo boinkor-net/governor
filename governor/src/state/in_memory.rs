@@ -93,6 +93,9 @@ impl StateStore for InMemoryState {
     {
         Some(self.measure_and_peek_one(f))
     }
+    fn reset(&self, _key: &Self::Key) {
+        self.0.store(0, Ordering::Release);
+    }
 }
 
 impl Debug for InMemoryState {

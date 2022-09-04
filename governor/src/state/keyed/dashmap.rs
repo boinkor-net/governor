@@ -40,6 +40,10 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
         let entry = self.entry(key.clone()).or_default();
         Some((*entry).measure_and_peek_one(f))
     }
+
+    fn reset(&self, key: &Self::Key) {
+        self.remove(key);
+    }
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed

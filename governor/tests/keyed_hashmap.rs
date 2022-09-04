@@ -72,7 +72,7 @@ fn peek_does_not_change_the_decision() {
             clock.advance(ms);
             assert_ne!(Ok(()), lb.peek_key(key), "Now: {:?}", clock.now());
         }
-        
+
         clock.advance(ms);
         assert_ne!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
 
@@ -100,6 +100,48 @@ fn peek_does_not_change_the_decision() {
             clock.advance(ms);
             assert_ne!(Ok(()), lb.peek_key(key), "Now: {:?}", clock.now());
         }
+    }
+}
+
+#[test]
+fn reset_does_work() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    for key in KEYS {
+        // use up our burst capacity (2 in the first second):
+        assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
+        clock.advance(ms);
+        assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
+
+        for _ in 0..10 {
+            clock.advance(ms);
+            assert_ne!(Ok(()), lb.peek_key(key), "Now: {:?}", clock.now());
+        }
+        clock.advance(ms);
+        assert_ne!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
+
+        lb.reset_key(key);
+
+        for _ in 0..10 {
+            clock.advance(ms);
+            assert_eq!(Ok(()), lb.peek_key(key), "Now: {:?}", clock.now());
+        }
+
+        assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
+        clock.advance(ms);
+        lb.reset_key(key);
+        assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
+        clock.advance(ms);
+        assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
+        
+        for _ in 0..10 {
+            clock.advance(ms);
+            assert_ne!(Ok(()), lb.peek_key(key), "Now: {:?}", clock.now());
+        }
+        clock.advance(ms);
+        assert_ne!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
     }
 }
 
