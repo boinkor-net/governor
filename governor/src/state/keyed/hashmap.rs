@@ -48,10 +48,11 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
             return Some(v.measure_and_peek_one(f));
         }
         // not-so-fast path: make a new entry and measure it.
-        let entry = (*map)
-            .entry(key.clone());
+        let entry = (*map).entry(key.clone());
         match entry {
-            std::collections::hash_map::Entry::Occupied(occupied) => Some(occupied.get().measure_and_peek_one(f)),
+            std::collections::hash_map::Entry::Occupied(occupied) => {
+                Some(occupied.get().measure_and_peek_one(f))
+            }
             std::collections::hash_map::Entry::Vacant(_) => None,
         }
     }

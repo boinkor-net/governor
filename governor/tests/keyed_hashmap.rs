@@ -135,7 +135,7 @@ fn reset_does_work() {
         assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
         clock.advance(ms);
         assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
-        
+
         for _ in 0..10 {
             clock.advance(ms);
             assert_ne!(Ok(()), lb.peek_key(key), "Now: {:?}", clock.now());

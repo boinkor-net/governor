@@ -42,56 +42,55 @@ fn peek_does_not_change_the_decision() {
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
     let ms = Duration::from_millis(1);
 
-
-        // no key is always positive outcome
-        for _ in 0..10 {
-            clock.advance(ms);
-            assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
-        }
-
-        // use up our burst capacity (2 in the first second):
-        assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
-
-        for _ in 0..10 {
-            clock.advance(ms);
-            assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
-        }
-
+    // no key is always positive outcome
+    for _ in 0..10 {
         clock.advance(ms);
-        assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+        assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
 
-        for _ in 0..10 {
-            clock.advance(ms);
-            assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
-        }
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
 
+    for _ in 0..10 {
         clock.advance(ms);
-        assert_ne!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+        assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
 
-        for _ in 0..10 {
-            clock.advance(ms);
-            assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
-        }
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
 
-        // should be ok again in 1s:
-        clock.advance(ms * 1000);
-        assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+    for _ in 0..10 {
         clock.advance(ms);
+        assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
 
-        for _ in 0..10 {
-            clock.advance(ms);
-            assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
-        }
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check(), "Now: {:?}", clock.now());
 
-        assert_eq!(Ok(()), lb.check());
-
+    for _ in 0..10 {
         clock.advance(ms);
-        assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+        assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
 
-        for _ in 0..10 {
-            clock.advance(ms);
-            assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
-        }
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+    clock.advance(ms);
+
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
+
+    assert_eq!(Ok(()), lb.check());
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
 }
 
 #[test]

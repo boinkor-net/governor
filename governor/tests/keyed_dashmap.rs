@@ -54,14 +54,24 @@ fn rejects_too_many_n() {
 
     for key in KEYS {
         // use up our burst capacity (2 in the first second):
-        assert_eq!(Ok(()), lb.check_key_n(key, nonzero!(2u32)), "Now: {:?}", clock.now());
+        assert_eq!(
+            Ok(()),
+            lb.check_key_n(key, nonzero!(2u32)),
+            "Now: {:?}",
+            clock.now()
+        );
         clock.advance(ms);
 
         assert_ne!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
 
         // should be ok again in 1s:
         clock.advance(ms * 1000);
-        assert_eq!(Ok(()), lb.check_key_n(key, nonzero!(2u32)), "Now: {:?}", clock.now());
+        assert_eq!(
+            Ok(()),
+            lb.check_key_n(key, nonzero!(2u32)),
+            "Now: {:?}",
+            clock.now()
+        );
         clock.advance(ms);
 
         assert_ne!(Ok(()), lb.check_key(key), "{:?}", lb);
@@ -136,29 +146,59 @@ fn peek_does_not_change_the_decision_n() {
     for key in KEYS {
         // no key is always positive outcome
         assert!(lb.peek_key_n(key, nonzero!(3u32)).is_err());
-        assert_eq!(Ok(()), lb.peek_key_n(key, nonzero!(2u32)), "Now: {:?}", clock.now());
+        assert_eq!(
+            Ok(()),
+            lb.peek_key_n(key, nonzero!(2u32)),
+            "Now: {:?}",
+            clock.now()
+        );
 
         // use up our burst capacity (2 in the first second):
         assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
 
-        assert_eq!(Ok(()), lb.peek_key_n(key, nonzero!(1u32)), "Now: {:?}", clock.now());
+        assert_eq!(
+            Ok(()),
+            lb.peek_key_n(key, nonzero!(1u32)),
+            "Now: {:?}",
+            clock.now()
+        );
         assert!(lb.peek_key_n(key, nonzero!(2u32)).is_err());
 
         clock.advance(ms);
         assert_eq!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
 
-        assert_ne!(Ok(()), lb.peek_key_n(key, nonzero!(2u32)), "Now: {:?}", clock.now());
+        assert_ne!(
+            Ok(()),
+            lb.peek_key_n(key, nonzero!(2u32)),
+            "Now: {:?}",
+            clock.now()
+        );
 
         clock.advance(ms);
         assert_ne!(Ok(()), lb.check_key(key), "Now: {:?}", clock.now());
 
-        assert_ne!(Ok(()), lb.peek_key_n(key, nonzero!(2u32)), "Now: {:?}", clock.now());
+        assert_ne!(
+            Ok(()),
+            lb.peek_key_n(key, nonzero!(2u32)),
+            "Now: {:?}",
+            clock.now()
+        );
 
         // should be ok again in 1s:
         clock.advance(ms * 1000);
-        assert_eq!(Ok(()), lb.peek_key_n(key, nonzero!(2u32)), "Now: {:?}", clock.now());
+        assert_eq!(
+            Ok(()),
+            lb.peek_key_n(key, nonzero!(2u32)),
+            "Now: {:?}",
+            clock.now()
+        );
 
-        assert_eq!(Ok(()), lb.check_key_n(key, nonzero!(2u32)),"Now: {:?}", clock.now());
+        assert_eq!(
+            Ok(()),
+            lb.check_key_n(key, nonzero!(2u32)),
+            "Now: {:?}",
+            clock.now()
+        );
         assert!(lb.peek_key_n(key, nonzero!(2u32)).is_err());
     }
 }

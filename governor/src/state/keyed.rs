@@ -99,18 +99,14 @@ where
     }
 
     pub fn peek_key(&self, key: &K) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
-        self.gcra.peek_test::<K, C::Instant, S, MW>(
-            self.start,
-            key,
-            &self.state,
-            self.clock.now(),
-        )
+        self.gcra
+            .peek_test::<K, C::Instant, S, MW>(self.start, key, &self.state, self.clock.now())
     }
 
     pub fn reset_key(&self, key: &K) {
         self.state.reset(key);
     }
-    
+
     /// Allow *only all* `n` cells through the rate limiter for the given key.
     ///
     /// This method can succeed in only one way and fail in two ways:
@@ -152,7 +148,6 @@ where
             self.clock.now(),
         )
     }
-
 }
 
 /// Keyed rate limiters that can be "cleaned up".

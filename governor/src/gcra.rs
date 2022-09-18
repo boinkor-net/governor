@@ -122,10 +122,8 @@ impl Gcra {
             } else {
                 let next = cmp::max(tat, t0) + t;
                 Ok((
-                    MW::allow(
-                        key,
-                        StateSnapshot::new(self.t, self.tau, t0, next)),
-                        next,
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
+                    next,
                 ))
             }
         })
@@ -164,7 +162,10 @@ impl Gcra {
             }
         }) {
             Some(outcome) => outcome,
-            None => Ok(MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tau))),
+            None => Ok(MW::allow(
+                key,
+                StateSnapshot::new(self.t, self.tau, t0, tau),
+            )),
         }
     }
 
@@ -262,7 +263,10 @@ impl Gcra {
             }
         }) {
             Some(outcome) => outcome,
-            None => Ok(MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, tau))),
+            None => Ok(MW::allow(
+                key,
+                StateSnapshot::new(self.t, self.tau, t0, tau),
+            )),
         }
     }
 }

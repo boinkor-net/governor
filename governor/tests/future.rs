@@ -24,7 +24,10 @@ fn pauses() {
 
     let i = Instant::now();
     block_on(lim.until_ready());
-    assert_ge!(i.elapsed(), Duration::from_millis(PAUSES_DURATION_MIN_MILLIS));
+    assert_ge!(
+        i.elapsed(),
+        Duration::from_millis(PAUSES_DURATION_MIN_MILLIS)
+    );
 }
 
 #[test]
@@ -36,7 +39,10 @@ fn pauses_n() {
 
     let i = Instant::now();
     block_on(lim.until_n_ready(nonzero!(5u32))).unwrap();
-    assert_ge!(i.elapsed(), Duration::from_millis(PAUSES_DURATION_MIN_MILLIS));
+    assert_ge!(
+        i.elapsed(),
+        Duration::from_millis(PAUSES_DURATION_MIN_MILLIS)
+    );
 }
 
 #[test]
@@ -51,7 +57,10 @@ fn pauses_keyed() {
     }
     let i = Instant::now();
     block_on(lim.until_key_ready(&1u32));
-    assert_ge!(i.elapsed(), Duration::from_millis(PAUSES_DURATION_MIN_MILLIS));
+    assert_ge!(
+        i.elapsed(),
+        Duration::from_millis(PAUSES_DURATION_MIN_MILLIS)
+    );
 }
 
 #[test]
@@ -60,7 +69,10 @@ fn proceeds() {
 
     let i = Instant::now();
     block_on(lim.until_ready());
-    assert_le!(i.elapsed(), Duration::from_micros(PROCEEDS_DURATION_MAX_MICROS));
+    assert_le!(
+        i.elapsed(),
+        Duration::from_micros(PROCEEDS_DURATION_MAX_MICROS)
+    );
 }
 
 #[test]
@@ -69,7 +81,10 @@ fn proceeds_n() {
 
     let i = Instant::now();
     block_on(lim.until_n_ready(nonzero!(10u32))).unwrap();
-    assert_le!(i.elapsed(), Duration::from_micros(PROCEEDS_DURATION_MAX_MICROS));
+    assert_le!(
+        i.elapsed(),
+        Duration::from_micros(PROCEEDS_DURATION_MAX_MICROS)
+    );
 }
 
 #[test]
@@ -78,7 +93,10 @@ fn proceeds_keyed() {
 
     let i = Instant::now();
     block_on(lim.until_key_ready(&1u32));
-    assert_le!(i.elapsed(), Duration::from_micros(PROCEEDS_DURATION_MAX_MICROS));
+    assert_le!(
+        i.elapsed(),
+        Duration::from_micros(PROCEEDS_DURATION_MAX_MICROS)
+    );
 }
 
 #[test]
