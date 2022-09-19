@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.5.0](https://docs.rs/governor/0.5.0/governor/)] - 2022-09-19
+
 ### Changed
 * Fixed a bug in `StateSnapshot::remaining_burst_capacity`: Now
   returns the correct number of cells after enough time has
