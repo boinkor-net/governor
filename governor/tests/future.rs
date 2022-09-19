@@ -55,7 +55,6 @@ fn pauses_keyed() {
 
 #[test]
 fn proceeds() {
-
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
     let i = Instant::now();
     block_on(lim.until_ready());
