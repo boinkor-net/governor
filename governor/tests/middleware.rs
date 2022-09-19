@@ -24,7 +24,6 @@ impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for My
         _limiter: impl Into<StateSnapshot>,
         _start_time: <FakeRelativeClock as clock::Clock>::Instant,
     ) -> Self::NegativeOutcome {
-        ()
     }
 }
 

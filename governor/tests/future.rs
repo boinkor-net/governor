@@ -8,9 +8,10 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
+const WAIT_UNTIL_PROCEEDS: u64 = 50;
+
 #[test]
 fn pauses() {
-    let i = Instant::now();
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
 
     // exhaust the limiter:
@@ -19,20 +20,19 @@ fn pauses() {
             break;
         }
     }
-
+    let i = Instant::now();
     block_on(lim.until_ready());
     assert_ge!(i.elapsed(), Duration::from_millis(100));
 }
 
 #[test]
 fn pauses_n() {
-    let i = Instant::now();
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
 
     for _ in 0..6 {
         lim.check().unwrap();
     }
-
+    let i = Instant::now();
     block_on(lim.until_n_ready(nonzero!(5u32))).unwrap();
     assert_ge!(i.elapsed(), Duration::from_millis(100));
 }
@@ -55,37 +55,33 @@ fn pauses_keyed() {
 
 #[test]
 fn proceeds() {
-    let i = Instant::now();
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
-
+    let i = Instant::now();
     block_on(lim.until_ready());
-    assert_le!(i.elapsed(), Duration::from_millis(100));
+    assert_le!(i.elapsed(), Duration::from_micros(WAIT_UNTIL_PROCEEDS));
 }
 
 #[test]
 fn proceeds_n() {
-    let i = Instant::now();
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
-
+    let i = Instant::now();
     block_on(lim.until_n_ready(nonzero!(10u32))).unwrap();
-    assert_le!(i.elapsed(), Duration::from_millis(100));
+    assert_le!(i.elapsed(), Duration::from_micros(WAIT_UNTIL_PROCEEDS));
 }
 
 #[test]
 fn proceeds_keyed() {
-    let i = Instant::now();
     let lim = RateLimiter::keyed(Quota::per_second(nonzero!(10u32)));
-
+    let i = Instant::now();
     block_on(lim.until_key_ready(&1u32));
-    assert_le!(i.elapsed(), Duration::from_millis(100));
+    assert_le!(i.elapsed(), Duration::from_micros(WAIT_UNTIL_PROCEEDS));
 }
 
 #[test]
 fn multiple() {
-    let i = Instant::now();
     let lim = Arc::new(RateLimiter::direct(Quota::per_second(nonzero!(10u32))));
     let mut children = vec![];
-
+    let i = Instant::now();
     for _i in 0..20 {
         let lim = Arc::clone(&lim);
         children.push(thread::spawn(move || {
@@ -103,10 +99,10 @@ fn multiple() {
 
 #[test]
 fn multiple_keyed() {
-    let i = Instant::now();
     let lim = Arc::new(RateLimiter::keyed(Quota::per_second(nonzero!(10u32))));
     let mut children = vec![];
 
+    let i = Instant::now();
     for _i in 0..20 {
         let lim = Arc::clone(&lim);
         children.push(thread::spawn(move || {

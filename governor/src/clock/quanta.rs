@@ -123,9 +123,7 @@ mod test {
         let one_ns = Nanos::new(1);
         // let _c1 =
         //     QuantaUpkeepClock::from_builder(quanta::Upkeep::new(Duration::from_secs(1))).unwrap();
-        let c = QuantaUpkeepClock::from_interval(Duration::from_secs(1))
-            .unwrap()
-            .clone();
+        let c = QuantaUpkeepClock::from_interval(Duration::from_secs(1)).unwrap();
         let now = c.now();
         assert_ne!(now + one_ns, now);
         assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));

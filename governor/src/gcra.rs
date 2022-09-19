@@ -12,13 +12,13 @@ use crate::Jitter;
 ///
 /// `NotUntil`'s methods indicate when a caller can expect the next positive
 /// rate-limiting result.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct NotUntil<P: clock::Reference> {
     state: StateSnapshot,
     start: P,
 }
 
-impl<'a, P: clock::Reference> NotUntil<P> {
+impl<P: clock::Reference> NotUntil<P> {
     /// Create a `NotUntil` as a negative rate-limiting result.
     #[inline]
     pub(crate) fn new(state: StateSnapshot, start: P) -> Self {
@@ -67,13 +67,13 @@ impl<'a, P: clock::Reference> NotUntil<P> {
     }
 }
 
-impl<'a, P: clock::Reference> fmt::Display for NotUntil<P> {
+impl<P: clock::Reference> fmt::Display for NotUntil<P> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "rate-limited until {:?}", self.start + self.state.tat)
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Gcra {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
@@ -190,13 +190,14 @@ mod test {
     #[cfg(feature = "std")]
     #[test]
     fn gcra_derives() {
+        use all_asserts::assert_gt;
         use nonzero_ext::nonzero;
 
         let g = Gcra::new(Quota::per_second(nonzero!(1u32)));
         let g2 = Gcra::new(Quota::per_second(nonzero!(2u32)));
         assert_eq!(g, g);
         assert_ne!(g, g2);
-        assert!(format!("{:?}", g).len() > 0);
+        assert_gt!(format!("{:?}", g).len(), 0);
     }
 
     /// Exercise derives and convenience impls on NotUntil to make coverage happy
@@ -204,6 +205,7 @@ mod test {
     #[test]
     fn notuntil_impls() {
         use crate::RateLimiter;
+        use all_asserts::assert_gt;
         use clock::FakeRelativeClock;
         use nonzero_ext::nonzero;
 
@@ -215,7 +217,7 @@ mod test {
             .check()
             .map_err(|nu| {
                 assert_eq!(nu, nu);
-                assert!(format!("{:?}", nu).len() > 0);
+                assert_gt!(format!("{:?}", nu).len(), 0);
                 assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
                 assert_eq!(nu.quota(), quota);
             })

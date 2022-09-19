@@ -57,7 +57,7 @@ use std::time::Instant;
 /// # }
 /// # #[cfg(any(not(feature = "jitter"), not(feature = "std")))] fn main() {}
 /// ```
-#[derive(Debug, PartialEq, Default, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Default, Clone, Copy)]
 #[cfg_attr(feature = "docs", doc(cfg(jitter)))]
 pub struct Jitter {
     min: Nanos,
