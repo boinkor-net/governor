@@ -12,7 +12,7 @@ use crate::Jitter;
 ///
 /// `NotUntil`'s methods indicate when a caller can expect the next positive
 /// rate-limiting result.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct NotUntil<P: clock::Reference> {
     state: StateSnapshot,
     start: P,
@@ -73,7 +73,7 @@ impl<P: clock::Reference> fmt::Display for NotUntil<P> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Gcra {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
