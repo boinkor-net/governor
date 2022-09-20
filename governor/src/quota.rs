@@ -186,7 +186,7 @@ impl Quota {
 impl Quota {
     /// A way to reconstruct a Quota from an in-use Gcra.
     ///
-    /// This is useful mainly for [`crate::RateLimitingMiddleware`]
+    /// This is useful mainly for [`crate::middleware::RateLimitingMiddleware`]
     /// where custom code may want to construct information based on
     /// the amount of burst balance remaining.
     pub(crate) fn from_gcra_parameters(t: Nanos, tau: Nanos) -> Quota {
