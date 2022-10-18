@@ -11,3 +11,5 @@ See the [README for the `governor` crate](governor/README.md) for details.
  + [tide-governor](https://github.com/ohmree/tide-governor): A tide middleware that provides rate-limiting functionality backed by governor.
 
  + [actix-governor](https://github.com/AaronErhardt/actix-governor): A middleware for actix-web that provides rate-limiting backed by governor.
+
+ + [tower_governor](https://github.com/benwis/tower_governor): A tower middleware that provides rate-limit      ing backed by governor for projects that use Tower like Axum and Tonic
