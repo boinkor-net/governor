@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.5.1](https://docs.rs/governor/0.5.1/governor/)] - 2022-11-29
+
 ### Changed
 * Fixed quota reporting for positive rate limiting decisions when
   `StateInformationMiddleware` is in use with a real clock. Reported
