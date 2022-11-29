@@ -4,6 +4,14 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+* Fixed quota reporting for positive rate limiting decisions when
+  `StateInformationMiddleware` is in use with a real clock. Reported
+  in [#157](https://github.com/antifuchs/governor/issues/157)
+
+### Contributors
+* [@AaronErhardt](https://github.com/AaronErhardt)
+
 ## [[0.5.0](https://docs.rs/governor/0.5.0/governor/)] - 2022-09-19
 
 ### Changed
@@ -20,7 +28,7 @@
 * Upgraded `dashmap` back [to 5.1.0](https://github.com/antifuchs/governor/pull/110).
 * Upgraded `parking_lot` [to 0.12.0](https://github.com/antifuchs/governor/pull/109).
 
-## Internal
+### Internal
 * Migrated the `governor` code base to [cargo
   workspaces](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html).
 
