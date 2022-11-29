@@ -212,10 +212,15 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     ) -> Self::NegativeOutcome;
 }
 
-#[derive(Debug)]
 /// A middleware that does nothing and returns `()` in the positive outcome.
 pub struct NoOpMiddleware<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
     phantom: PhantomData<P>,
+}
+
+impl<P: clock::Reference> std::fmt::Debug for NoOpMiddleware<P> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "NoOpMiddleware")
+    }
 }
 
 impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
@@ -283,7 +288,7 @@ mod test {
                     phantom: PhantomData::<Duration>,
                 }
             ),
-            "NoOpMiddleware { phantom: PhantomData }"
+            "NoOpMiddleware"
         );
     }
 }
