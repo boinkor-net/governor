@@ -1,30 +1,14 @@
-use std::{error::Error, fmt, num::NonZeroU32};
+use std::num::NonZeroU32;
 
 use super::RateLimiter;
 use crate::{
     clock,
+    errors::InsufficientCapacity,
     middleware::RateLimitingMiddleware,
     state::{DirectStateStore, NotKeyed},
-    Jitter, NegativeMultiDecision, NotUntil,
+    Jitter, NotUntil,
 };
 use futures_timer::Delay;
-
-/// An error that occurs when the number of cells required in `check_n`
-/// exceeds the maximum capacity of the limiter.
-#[derive(Debug, Clone)]
-pub struct InsufficientCapacity(pub u32);
-
-impl fmt::Display for InsufficientCapacity {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "required number of cell {} exceeds bucket's capacity",
-            self.0
-        )
-    }
-}
-
-impl Error for InsufficientCapacity {}
 
 #[cfg(feature = "std")]
 /// # Direct rate limiters - `async`/`await`
@@ -100,16 +84,13 @@ where
         jitter: Jitter,
     ) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
         loop {
-            match self.check_n(n) {
+            match self.check_n(n)? {
                 Ok(x) => {
                     return Ok(x);
                 }
-                Err(NegativeMultiDecision::BatchNonConforming(_, negative)) => {
+                Err(negative) => {
                     let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
                     delay.await;
-                }
-                Err(NegativeMultiDecision::InsufficientCapacity(cap)) => {
-                    return Err(InsufficientCapacity(cap))
                 }
             }
         }

@@ -4,6 +4,12 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+* The API for `.check_n` and `.until_n` (and their keyed counterpart)
+  have changed to return a nested `Result` - the outer indicating
+  whether the check could ever succeed and the inner one indicating
+  the rate limiting result, if it could succeed.
+
 ## [[0.5.1](https://docs.rs/governor/0.5.1/governor/)] - 2022-11-29
 
 ### Changed

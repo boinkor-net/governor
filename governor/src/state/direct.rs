@@ -9,9 +9,10 @@ use std::num::NonZeroU32;
 
 use crate::{
     clock,
+    errors::InsufficientCapacity,
     middleware::{NoOpMiddleware, RateLimitingMiddleware},
     state::InMemoryState,
-    NegativeMultiDecision, Quota,
+    Quota,
 };
 
 /// The "this state store does not use keys" key type.
@@ -97,7 +98,7 @@ where
     pub fn check_n(
         &self,
         n: NonZeroU32,
-    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
         self.gcra
             .test_n_all_and_update::<NotKeyed, C::Instant, S, MW>(
                 self.start,
