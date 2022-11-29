@@ -8,7 +8,9 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-const WAIT_UNTIL_PROCEEDS: u64 = 50;
+/// The time that our "real" clock tests may take, indicating that no
+/// blocking waits have occurred.
+const MAX_TEST_RUN_DURATION: Duration = Duration::from_micros(200);
 
 #[test]
 fn pauses() {
@@ -55,26 +57,26 @@ fn pauses_keyed() {
 
 #[test]
 fn proceeds() {
-    let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+    let lim = RateLimiter::direct(Quota::per_second(nonzero!(2u32)));
     let i = Instant::now();
     block_on(lim.until_ready());
-    assert_le!(i.elapsed(), Duration::from_micros(WAIT_UNTIL_PROCEEDS));
+    assert_le!(i.elapsed(), MAX_TEST_RUN_DURATION);
 }
 
 #[test]
 fn proceeds_n() {
-    let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
+    let lim = RateLimiter::direct(Quota::per_second(nonzero!(3u32)));
     let i = Instant::now();
-    block_on(lim.until_n_ready(nonzero!(10u32))).unwrap();
-    assert_le!(i.elapsed(), Duration::from_micros(WAIT_UNTIL_PROCEEDS));
+    block_on(lim.until_n_ready(nonzero!(2u32))).unwrap();
+    assert_le!(i.elapsed(), MAX_TEST_RUN_DURATION);
 }
 
 #[test]
 fn proceeds_keyed() {
-    let lim = RateLimiter::keyed(Quota::per_second(nonzero!(10u32)));
+    let lim = RateLimiter::keyed(Quota::per_second(nonzero!(2u32)));
     let i = Instant::now();
     block_on(lim.until_key_ready(&1u32));
-    assert_le!(i.elapsed(), Duration::from_micros(WAIT_UNTIL_PROCEEDS));
+    assert_le!(i.elapsed(), MAX_TEST_RUN_DURATION);
 }
 
 #[test]

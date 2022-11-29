@@ -106,11 +106,7 @@ impl StateSnapshot {
     /// If this state snapshot is based on a negative rate limiting
     /// outcome, this method returns 0.
     pub fn remaining_burst_capacity(&self) -> u32 {
-        let t0 = if self.time_of_measurement.as_u64() == 0 {
-            self.time_of_measurement + self.t
-        } else {
-            self.time_of_measurement
-        };
+        let t0 = self.time_of_measurement + self.t;
         (cmp::min(
             (t0 + self.tau).saturating_sub(self.tat).as_u64(),
             self.tau.as_u64(),

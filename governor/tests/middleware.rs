@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use governor::{
     clock::{self, FakeRelativeClock},
     middleware::{RateLimitingMiddleware, StateInformationMiddleware, StateSnapshot},
@@ -72,31 +70,40 @@ fn mymw_derives() {
 
 #[test]
 fn state_snapshot_tracks_quota_accurately() {
-    use crate::clock::FakeRelativeClock;
-    use crate::RateLimiter;
-    use nonzero_ext::*;
+    use governor::middleware::StateInformationMiddleware;
+    use governor::{Quota, RateLimiter};
+    use std::num::NonZeroU32;
+    use std::time::Duration;
+
+    let burst_size = NonZeroU32::new(2).unwrap();
+    let period = Duration::from_millis(90);
+    let quota = Quota::with_period(period).unwrap().allow_burst(burst_size);
 
     let clock = FakeRelativeClock::default();
 
-    let lim = RateLimiter::direct_with_clock(Quota::per_minute(nonzero!(5_u32)), &clock)
+    // First test
+    let lim = RateLimiter::direct_with_clock(quota, &clock)
         .with_middleware::<StateInformationMiddleware>();
 
-    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(4));
-    assert_eq!(
-        lim.check_n(nonzero!(3_u32))
-            .map(|s| s.remaining_burst_capacity()),
-        Ok(1)
-    );
-    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(0));
+    assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 1);
+    assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 0);
     assert_eq!(lim.check().map_err(|_| ()), Err(()), "should rate limit");
 
     clock.advance(Duration::from_secs(120));
-    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(4));
-    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(3));
     assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(2));
     assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(1));
     assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(0));
-    // TODO: this is incorrect:
-    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(0));
-    assert_eq!(lim.check().map_err(|_| ()), Err(()));
+    assert_eq!(lim.check().map_err(|_| ()), Err(()), "should rate limit");
+
+    // Now with a real clock
+    let lim = RateLimiter::direct(quota).with_middleware::<StateInformationMiddleware>();
+
+    assert_eq!(
+        lim.check().unwrap().remaining_burst_capacity(),
+        1,
+        "{:?}",
+        lim
+    ); // <- This returns 0 instead
+    assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 0);
+    assert_eq!(lim.check().map_err(|_| ()), Err(()), "should rate limit");
 }
