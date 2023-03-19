@@ -157,7 +157,7 @@ fn actual_threadsafety() {
 
 #[test]
 fn default_direct() {
-    let clock = FakeRelativeClock::default();
+    let clock = governor::clock::DefaultClock::default();
     let limiter: DefaultDirectRateLimiter =
         RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
     assert_eq!(Ok(()), limiter.check());
