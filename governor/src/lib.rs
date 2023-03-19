@@ -68,3 +68,18 @@ pub mod prelude {
     #[cfg(feature = "std")]
     pub use crate::state::direct::StreamRateLimitExt;
 }
+
+/// A rate limiter representing a single item of state in memory, running on the default clock.
+///
+/// See the [`RateLimiter`] documentation for details.
+pub type DefaultDirectRateLimiter<
+    MW = middleware::NoOpMiddleware<<clock::DefaultClock as clock::Clock>::Instant>,
+> = RateLimiter<state::direct::NotKeyed, state::InMemoryState, clock::DefaultClock, MW>;
+
+/// A rate limiter with one state per key, running on the default clock.
+///
+/// See the [`RateLimiter`] documentation for details.
+pub type DefaultKeyedRateLimiter<
+    K,
+    MW = middleware::NoOpMiddleware<<clock::DefaultClock as clock::Clock>::Instant>,
+> = RateLimiter<K, state::keyed::DefaultKeyedStateStore<K>, clock::DefaultClock, MW>;
