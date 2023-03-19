@@ -1,5 +1,6 @@
 use crate::state::StateStore;
-use crate::{clock, middleware::StateSnapshot, NegativeMultiDecision, Quota};
+use crate::InsufficientCapacity;
+use crate::{clock, middleware::StateSnapshot, Quota};
 use crate::{middleware::RateLimitingMiddleware, nanos::Nanos};
 use std::num::NonZeroU32;
 use std::time::Duration;
@@ -142,7 +143,7 @@ impl Gcra {
         n: NonZeroU32,
         state: &S,
         t0: P,
-    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
         let t0 = t0.duration_since(start);
         let tau = self.tau;
         let t = self.t;
@@ -151,21 +152,16 @@ impl Gcra {
         // check that we can allow enough cells through. Note that `additional_weight` is the
         // value of the cells *in addition* to the first cell - so add that first cell back.
         if additional_weight + t > tau {
-            return Err(NegativeMultiDecision::InsufficientCapacity(
-                (tau.as_u64() / t.as_u64()) as u32,
-            ));
+            return Err(InsufficientCapacity((tau.as_u64() / t.as_u64()) as u32));
         }
-        state.measure_and_replace(key, |tat| {
+        Ok(state.measure_and_replace(key, |tat| {
             let tat = tat.unwrap_or_else(|| self.starting_state(t0));
             let earliest_time = (tat + additional_weight).saturating_sub(tau);
             if t0 < earliest_time {
-                Err(NegativeMultiDecision::BatchNonConforming(
-                    n.get(),
-                    MW::disallow(
-                        key,
-                        StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
-                        start,
-                    ),
+                Err(MW::disallow(
+                    key,
+                    StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
+                    start,
                 ))
             } else {
                 let next = cmp::max(tat, t0) + t + additional_weight;
@@ -174,7 +170,7 @@ impl Gcra {
                     next,
                 ))
             }
-        })
+        }))
     }
 }
 

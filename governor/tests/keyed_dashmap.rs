@@ -155,7 +155,7 @@ fn dashmap_shrink_to_fit() {
 
     assert_eq!(
         lim.check_key_n(&"long-lived".to_string(), nonzero!(10_u32)),
-        Ok(())
+        Ok(Ok(()))
     );
     assert_eq!(lim.check_key(&"short-lived".to_string()), Ok(()));
 

@@ -14,9 +14,10 @@ use std::prelude::v1::*;
 use crate::state::StateStore;
 use crate::{
     clock::{self, Reference},
+    errors::InsufficientCapacity,
     middleware::RateLimitingMiddleware,
     nanos::Nanos,
-    NegativeMultiDecision, Quota, RateLimiter,
+    Quota, RateLimiter,
 };
 
 /// A trait for state stores with one rate limiting state per key.
@@ -101,12 +102,12 @@ where
     /// Allow *only all* `n` cells through the rate limiter for the given key.
     ///
     /// This method can succeed in only one way and fail in two ways:
-    /// * Success: If all `n` cells can be accommodated, it returns `Ok(())`.
+    /// * Success: If all `n` cells can be accommodated, it returns `Ok(Ok(()))`.
     /// * Failure (but ok): Not all cells can make it through at the current time.
-    ///   The result is `Err(NegativeMultiDecision::BatchNonConforming(NotUntil))`, which can
+    ///   The result is `Ok(Err(NotUntil))`, which can
     ///   be interrogated about when the batch might next conform.
     /// * Failure (the batch can never go through): The rate limit is too low for the given number
-    ///   of cells.
+    ///   of cells. The result is `Err(InsufficientCapacity)`
     ///
     /// ### Performance
     /// This method diverges a little from the GCRA algorithm, using
@@ -116,7 +117,7 @@ where
         &self,
         key: &K,
         n: NonZeroU32,
-    ) -> Result<MW::PositiveOutcome, NegativeMultiDecision<MW::NegativeOutcome>> {
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
         self.gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
             self.start,
             key,
