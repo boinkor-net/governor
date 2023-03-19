@@ -9,6 +9,10 @@
   `DefaultKeyedRateLimiter` to cut down on type-typing of typical rate
   limiters in struct and function definitions. Requested in
   [#85](https://github.com/antifuchs/governor/issues/85).
+* New method `contains_key` that can be used to check if a
+  `RateLimiter` has a given key (which can be used to prevent
+  arbitrary attacker-controlled memory usage in case of a DDoS
+  attack).
 
 ### Changed
 * The API for `.check_n` and `.until_n` (and their keyed counterpart)
