@@ -27,6 +27,10 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
         let entry = self.entry(key.clone()).or_default();
         (*entry).measure_and_replace_one(f)
     }
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        self.contains_key(key)
+    }
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed

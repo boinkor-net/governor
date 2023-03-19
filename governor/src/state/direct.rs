@@ -135,4 +135,10 @@ mod test {
     fn not_keyed_impls_coverage() {
         assert_eq!(NotKeyed::NonKey, NotKeyed::NonKey);
     }
+
+    #[test]
+    fn not_keyed_contains_key_impls_coverage() {
+        let state = InMemoryState::default();
+        assert!(state.contains_key(&NotKeyed::NonKey));
+    }
 }

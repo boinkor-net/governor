@@ -86,6 +86,17 @@ where
     C: clock::Clock,
     MW: RateLimitingMiddleware<C::Instant>,
 {
+    /// Check whether a given key already exists in the state store.
+    ///
+    /// This method returns true if the key is already occupying
+    /// memory (that is, if an underlying hash map state store would
+    /// return true on its `contains_key` method). Particularly, it will
+    /// also return true on keys that would be dropped by
+    /// [`ShrinkableKeyedStateStore::retain_recent`].
+    pub fn contains_key(&self, key: &K) -> bool {
+        self.state.contains_key(key)
+    }
+
     /// Allow a single cell through the rate limiter for the given key.
     ///
     /// If the rate limit is reached, `check_key` returns information about the earliest
@@ -252,6 +263,10 @@ mod test {
         impl<K: Hash + Eq + Clone> StateStore for NaiveKeyedStateStore<K> {
             type Key = K;
 
+            fn contains_key(&self, _key: &Self::Key) -> bool {
+                false
+            }
+
             fn measure_and_replace<T, F, E>(&self, _key: &Self::Key, f: F) -> Result<T, E>
             where
                 F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
@@ -283,6 +298,7 @@ mod test {
             NaiveKeyedStateStore::default(),
             &FakeRelativeClock::default(),
         );
+        assert_eq!(false, lim.contains_key(&1u32));
         assert_eq!(lim.check_key(&1u32), Ok(()));
         assert!(lim.is_empty());
         assert_eq!(lim.len(), 0);

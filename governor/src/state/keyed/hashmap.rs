@@ -37,6 +37,11 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
             .or_insert_with(InMemoryState::default);
         entry.measure_and_replace_one(f)
     }
+
+    fn contains_key(&self, key: &Self::Key) -> bool {
+        let map = self.lock();
+        (*map).contains_key(key)
+    }
 }
 
 impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for HashMapStateStore<K> {

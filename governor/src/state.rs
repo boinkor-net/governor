@@ -46,6 +46,8 @@ pub trait StateStore {
     fn measure_and_replace<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
+
+    fn contains_key(&self, key: &Self::Key) -> bool;
 }
 
 /// A rate limiter.
