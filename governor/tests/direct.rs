@@ -1,6 +1,6 @@
 use governor::{
     clock::{Clock, FakeRelativeClock},
-    InsufficientCapacity, Quota, RateLimiter,
+    DefaultDirectRateLimiter, InsufficientCapacity, Quota, RateLimiter,
 };
 use nonzero_ext::nonzero;
 use std::time::Duration;
@@ -153,4 +153,12 @@ fn actual_threadsafety() {
     assert_ne!(Ok(()), lim.check());
     clock.advance(ms * 998);
     assert_eq!(Ok(()), lim.check());
+}
+
+#[test]
+fn default_direct() {
+    let clock = FakeRelativeClock::default();
+    let limiter: DefaultDirectRateLimiter =
+        RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+    assert_eq!(Ok(()), limiter.check());
 }
