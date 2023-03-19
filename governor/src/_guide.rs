@@ -85,6 +85,28 @@
 //! [KeyedStateStore][crate::state::keyed::KeyedStateStore] trait, and optionally the
 //! [ShrinkableKeyedStateStore][crate::state::keyed::ShrinkableKeyedStateStore] trait.
 //!
+//! # Type signatures for rate limiters
+//!
+//! Rate limiters tend to be long-lived, and need to be stored
+//! somewhere - sometimes in struct fields, or even just to pass in
+//! function arguments. The [`crate::RateLimiter`] type signatures
+//! tend to be pretty unwieldy for that, so this crate exports a pair
+//! of handy type aliases, [`crate::DefaultDirectRateLimiter`] and
+//! [`crate::DefaultDirectRateLimiter`].
+//!
+//! Here's an example for embedding a direct rate limiter in a struct:
+//!
+//! ```rust
+//! # use governor::DefaultDirectRateLimiter;
+//! struct MyApiClient {
+//!     limiter: DefaultDirectRateLimiter,
+//! }
+//! ```
+//!
+//! If you need to provide a different clock, or a different
+//! implementation of the keyed state, you will still have to fall
+//! back to the regular type.
+//!
 //! # Data ownership and references to rate limiters
 //!
 //! `governor`'s rate limiter state is not hidden behind an [interior
