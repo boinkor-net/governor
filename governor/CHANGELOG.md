@@ -4,6 +4,12 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+* Type aliases `DefaultDirectRateLimiter` and
+  `DefaultKeyedRateLimiter` to cut down on type-typing of typical rate
+  limiters in struct and function definitions. Requested in
+  [#85](https://github.com/antifuchs/governor/issues/85).
+
 ### Changed
 * The API for `.check_n` and `.until_n` (and their keyed counterpart)
   have changed to return a nested `Result` - the outer indicating
