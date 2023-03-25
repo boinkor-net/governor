@@ -15,6 +15,11 @@
   have changed to return a nested `Result` - the outer indicating
   whether the check could ever succeed and the inner one indicating
   the rate limiting result, if it could succeed.
+* Updated the [quanta dependency to
+  0.11.0](https://github.com/metrics-rs/quanta/blob/main/CHANGELOG.md#0110---2023-03-24). This
+  requires adding a `once_cell` dependency, to keep track of a static
+  "reference" instant to compare against. All quanta timekeeping used
+  by governor will now be relative to that reference instant.
 
 ## [[0.5.1](https://docs.rs/governor/0.5.1/governor/)] - 2022-11-29
 

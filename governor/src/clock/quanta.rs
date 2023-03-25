@@ -2,6 +2,7 @@ use std::prelude::v1::*;
 
 use crate::clock::{Clock, ReasonablyRealtime, Reference};
 use crate::nanos::Nanos;
+use once_cell::sync::Lazy;
 use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
@@ -15,9 +16,11 @@ use std::time::Duration;
 #[derive(Debug, Clone, Default)]
 pub struct QuantaClock(quanta::Clock);
 
+static REFERENCE: Lazy<quanta::Instant> = Lazy::new(quanta::Instant::now);
+
 impl From<quanta::Instant> for Nanos {
     fn from(instant: quanta::Instant) -> Self {
-        instant.as_u64().into()
+        instant.duration_since(*REFERENCE).into()
     }
 }
 
