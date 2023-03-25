@@ -19,6 +19,7 @@ pub struct QuantaClock(quanta::Clock);
 static REFERENCE: Lazy<quanta::Instant> = Lazy::new(quanta::Instant::now);
 
 impl From<quanta::Instant> for Nanos {
+    #[inline]
     fn from(instant: quanta::Instant) -> Self {
         instant.duration_since(*REFERENCE).into()
     }
