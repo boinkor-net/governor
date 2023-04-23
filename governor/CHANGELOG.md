@@ -15,6 +15,11 @@
   have changed to return a nested `Result` - the outer indicating
   whether the check could ever succeed and the inner one indicating
   the rate limiting result, if it could succeed.
+* Some parts of the documentation for burst sizes has been rephrased
+  to be less confusing.
+
+### Contributors
+* [@brprkr](https://github.com/brprkr)
 
 ## [[0.5.1](https://docs.rs/governor/0.5.1/governor/)] - 2022-11-29
 
