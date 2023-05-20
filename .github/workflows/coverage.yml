@@ -17,7 +17,7 @@ jobs:
       - name: Set grcov version
         run: echo "grcov_version=0.8.0" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v3.0.2
+      - uses: actions/checkout@v3.5.2
 
       - name: Cache cargo index
         uses: actions/cache@v3.0.4
@@ -55,7 +55,7 @@ jobs:
           grcov . --binary-path target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../**' --ignore '/*' -o coverage/doctests.lcov
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3.1.1
+        uses: codecov/codecov-action@v3.1.4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/*.lcov
