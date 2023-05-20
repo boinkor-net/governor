@@ -20,6 +20,11 @@
   requires adding a `once_cell` dependency, to keep track of a static
   "reference" instant to compare against. All quanta timekeeping used
   by governor will now be relative to that reference instant.
+* Some parts of the documentation for burst sizes has been rephrased
+  to be less confusing.
+
+### Contributors
+* [@brprkr](https://github.com/brprkr)
 
 ## [[0.5.1](https://docs.rs/governor/0.5.1/governor/)] - 2022-11-29
 
