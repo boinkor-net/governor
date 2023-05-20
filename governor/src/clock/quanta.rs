@@ -12,12 +12,17 @@ use std::time::Duration;
 /// clock that uses a quanta background upkeep thread (which allows retrieving the time with an
 /// atomic read, but requires a background thread that wakes up continually),
 /// see [`QuantaUpkeepClock`].
-#[derive(Debug, Clone, Default)]
-pub struct QuantaClock(quanta::Clock);
+#[derive(Debug, Clone)]
+pub struct QuantaClock {
+    clock: quanta::Clock,
+    reference: u64,
+}
 
-impl From<quanta::Instant> for Nanos {
-    fn from(instant: quanta::Instant) -> Self {
-        instant.as_u64().into()
+impl Default for QuantaClock {
+    fn default() -> Self {
+        let clock = quanta::Clock::default();
+        let reference = clock.raw();
+        Self { clock, reference }
     }
 }
 
@@ -25,7 +30,8 @@ impl Clock for QuantaClock {
     type Instant = QuantaInstant;
 
     fn now(&self) -> Self::Instant {
-        QuantaInstant(Nanos::from(self.0.now()))
+        let nowish = self.clock.raw();
+        QuantaInstant(Nanos::from(self.clock.delta(self.reference, nowish)))
     }
 }
 
@@ -65,7 +71,11 @@ impl Reference for QuantaInstant {
 /// and the upkeep interval that you pick; you should measure and compare performance before
 /// picking one or the other.
 #[derive(Debug, Clone)]
-pub struct QuantaUpkeepClock(quanta::Clock, Arc<quanta::Handle>);
+pub struct QuantaUpkeepClock {
+    clock: quanta::Clock,
+    _handle: Arc<quanta::Handle>,
+    reference: quanta::Instant,
+}
 
 impl QuantaUpkeepClock {
     /// Returns a new `QuantaUpkeepClock` with an upkeep thread that wakes up once in `interval`.
@@ -76,11 +86,14 @@ impl QuantaUpkeepClock {
 
     /// Returns a new `QuantaUpkeepClock` with an upkeep thread as specified by the given builder.
     pub fn from_builder(builder: quanta::Upkeep) -> Result<QuantaUpkeepClock, quanta::Error> {
-        let handle = builder.start()?;
-        Ok(QuantaUpkeepClock(
-            quanta::Clock::default(),
-            Arc::new(handle),
-        ))
+        let handle = Arc::new(builder.start()?);
+        let clock = quanta::Clock::default();
+        let reference = clock.recent();
+        Ok(QuantaUpkeepClock {
+            clock,
+            _handle: handle,
+            reference,
+        })
     }
 }
 
@@ -88,7 +101,10 @@ impl Clock for QuantaUpkeepClock {
     type Instant = QuantaInstant;
 
     fn now(&self) -> Self::Instant {
-        QuantaInstant(Nanos::from(self.0.recent()))
+        QuantaInstant(Nanos::from(
+            self.reference
+                .saturating_duration_since(self.clock.recent()),
+        ))
     }
 }
 
