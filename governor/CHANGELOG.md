@@ -19,9 +19,7 @@
   0.11.0](https://github.com/metrics-rs/quanta/blob/main/CHANGELOG.md#0110---2023-03-24).
   This change also adds a reference u64 instant to all instances of
   the `QuantaClock` structure. All quanta timekeeping used by governor
-  will now be relative to that reference instant. Note that this
-  increases the size of each `RateLimiter` by the width of a u64, to
-  accommodate that reference instant.
+  will now be relative to that reference instant.
 * Some parts of the documentation for burst sizes has been rephrased
   to be less confusing.
 
