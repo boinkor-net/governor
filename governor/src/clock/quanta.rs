@@ -15,14 +15,12 @@ use std::time::Duration;
 #[derive(Debug, Clone)]
 pub struct QuantaClock {
     clock: quanta::Clock,
-    reference: u64,
 }
 
 impl Default for QuantaClock {
     fn default() -> Self {
         let clock = quanta::Clock::default();
-        let reference = clock.raw();
-        Self { clock, reference }
+        Self { clock }
     }
 }
 
@@ -31,7 +29,7 @@ impl Clock for QuantaClock {
 
     fn now(&self) -> Self::Instant {
         let nowish = self.clock.raw();
-        QuantaInstant(Nanos::from(self.clock.delta(self.reference, nowish)))
+        QuantaInstant(Nanos::from(self.clock.delta(0, nowish)))
     }
 }
 
