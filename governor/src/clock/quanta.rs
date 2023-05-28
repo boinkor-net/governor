@@ -29,7 +29,7 @@ impl Clock for QuantaClock {
 
     fn now(&self) -> Self::Instant {
         let nowish = self.clock.raw();
-        QuantaInstant(Nanos::from(self.clock.delta(0, nowish)))
+        QuantaInstant(Nanos::new(self.clock.delta_as_nanos(0, nowish)))
     }
 }
 
