@@ -16,10 +16,11 @@
   whether the check could ever succeed and the inner one indicating
   the rate limiting result, if it could succeed.
 * Updated the [quanta dependency to
-  0.11.0](https://github.com/metrics-rs/quanta/blob/main/CHANGELOG.md#0110---2023-03-24).
+  0.11.1](https://github.com/metrics-rs/quanta/blob/main/CHANGELOG.md#0110---2023-03-24).
   This change also adds a reference u64 instant to all instances of
-  the `QuantaClock` structure. All quanta timekeeping used by governor
-  will now be relative to that reference instant.
+  the `QuantaUpkeepClock` structure. All lower-resolution quanta
+  timekeeping used by governor will now be relative to that reference
+  instant.
 * Some parts of the documentation for burst sizes has been rephrased
   to be less confusing.
 
