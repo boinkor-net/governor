@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.6.0](https://docs.rs/governor/0.6.0/governor/)] - 2023-07-12
+
 ### Added
 * Type aliases `DefaultDirectRateLimiter` and
   `DefaultKeyedRateLimiter` to cut down on type-typing of typical rate
