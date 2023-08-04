@@ -8,11 +8,16 @@ on:
       - staging
       - trying
   schedule:
-    - cron: '0 23 * * FRI'
+    - cron: "0 23 * * FRI"
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  rust_lints:
+    secrets: "inherit"
+    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_lints.yml@init"
+
+  rust_tests:
+    secrets: "inherit"
+    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_tests.yml@init"
     strategy:
       matrix:
         rust_toolchain: [nightly, stable]
@@ -21,60 +26,21 @@ jobs:
           - "--no-default-features --features 'jitter no_std'"
           - "--no-default-features --features std"
           - ""
-    steps:
-      - uses: actions/checkout@v3.5.2
-      - uses: actions-rs/toolchain@v1
-        with:
-            toolchain: ${{ matrix.rust_toolchain }}
-            override: true
-            profile: minimal
-      - name: "cargo test"
-        uses: actions-rs/cargo@v1.0.3
-        with:
-          command: test
-          args: ${{ matrix.cargo_args }}
-          toolchain: ${{ matrix.rust_toolchain }}
+    with:
+      rust_toolchain: ${{matrix.rust_toolchain}}
+      cargo_test_args: ${{matrix.cargo_test_args}}
 
   all_tests:
-    needs: test
+    needs: rust_tests
     runs-on: ubuntu-latest
     steps:
       - name: Mark the job as a success
         run: exit 0
 
-  rustfmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3.5.2
-      - name: "cargo fmt"
-        uses: actions-rs/cargo@v1.0.3
-        with:
-          command: fmt
-          args: "-v -- --check"
-
-  cargo_deny:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3.5.2
-    - name: "cargo deny"
-      uses: EmbarkStudios/cargo-deny-action@v1
-      with:
-        command: "check all"
-
-  cargo_clippy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3.5.2
-    - name: "cargo clippy"
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: -- -D warnings
-
   cargo_bench:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    needs: test
+    needs: rust_tests
     steps:
       - uses: actions/checkout@v3.5.2
       - name: "cargo bench"
