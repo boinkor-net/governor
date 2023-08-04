@@ -13,11 +13,11 @@ on:
 jobs:
   rust_lints:
     secrets: "inherit"
-    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_lints.yml@init"
+    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_lints.yml@main"
 
   rust_tests:
     secrets: "inherit"
-    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_tests.yml@init"
+    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_tests.yml@main"
     strategy:
       matrix:
         rust_toolchain: [nightly, stable]
