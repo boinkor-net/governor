@@ -9,6 +9,7 @@ on:
       - trying
   schedule:
     - cron: "0 23 * * FRI"
+  workflow_call:
 
 jobs:
   rust_lints:
