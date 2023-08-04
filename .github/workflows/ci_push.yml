@@ -36,7 +36,5 @@ jobs:
     needs: rust_tests
     steps:
       - uses: actions/checkout@v3.5.2
-      - name: "cargo bench"
-        uses: actions-rs/cargo@v1.0.3
-        with:
-          command: bench
+      - uses: dtolnay/rust-toolchain@stable
+      - run: "cargo bench"
