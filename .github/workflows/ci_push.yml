@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         rust_toolchain: [nightly, stable]
-        cargo_args:
+        cargo_test_args:
           - "--no-default-features --features no_std"
           - "--no-default-features --features 'jitter no_std'"
           - "--no-default-features --features std"
