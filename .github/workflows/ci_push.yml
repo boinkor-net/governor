@@ -30,13 +30,6 @@ jobs:
       rust_toolchain: ${{matrix.rust_toolchain}}
       cargo_test_args: ${{matrix.cargo_test_args}}
 
-  all_tests:
-    needs: rust_tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Mark the job as a success
-        run: exit 0
-
   cargo_bench:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'

@@ -2,7 +2,7 @@
 # https://app.bors.tech/repositories so bors can see the new repo!
 
 status = [
-  "all_tests",
+  "rust_tests",
   "rust_lints",
 ]
 timeout_sec = 600
