@@ -9,4 +9,4 @@ jobs:
   code_coverage:
     uses: boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_coverage.yml@coverage
     secrets:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
