@@ -96,6 +96,11 @@ where
     pub fn into_state_store(self) -> S {
         self.state
     }
+
+    /// Consumes the `RateLimiter` and returns `Quota`.
+    pub fn quota(&self) -> Quota {
+        self.gcra.to_quota()
+    }
 }
 
 impl<K, S, C, MW> RateLimiter<K, S, C, MW>
