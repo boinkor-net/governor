@@ -24,7 +24,7 @@ pub use direct::*;
 /// do more than N tasks a day). The keyed kind allows one rate limit per key (e.g. an API
 /// call budget per client API key).
 ///
-/// A direct state store is expressed as [`StateStore::Key`] = [`NotKeyed`][direct::NotKeyed].
+/// A direct state store is expressed as [`StateStore::Key`] = [`NotKeyed`].
 /// Keyed state stores have a
 /// type parameter for the key and set their key to that.
 pub trait StateStore {
