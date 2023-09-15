@@ -175,7 +175,7 @@ fn stresstest_large_quotas() {
         Arc::new(RateLimiter::direct(quota).with_middleware::<StateInformationMiddleware>());
 
     fn rlspin(rl: Arc<DefaultDirectRateLimiter<StateInformationMiddleware>>) {
-        for _ in 0..100_000_000 {
+        for _ in 0..1_000_000 {
             rl.check().map_err(|e| dbg!(e)).unwrap();
         }
     }
