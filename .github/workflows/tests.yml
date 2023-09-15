@@ -20,6 +20,7 @@ jobs:
     secrets: "inherit"
     uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_tests.yml@main"
     strategy:
+      fail-fast: false
       matrix:
         rust_toolchain: [nightly, stable]
         cargo_test_args:
