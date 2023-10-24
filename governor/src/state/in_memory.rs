@@ -44,6 +44,14 @@ impl InMemoryState {
         decision.map(|(result, _)| result)
     }
 
+    pub(crate) fn measure<T, F, E>(&self, mut f: F) -> Result<T, E>
+    where
+        F: FnMut(Option<Nanos>) -> Result<T, E>,
+    {
+        let prev = self.0.load(Ordering::Acquire);
+        f(NonZeroU64::new(prev).map(|n| n.get().into()))
+    }
+
     pub(crate) fn is_older_than(&self, nanos: Nanos) -> bool {
         self.0.load(Ordering::Relaxed) <= nanos.into()
     }
@@ -58,6 +66,13 @@ impl StateStore for InMemoryState {
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
     {
         self.measure_and_replace_one(f)
+    }
+
+    fn measure<T, F, E>(&self, _key: &Self::Key, f: F) -> Result<T, E>
+    where
+        F: Fn(Option<Nanos>) -> Result<T, E>,
+    {
+        self.measure(f)
     }
 }
 

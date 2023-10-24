@@ -108,6 +108,34 @@ where
                 self.clock.now(),
             )
     }
+
+    /// same as `check`, but will not update internal state.
+    /// It would only query if the rate limit is reached.
+    pub fn check_only(&self) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        self.gcra
+            .test_without_update::<NotKeyed, C::Instant, S, MW>(
+                self.start,
+                &NotKeyed::NonKey,
+                &self.state,
+                self.clock.now(),
+            )
+    }
+
+    /// same as `check_n`, but will not update internal state.
+    /// It would only query if all `n` cells can be accommodated.
+    pub fn check_n_only(
+        &self,
+        n: NonZeroU32,
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
+        self.gcra
+            .test_n_all_without_update::<NotKeyed, C::Instant, S, MW>(
+                self.start,
+                &NotKeyed::NonKey,
+                n,
+                &self.state,
+                self.clock.now(),
+            )
+    }
 }
 
 #[cfg(feature = "std")]
