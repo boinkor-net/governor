@@ -13,6 +13,24 @@ fn accepts_first_cell() {
 }
 
 #[test]
+fn accepts_first_cell_check_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(1u32)), &clock);
+    assert_eq!(Ok(()), lb.check_only());
+    // last call does not consume cells
+    assert_eq!(Ok(()), lb.check_only());
+}
+
+#[test]
+fn accepts_cells_check_n_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(3u32)), &clock);
+    assert_eq!(Ok(Ok(())), lb.check_n_only(nonzero!(3u32)));
+    // last call does not consume cells
+    assert_eq!(Ok(Ok(())), lb.check_n_only(nonzero!(3u32)));
+}
+
+#[test]
 fn rejects_too_many() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
@@ -34,6 +52,30 @@ fn rejects_too_many() {
 
     clock.advance(ms);
     assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+}
+
+#[test]
+fn rejects_too_many_check_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check());
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check_only(), "{:?}", lb);
 }
 
 #[test]
@@ -62,6 +104,31 @@ fn all_1_identical_to_1() {
 }
 
 #[test]
+fn all_1_identical_to_1_check_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+    let one = nonzero!(1u32);
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(Ok(())), lb.check_n(one), "Now: {:?}", clock.now());
+    clock.advance(ms);
+    assert_eq!(Ok(Ok(())), lb.check_n(one), "Now: {:?}", clock.now());
+
+    clock.advance(ms);
+    assert_ne!(Ok(Ok(())), lb.check_n_only(one), "Now: {:?}", clock.now());
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(Ok(())), lb.check_n(one), "Now: {:?}", clock.now());
+    clock.advance(ms);
+    assert_eq!(Ok(Ok(())), lb.check_n(one));
+
+    clock.advance(ms);
+    assert_ne!(Ok(Ok(())), lb.check_n_only(one), "{:?}", lb);
+}
+
+#[test]
 fn never_allows_more_than_capacity_all() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), &clock);
@@ -85,6 +152,29 @@ fn never_allows_more_than_capacity_all() {
 }
 
 #[test]
+fn never_allows_more_than_capacity_all_check_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    // Use up the burst capacity:
+    assert_eq!(Ok(Ok(())), lb.check_n(nonzero!(2u32)));
+    assert_eq!(Ok(Ok(())), lb.check_n(nonzero!(2u32)));
+
+    clock.advance(ms);
+    assert_ne!(Ok(Ok(())), lb.check_n_only(nonzero!(2u32)));
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(Ok(())), lb.check_n(nonzero!(2u32)));
+    clock.advance(ms);
+    assert_eq!(Ok(Ok(())), lb.check_n(nonzero!(2u32)));
+
+    clock.advance(ms);
+    assert_ne!(Ok(Ok(())), lb.check_n_only(nonzero!(2u32)), "{:?}", lb);
+}
+
+#[test]
 fn rejects_too_many_all() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
@@ -99,6 +189,20 @@ fn rejects_too_many_all() {
 }
 
 #[test]
+fn rejects_too_many_all_check_n_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    // Should not allow the first 15 cells on a capacity 5 bucket:
+    assert_ne!(Ok(Ok(())), lb.check_n_only(nonzero!(15u32)));
+
+    // After 3 and 20 seconds, it should not allow 15 on that bucket either:
+    clock.advance(ms * 3 * 1000);
+    assert_ne!(Ok(Ok(())), lb.check_n_only(nonzero!(15u32)));
+}
+
+#[test]
 fn all_capacity_check_rejects_excess() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
@@ -106,6 +210,25 @@ fn all_capacity_check_rejects_excess() {
     assert_eq!(Err(InsufficientCapacity(5)), lb.check_n(nonzero!(15u32)));
     assert_eq!(Err(InsufficientCapacity(5)), lb.check_n(nonzero!(6u32)));
     assert_eq!(Err(InsufficientCapacity(5)), lb.check_n(nonzero!(7u32)));
+}
+
+#[test]
+fn all_capacity_check_rejects_excess_check_n_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+
+    assert_eq!(
+        Err(InsufficientCapacity(5)),
+        lb.check_n_only(nonzero!(15u32))
+    );
+    assert_eq!(
+        Err(InsufficientCapacity(5)),
+        lb.check_n_only(nonzero!(6u32))
+    );
+    assert_eq!(
+        Err(InsufficientCapacity(5)),
+        lb.check_n_only(nonzero!(7u32))
+    );
 }
 
 #[test]
