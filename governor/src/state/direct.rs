@@ -136,6 +136,29 @@ where
                 self.clock.now(),
             )
     }
+
+    /// Consume a cell through the rate limiter.
+    /// If no cell is available, it would "borrow" from future cells.
+    pub fn consume(&self) {
+        self.gcra.update::<NotKeyed, C::Instant, S, MW>(
+            self.start,
+            &NotKeyed::NonKey,
+            &self.state,
+            self.clock.now(),
+        )
+    }
+
+    /// Consume n cells through the rate limiter.
+    /// If no cell is available, it would "borrow" from future cells.
+    pub fn consume_n(&self, n: NonZeroU32) {
+        self.gcra.update_n::<NotKeyed, C::Instant, S, MW>(
+            self.start,
+            &NotKeyed::NonKey,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
+    }
 }
 
 #[cfg(feature = "std")]

@@ -254,6 +254,55 @@ impl Gcra {
             }
         })
     }
+
+    /// Update a single cell against the rate limiter state at the given key.
+    pub(crate) fn update<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        state: &S,
+        t0: P,
+    ) {
+        let t0 = t0.duration_since(start);
+        let t = self.t;
+        let _ = state.measure_and_replace(key, |tat| {
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+            let next = cmp::max(tat, t0) + t;
+            // always ask state to update
+            Ok::<((), Nanos), ()>(((), next))
+        });
+    }
+
+    /// Update `n` cells for the rate limiter state.
+    pub(crate) fn update_n<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        n: NonZeroU32,
+        state: &S,
+        t0: P,
+    ) {
+        let t0 = t0.duration_since(start);
+        let t = self.t;
+        let additional_weight = t * (n.get() - 1) as u64;
+
+        let _ = state.measure_and_replace(key, |tat| {
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+
+            let next = cmp::max(tat, t0) + t + additional_weight;
+            Ok::<((), Nanos), ()>(((), next))
+        });
+    }
 }
 
 #[cfg(test)]
