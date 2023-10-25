@@ -79,6 +79,34 @@ fn rejects_too_many_check_only() {
 }
 
 #[test]
+fn rejects_too_many_with_consume_and_check_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+    lb.consume();
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+    lb.consume();
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+    lb.consume();
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+    lb.consume();
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check_only(), "{:?}", lb);
+}
+
+#[test]
 fn all_1_identical_to_1() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
@@ -126,6 +154,110 @@ fn all_1_identical_to_1_check_only() {
 
     clock.advance(ms);
     assert_ne!(Ok(Ok(())), lb.check_n_only(one), "{:?}", lb);
+}
+
+#[test]
+fn all_1_identical_to_1_consume_and_check_only() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+    let one = nonzero!(1u32);
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(Ok(())), lb.check_n_only(one), "Now: {:?}", clock.now());
+    lb.consume_n(one);
+    clock.advance(ms);
+    assert_eq!(Ok(Ok(())), lb.check_n_only(one), "Now: {:?}", clock.now());
+    lb.consume_n(one);
+
+    clock.advance(ms);
+    assert_ne!(Ok(Ok(())), lb.check_n_only(one), "Now: {:?}", clock.now());
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(Ok(())), lb.check_n_only(one), "Now: {:?}", clock.now());
+    lb.consume_n(one);
+    clock.advance(ms);
+    assert_eq!(Ok(Ok(())), lb.check_n_only(one));
+    lb.consume_n(one);
+
+    clock.advance(ms);
+    assert_ne!(Ok(Ok(())), lb.check_n_only(one), "{:?}", lb);
+}
+
+#[test]
+fn consume_n_borrow_from_future() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    assert_eq!(
+        Ok(Ok(())),
+        lb.check_n_only(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+    lb.consume_n(nonzero!(2u32));
+    // consumed all cells
+    assert_ne!(
+        Ok(Ok(())),
+        lb.check_n_only(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+
+    // borrow from future
+    lb.consume_n(nonzero!(2u32));
+    // consumed all cells
+    assert_ne!(
+        Ok(Ok(())),
+        lb.check_n_only(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+
+    // borrowed cells not paid off
+    clock.advance(1000 * ms);
+    assert_ne!(
+        Ok(Ok(())),
+        lb.check_n_only(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+
+    // paid off
+    clock.advance(1000 * ms);
+    assert_eq!(
+        Ok(Ok(())),
+        lb.check_n_only(nonzero!(2u32)),
+        "Now: {:?}",
+        clock.now()
+    );
+}
+
+#[test]
+fn consume_borrow_from_future() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(1u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    assert_eq!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+    lb.consume();
+    // consumed all cells
+    assert_ne!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+
+    // borrow from future
+    lb.consume();
+    // consumed all cells
+    assert_ne!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+
+    // borrowed cells not paid off
+    clock.advance(1000 * ms);
+    assert_ne!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
+
+    // paid off
+    clock.advance(1000 * ms);
+    assert_eq!(Ok(()), lb.check_only(), "Now: {:?}", clock.now());
 }
 
 #[test]
