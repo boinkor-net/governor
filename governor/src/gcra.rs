@@ -256,12 +256,7 @@ impl Gcra {
     }
 
     /// Update a single cell against the rate limiter state at the given key.
-    pub(crate) fn update<
-        K,
-        P: clock::Reference,
-        S: StateStore<Key = K>,
-        MW: RateLimitingMiddleware<P>,
-    >(
+    pub(crate) fn update<K, P: clock::Reference, S: StateStore<Key = K>>(
         &self,
         start: P,
         key: &K,
@@ -279,12 +274,7 @@ impl Gcra {
     }
 
     /// Update `n` cells for the rate limiter state.
-    pub(crate) fn update_n<
-        K,
-        P: clock::Reference,
-        S: StateStore<Key = K>,
-        MW: RateLimitingMiddleware<P>,
-    >(
+    pub(crate) fn update_n<K, P: clock::Reference, S: StateStore<Key = K>>(
         &self,
         start: P,
         key: &K,
