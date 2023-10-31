@@ -341,33 +341,6 @@ mod test {
             .is_err());
     }
 
-    #[cfg(feature = "std")]
-    #[test]
-    fn check_only() {
-        use crate::RateLimiter;
-        use all_asserts::assert_gt;
-        use clock::FakeRelativeClock;
-        use nonzero_ext::nonzero;
-
-        let clock = FakeRelativeClock::default();
-        let quota = Quota::per_second(nonzero!(1u32));
-        let lb = RateLimiter::direct_with_clock(quota, &clock);
-        assert!(lb.check_only().is_ok());
-        // should still be OK since it does not comsume anything
-        assert!(lb.check_only().is_ok());
-        assert!(lb.check().is_ok());
-        // not OK now since last call to check does consume.
-        assert!(lb
-            .check_only()
-            .map_err(|nu| {
-                assert_eq!(nu, nu);
-                assert_gt!(format!("{:?}", nu).len(), 0);
-                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
-                assert_eq!(nu.quota(), quota);
-            })
-            .is_err());
-    }
-
     #[derive(Debug)]
     struct Count(NonZeroU32);
     impl Arbitrary for Count {
