@@ -1,11 +1,12 @@
 use std::prelude::v1::*;
 
 use crate::{
+    errors::InsufficientCapacity,
     clock, middleware::RateLimitingMiddleware, state::keyed::KeyedStateStore, Jitter, NotUntil,
     RateLimiter,
 };
 use futures_timer::Delay;
-use std::hash::Hash;
+use std::{num::NonZeroU32, hash::Hash};
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - `async`/`await`
@@ -49,6 +50,44 @@ where
             match self.check_key(key) {
                 Ok(x) => {
                     return x;
+                }
+                Err(negative) => {
+                    let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
+                    delay.await;
+                }
+            }
+        }
+    }
+
+    /// Asynchronously resolves as soon as the rate limiter allows it.
+    ///
+    /// This is similar to `until_key_ready` except it waits for an abitrary number
+    /// of `n` cells to be available.
+    ///
+    /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
+    /// capacity of the rate limiter.
+    pub async fn until_key_n_ready(&self, key: &K, n: NonZeroU32) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
+        self.until_key_n_ready_with_jitter(key, n, Jitter::NONE).await
+    }
+
+    /// Asynchronously resolves as soon as the rate limiter allows it, with a
+    /// randomized wait period.
+    ///
+    /// This is similar to `until_key_ready_with_jitter` except it waits for an
+    /// abitrary number of `n` cells to be available.
+    ///
+    /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
+    /// capacity of the rate limiter.
+    pub async fn until_key_n_ready_with_jitter(
+        &self,
+        key: &K,
+        n: NonZeroU32,
+        jitter: Jitter,
+    ) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
+        loop {
+            match self.check_key_n(key, n)? {
+                Ok(x) => {
+                    return Ok(x);
                 }
                 Err(negative) => {
                     let delay = Delay::new(jitter + negative.wait_time_from(self.clock.now()));
