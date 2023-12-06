@@ -1,12 +1,11 @@
 use std::prelude::v1::*;
 
 use crate::{
-    errors::InsufficientCapacity,
-    clock, middleware::RateLimitingMiddleware, state::keyed::KeyedStateStore, Jitter, NotUntil,
-    RateLimiter,
+    clock, errors::InsufficientCapacity, middleware::RateLimitingMiddleware,
+    state::keyed::KeyedStateStore, Jitter, NotUntil, RateLimiter,
 };
 use futures_timer::Delay;
-use std::{num::NonZeroU32, hash::Hash};
+use std::{hash::Hash, num::NonZeroU32};
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - `async`/`await`
@@ -66,8 +65,13 @@ where
     ///
     /// Returns `InsufficientCapacity` if the `n` provided exceeds the maximum
     /// capacity of the rate limiter.
-    pub async fn until_key_n_ready(&self, key: &K, n: NonZeroU32) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
-        self.until_key_n_ready_with_jitter(key, n, Jitter::NONE).await
+    pub async fn until_key_n_ready(
+        &self,
+        key: &K,
+        n: NonZeroU32,
+    ) -> Result<MW::PositiveOutcome, InsufficientCapacity> {
+        self.until_key_n_ready_with_jitter(key, n, Jitter::NONE)
+            .await
     }
 
     /// Asynchronously resolves as soon as the rate limiter allows it, with a
