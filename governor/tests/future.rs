@@ -56,6 +56,18 @@ fn pauses_keyed() {
 }
 
 #[test]
+fn pauses_keyed_n() {
+    let lim = RateLimiter::keyed(Quota::per_second(nonzero!(10u32)));
+
+    for _ in 0..6 {
+        lim.check_key(&1u32).unwrap();
+    }
+    let i = Instant::now();
+    block_on(lim.until_key_n_ready(&1u32, nonzero!(5u32))).unwrap();
+    assert_ge!(i.elapsed(), Duration::from_millis(100));
+}
+
+#[test]
 fn proceeds() {
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(2u32)));
     let i = Instant::now();
@@ -76,6 +88,14 @@ fn proceeds_keyed() {
     let lim = RateLimiter::keyed(Quota::per_second(nonzero!(2u32)));
     let i = Instant::now();
     block_on(lim.until_key_ready(&1u32));
+    assert_le!(i.elapsed(), MAX_TEST_RUN_DURATION);
+}
+
+#[test]
+fn proceeds_keyed_n() {
+    let lim = RateLimiter::keyed(Quota::per_second(nonzero!(3u32)));
+    let i = Instant::now();
+    block_on(lim.until_key_n_ready(&1u32, nonzero!(2u32))).unwrap();
     assert_le!(i.elapsed(), MAX_TEST_RUN_DURATION);
 }
 
@@ -125,4 +145,8 @@ fn errors_on_exceeded_capacity() {
     let lim = RateLimiter::direct(Quota::per_second(nonzero!(10u32)));
 
     block_on(lim.until_n_ready(nonzero!(11u32))).unwrap_err();
+
+    let lim = RateLimiter::keyed(Quota::per_second(nonzero!(10u32)));
+
+    block_on(lim.until_key_n_ready(&1u32, nonzero!(11u32))).unwrap_err();
 }
