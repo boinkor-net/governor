@@ -3,8 +3,6 @@
 //! Rate limiters based on these types are constructed with
 //! [the `RateLimiter` constructors](../struct.RateLimiter.html#direct-in-memory-rate-limiters---constructors)
 
-#![allow(unused_imports)]
-
 use std::prelude::v1::*;
 
 use std::num::NonZeroU32;
@@ -114,8 +112,6 @@ where
 
 #[cfg(feature = "std")]
 mod future;
-#[cfg(feature = "std")]
-pub use future::*;
 
 #[cfg(feature = "std")]
 mod sinks;
