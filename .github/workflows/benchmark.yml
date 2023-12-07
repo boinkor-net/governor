@@ -1,0 +1,12 @@
+name: "CI/benchmark"
+on:
+  workflow_call:
+
+jobs:
+  cargo_bench:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - uses: dtolnay/rust-toolchain@stable
+      - run: "cargo bench"

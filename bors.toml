@@ -2,10 +2,7 @@
 # https://app.bors.tech/repositories so bors can see the new repo!
 
 status = [
-  "cargo_deny",
-  "cargo_clippy",
-  "all_tests",
-  "rustfmt",
+  "bors_passing",
 ]
 timeout_sec = 600
 delete_merged_branches = true

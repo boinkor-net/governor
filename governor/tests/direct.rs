@@ -162,3 +162,27 @@ fn default_direct() {
         RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
     assert_eq!(Ok(()), limiter.check());
 }
+
+#[cfg(feature = "std")]
+#[test]
+fn stresstest_large_quotas() {
+    use std::{sync::Arc, thread};
+
+    use governor::middleware::StateInformationMiddleware;
+
+    let quota = Quota::per_second(nonzero!(1_000_000_001u32));
+    let rate_limiter =
+        Arc::new(RateLimiter::direct(quota).with_middleware::<StateInformationMiddleware>());
+
+    fn rlspin(rl: Arc<DefaultDirectRateLimiter<StateInformationMiddleware>>) {
+        for _ in 0..1_000_000 {
+            rl.check().map_err(|e| dbg!(e)).unwrap();
+        }
+    }
+
+    let rate_limiter2 = rate_limiter.clone();
+    thread::spawn(move || {
+        rlspin(rate_limiter2);
+    });
+    rlspin(rate_limiter);
+}

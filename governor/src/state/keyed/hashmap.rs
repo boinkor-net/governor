@@ -32,9 +32,7 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
             return v.measure_and_replace_one(f);
         }
         // not-so-fast path: make a new entry and measure it.
-        let entry = (*map)
-            .entry(key.clone())
-            .or_insert_with(InMemoryState::default);
+        let entry = (*map).entry(key.clone()).or_default();
         entry.measure_and_replace_one(f)
     }
 }

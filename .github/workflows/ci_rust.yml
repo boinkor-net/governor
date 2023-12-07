@@ -1,0 +1,23 @@
+name: "CI/Rust"
+on:
+  workflow_call:
+
+jobs:
+  rust_lints:
+    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_lints.yml@main"
+    with:
+      manifest_dir: .
+      apt_install_packages: ""
+
+  rust_tests:
+    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_tests.yml@main"
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_toolchain: ["nightly","stable"]
+        cargo_test_args: ["--no-default-features --features no_std","--no-default-features --features 'jitter no_std'","--no-default-features --features std",""]
+    with:
+      rust_toolchain: ${{matrix.rust_toolchain}}
+      cargo_test_args: ${{matrix.cargo_test_args}}
+      manifest_dir: .
+      apt_install_packages: ""

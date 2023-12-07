@@ -4,6 +4,22 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+* The governor repo now lives in the `boinkor-net` github
+  organization. No ownership has changed (@antifuchs still manages
+  this org), but this makes it easier to securely manage the CI and
+  release setup.
+
+* The `.per_second` constructor for `Quota` now constructs a quota
+  that ensures all rate-limiting calls succeed when given values in
+  excess of 1 billion (previously, this would result in rate limiters
+  that would incorrectly reject values). Reported in
+  [#203](https://github.com/antifuchs/governor/issues/203).
+
+### Contributors
+* [@rkd-msw](https://github.com/rkd-msw)
+
 ## [[0.6.0](https://docs.rs/governor/0.6.0/governor/)] - 2023-07-12
 
 ### Added
