@@ -1,14 +1,22 @@
-version: 2
-updates:
-- package-ecosystem: cargo
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "04:00"
-  open-pull-requests-limit: 10
-- package-ecosystem: github-actions
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "04:00"
-  open-pull-requests-limit: 10
+"updates":
+- "directory": "/"
+  "groups":
+    "cargo":
+      "patterns":
+      - "*"
+  "open-pull-requests-limit": 10
+  "package-ecosystem": "cargo"
+  "schedule":
+    "interval": "daily"
+    "time": "04:00"
+- "directory": "/"
+  "groups":
+    "github-actions":
+      "patterns":
+      - "*"
+  "open-pull-requests-limit": 10
+  "package-ecosystem": "github-actions"
+  "schedule":
+    "interval": "daily"
+    "time": "04:00"
+"version": 2
