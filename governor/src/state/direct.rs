@@ -112,8 +112,6 @@ where
 
 #[cfg(feature = "std")]
 mod future;
-#[cfg(feature = "std")]
-pub use future::*;
 
 #[cfg(feature = "std")]
 mod sinks;
