@@ -23,7 +23,6 @@
   "can_merge":
     "if": "always() && github.event_name == 'merge_group'"
     "needs":
-    - "benchmark"
     - "ci_rust"
     "permissions":
       "actions": "read"
