@@ -92,7 +92,7 @@
 //! function arguments. The [`crate::RateLimiter`] type signatures
 //! tend to be pretty unwieldy for that, so this crate exports a pair
 //! of handy type aliases, [`crate::DefaultDirectRateLimiter`] and
-//! [`crate::DefaultDirectRateLimiter`].
+//! [`crate::DefaultKeyedRateLimiter`].
 //!
 //! Here's an example for embedding a direct rate limiter in a struct:
 //!
