@@ -132,6 +132,46 @@ impl Gcra {
         })
     }
 
+    pub(crate) fn peek_test<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        state: &S,
+        t0: P,
+    ) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        let t0 = t0.duration_since(start);
+        let tau = self.tau;
+        let t = self.t;
+        match state.measure_and_peek(key, |tat| {
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+            let earliest_time = tat.saturating_sub(tau);
+            if t0 < earliest_time {
+                Err(MW::disallow(
+                    key,
+                    StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
+                    start,
+                ))
+            } else {
+                let next = cmp::max(tat, t0) + t;
+                Ok((
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
+                    next,
+                ))
+            }
+        }) {
+            Some(outcome) => outcome,
+            None => Ok(MW::allow(
+                key,
+                StateSnapshot::new(self.t, self.tau, t0, tau),
+            )),
+        }
+    }
+
     /// Tests whether all `n` cells could be accommodated and updates the rate limiter state, if so.
     pub(crate) fn test_n_all_and_update<
         K,
@@ -174,12 +214,63 @@ impl Gcra {
             }
         }))
     }
+
+    pub(crate) fn test_n_all_peek<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        n: NonZeroU32,
+        state: &S,
+        t0: P,
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
+        let t0 = t0.duration_since(start);
+        let tau = self.tau;
+        let t = self.t;
+        let additional_weight = t * (n.get() - 1) as u64;
+
+        // check that we can allow enough cells through. Note that `additional_weight` is the
+        // value of the cells *in addition* to the first cell - so add that first cell back.
+        if additional_weight + t > tau {
+            return Err(InsufficientCapacity((tau.as_u64() / t.as_u64()) as u32));
+        }
+        match state.measure_and_peek(key, |tat| {
+            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+            let earliest_time = (tat + additional_weight).saturating_sub(tau);
+            if t0 < earliest_time {
+                Err(MW::disallow(
+                    key,
+                    StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
+                    start,
+                ))
+            } else {
+                let next = cmp::max(tat, t0) + t + additional_weight;
+                Ok((
+                    MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
+                    next,
+                ))
+            }
+        }) {
+            Some(outcome) => Ok(outcome),
+            None => Ok(Ok(MW::allow(
+                key,
+                StateSnapshot::new(self.t, self.tau, t0, tau),
+            ))),
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::Quota;
+    use crate::RateLimiter;
+    use crate::{clock::FakeRelativeClock, Quota};
+    use no_std_compat::prelude::v1::*;
+    use nonzero_ext::nonzero;
     use std::num::NonZeroU32;
 
     use proptest::prelude::*;
@@ -188,34 +279,40 @@ mod test {
     #[cfg(feature = "std")]
     #[test]
     fn gcra_derives() {
-        use all_asserts::assert_gt;
         use nonzero_ext::nonzero;
 
         let g = Gcra::new(Quota::per_second(nonzero!(1u32)));
         let g2 = Gcra::new(Quota::per_second(nonzero!(2u32)));
         assert_eq!(g, g);
         assert_ne!(g, g2);
-        assert_gt!(format!("{:?}", g).len(), 0);
+        assert!(!format!("{:?}", g).is_empty());
     }
 
     /// Exercise derives and convenience impls on NotUntil to make coverage happy
     #[cfg(feature = "std")]
     #[test]
     fn notuntil_impls() {
-        use crate::RateLimiter;
-        use all_asserts::assert_gt;
-        use clock::FakeRelativeClock;
-        use nonzero_ext::nonzero;
-
         let clock = FakeRelativeClock::default();
         let quota = Quota::per_second(nonzero!(1u32));
         let lb = RateLimiter::direct_with_clock(quota, &clock);
+        for _ in 0..2 {
+            assert!(lb.peek().is_ok());
+        }
         assert!(lb.check().is_ok());
+        assert!(lb
+            .peek()
+            .map_err(|nu| {
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
         assert!(lb
             .check()
             .map_err(|nu| {
-                assert_eq!(nu, nu);
-                assert_gt!(format!("{:?}", nu).len(), 0);
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
                 assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
                 assert_eq!(nu.quota(), quota);
             })
@@ -252,5 +349,191 @@ mod test {
             let back = Quota::from_gcra_parameters(gcra.t, gcra.tau);
             assert_eq!(quota, back);
         })
+    }
+
+    #[test]
+    fn peek_key_test_and_update_works() {
+        let clock = FakeRelativeClock::default();
+        let quota = Quota::per_second(nonzero!(1u32));
+        let lk = RateLimiter::hashmap_with_clock(quota, &clock);
+        let key = 1u32;
+        let key2 = 2u32;
+        for _ in 0..2 {
+            assert!(lk.peek_key(&key).is_ok());
+        }
+        for _ in 0..2 {
+            assert!(lk.peek_key(&key2).is_ok());
+        }
+        assert!(lk.check_key(&key).is_ok());
+        for _ in 0..2 {
+            assert!(lk.peek_key(&key2).is_ok());
+        }
+        assert!(lk
+            .check_key(&key)
+            .map_err(|nu| {
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
+        assert!(lk
+            .check_key(&key)
+            .map_err(|nu| {
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
+        assert!(lk.check_key(&key2).is_ok());
+        assert!(lk
+            .check_key(&key2)
+            .map_err(|nu| {
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
+        assert!(lk
+            .check_key(&key2)
+            .map_err(|nu| {
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
+        clock.advance(Duration::from_millis(500));
+        assert!(lk
+            .peek_key(&key)
+            .map_err(|nu| {
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
+        assert!(lk
+            .peek_key(&key)
+            .map_err(|nu| {
+                assert_eq!(nu.earliest_possible(), Nanos::from(1_000_000_000));
+                assert!(!format!("{:?}", nu).is_empty());
+                assert_eq!(format!("{}", nu), "rate-limited until Nanos(1s)");
+                assert_eq!(nu.quota(), quota);
+            })
+            .is_err());
+        clock.advance(Duration::from_millis(500));
+        for _ in 0..2 {
+            assert!(lk.peek_key(&key).is_ok());
+        }
+        for _ in 0..2 {
+            assert!(lk.peek_key(&key2).is_ok());
+        }
+    }
+
+    #[test]
+    fn peek_key_test_and_reset_works() {
+        let clock = FakeRelativeClock::default();
+        let quota = Quota::per_second(nonzero!(1u32));
+        let lk = RateLimiter::hashmap_with_clock(quota, &clock);
+        let key = 1u32;
+        let key2 = 2u32;
+        assert!(lk.check_key(&key).is_ok());
+        assert!(lk.check_key(&key2).is_ok());
+        assert!(lk.check_key(&3).is_ok());
+        assert!(lk.check_key(&key).is_err());
+        assert!(lk.check_key(&key2).is_err());
+        assert!(lk.check_key(&3).is_err());
+        lk.reset_key(&key);
+        assert!(lk.check_key(&key).is_ok());
+        lk.reset_key(&key2);
+        assert!(lk.check_key(&key2).is_ok());
+        lk.reset_key(&3);
+        assert!(lk.check_key(&3).is_ok());
+    }
+
+    #[test]
+    fn peek_n_key_test_and_update_works() {
+        let clock = FakeRelativeClock::default();
+        let quota = Quota::per_second(nonzero!(2u32));
+        let lk = RateLimiter::hashmap_with_clock(quota, &clock);
+        let key = 1u32;
+        let key2 = 2u32;
+        for _ in 0..2 {
+            assert!(lk.peek_key_n(&key, nonzero!(2u32)).is_ok());
+        }
+        for _ in 0..2 {
+            assert!(lk.peek_key_n(&key2, nonzero!(2u32)).is_ok());
+        }
+        for _ in 0..2 {
+            assert!(lk
+                .peek_key_n(&key, nonzero!(3u32))
+                .map_err(|nu| {
+                    assert_eq!(nu, InsufficientCapacity(2));
+                })
+                .is_err());
+        }
+        for _ in 0..2 {
+            assert!(lk
+                .peek_key_n(&key2, nonzero!(3u32))
+                .map_err(|nu| {
+                    assert_eq!(nu, InsufficientCapacity(2));
+                })
+                .is_err());
+        }
+    }
+
+    #[test]
+    fn peek_n_key_test_and_reset_works() {
+        let clock = FakeRelativeClock::default();
+        let quota = Quota::per_second(nonzero!(2u32));
+        let lk = RateLimiter::hashmap_with_clock(quota, &clock);
+        let key = 1u32;
+        let key2 = 2u32;
+
+        assert!(lk.check_key_n(&key, nonzero!(2u32)).is_ok());
+        assert!(lk.check_key_n(&key, nonzero!(1u32)).is_ok());
+        assert_eq!(
+            lk.check_key_n(&key, nonzero!(1u32))
+                .unwrap()
+                .unwrap_err()
+                .to_string(),
+            "rate-limited until Nanos(500ms)"
+        );
+        assert!(lk.check_key_n(&key2, nonzero!(2u32)).is_ok());
+        assert!(lk.check_key_n(&key2, nonzero!(1u32)).is_ok());
+        assert_eq!(
+            lk.check_key_n(&key2, nonzero!(1u32))
+                .unwrap()
+                .unwrap_err()
+                .to_string(),
+            "rate-limited until Nanos(500ms)"
+        );
+
+        for _ in 0..2 {
+            assert!(lk.peek_key_n(&key, nonzero!(1u32)).is_ok());
+            assert_eq!(
+                lk.peek_key_n(&key, nonzero!(1u32))
+                    .unwrap()
+                    .unwrap_err()
+                    .to_string(),
+                "rate-limited until Nanos(500ms)"
+            );
+        }
+        for _ in 0..2 {
+            assert!(lk.peek_key_n(&key2, nonzero!(1u32)).is_ok());
+            assert_eq!(
+                lk.peek_key_n(&key2, nonzero!(1u32))
+                    .unwrap()
+                    .unwrap_err()
+                    .to_string(),
+                "rate-limited until Nanos(500ms)"
+            );
+        }
+        lk.reset_key(&key);
+        assert!(lk.check_key_n(&key, nonzero!(2u32)).is_ok());
+        // TODO: impl Reference for FakeRelativeClock and test returned error
     }
 }

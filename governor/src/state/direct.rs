@@ -81,6 +81,22 @@ where
         )
     }
 
+    /// Allow a single cell through the rate limiter.
+    ///
+    /// If the rate limit is reached, `check` returns information about the earliest
+    /// time that a cell might be allowed through again.
+    /// This method does not update the rate limiter's state.
+    /// It is useful for checking whether a cell would be allowed through
+    /// without actually allowing it through.
+    pub fn peek(&self) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        self.gcra.peek_test::<NotKeyed, C::Instant, S, MW>(
+            self.start,
+            &NotKeyed::NonKey,
+            &self.state,
+            self.clock.now(),
+        )
+    }
+
     /// Allow *only all* `n` cells through the rate limiter.
     ///
     /// This method can succeed in only one way and fail in two ways:
@@ -107,6 +123,31 @@ where
                 &self.state,
                 self.clock.now(),
             )
+    }
+
+    /// Allow *only all* `n` cells through the rate limiter.
+    ///
+    /// This method can succeed in only one way and fail in two ways:
+    /// * Success: If all `n` cells can be accommodated, it returns `Ok(())`.
+    /// * Failure (but ok): Not all cells can make it through at the current time.
+    ///  The result is `Err(NegativeMultiDecision::BatchNonConforming(NotUntil))`, which can
+    /// be interrogated about when the batch might next conform.
+    /// * Failure (the batch can never go through): The rate limit quota's burst size is too low
+    /// for the given number of cells to ever be allowed through.
+    /// This method does not update the rate limiter's state.
+    /// It is useful for checking whether a batch of cells would be allowed through
+    /// without actually allowing them through.
+    pub fn peek_n(
+        &self,
+        n: NonZeroU32,
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
+        self.gcra.test_n_all_peek::<NotKeyed, C::Instant, S, MW>(
+            self.start,
+            &NotKeyed::NonKey,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
     }
 }
 

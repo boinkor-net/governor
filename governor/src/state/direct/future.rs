@@ -99,14 +99,13 @@ where
 
 #[cfg(test)]
 mod test {
-    use all_asserts::assert_gt;
 
     use super::*;
 
     #[test]
     fn insufficient_capacity_impl_coverage() {
         let i = InsufficientCapacity(1);
-        assert_eq!(i.0, i.clone().0);
-        assert_gt!(format!("{}", i).len(), 0);
+        assert_eq!(i.0, i.0);
+        assert!(!format!("{}", i).is_empty());
     }
 }

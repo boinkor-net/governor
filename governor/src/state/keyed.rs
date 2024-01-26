@@ -99,6 +99,31 @@ where
         )
     }
 
+    /// Allow a single cell through the rate limiter for the given key.
+    ///
+    /// This method does not update the rate limiter's state.
+    /// It is useful for checking whether a cell would be allowed through
+    /// without actually allowing it through.
+    /// If the rate limit is reached, `check_key` returns information about the earliest
+    /// time that a cell might be allowed through again under that key.
+    pub fn peek_key(&self, key: &K) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        self.gcra
+            .peek_test::<K, C::Instant, S, MW>(self.start, key, &self.state, self.clock.now())
+    }
+
+    /// Reset the rate limiter's state for the given key.
+    ///
+    /// This is useful for rate limiters that are used for rate limiting
+    /// a single batch of cells, e.g. a single API call.
+    /// It is not useful for rate limiters that are used for rate limiting
+    /// a stream of cells, e.g. a stream of API calls.
+    /// For the latter, use [`reset`](#method.reset) instead.
+    /// For the former, this method is more efficient than
+    /// [`reset`](#method.reset).
+    pub fn reset_key(&self, key: &K) {
+        self.state.reset(key)
+    }
+
     /// Allow *only all* `n` cells through the rate limiter for the given key.
     ///
     /// This method can succeed in only one way and fail in two ways:
@@ -119,6 +144,20 @@ where
         n: NonZeroU32,
     ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
         self.gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
+            self.start,
+            key,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
+    }
+
+    pub fn peek_key_n(
+        &self,
+        key: &K,
+        n: NonZeroU32,
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
+        self.gcra.test_n_all_peek::<K, C::Instant, S, MW>(
             self.start,
             key,
             n,
@@ -258,6 +297,15 @@ mod test {
             {
                 f(None).map(|(res, _)| res)
             }
+
+            fn measure_and_peek<T, F, E>(&self, _key: &Self::Key, f: F) -> Option<Result<T, E>>
+            where
+                F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
+            {
+                Some(f(None).map(|(res, _)| res))
+            }
+
+            fn reset(&self, _key: &Self::Key) {}
         }
 
         impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for NaiveKeyedStateStore<K> {
@@ -283,9 +331,11 @@ mod test {
             NaiveKeyedStateStore::default(),
             &FakeRelativeClock::default(),
         );
-        assert_eq!(lim.check_key(&1u32), Ok(()));
-        assert!(lim.is_empty());
         assert_eq!(lim.len(), 0);
+        assert!(lim.peek_key(&1u32).is_ok());
+        assert!(lim.check_key(&1u32).is_ok());
+        lim.reset_key(&1u32);
+        assert!(lim.is_empty());
         lim.retain_recent();
         lim.shrink_to_fit();
     }
