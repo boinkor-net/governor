@@ -135,11 +135,11 @@ mod test {
     }
 
     #[test]
-    fn quanta_upkeep_impls_coverage() {
+    fn quanta_upkeep_impls_coverage_and_advances() {
         let one_ns = Nanos::new(1);
         // let _c1 =
         //     QuantaUpkeepClock::from_builder(quanta::Upkeep::new(Duration::from_secs(1))).unwrap();
-        let c = QuantaUpkeepClock::from_interval(Duration::from_secs(1)).unwrap();
+        let c = QuantaUpkeepClock::from_interval(Duration::from_micros(10)).unwrap();
         let now = c.now();
         assert_ne!(now + one_ns, now);
         assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
@@ -148,15 +148,13 @@ mod test {
             Reference::saturating_sub(&(now + Duration::from_nanos(1).into()), one_ns),
             now
         );
-    }
 
-    #[test]
-    fn quanta_upkeep_advances() {
-        let clock = QuantaUpkeepClock::from_interval(Duration::from_micros(10)).unwrap();
-        let start = clock.now();
+        // Test clock advances over time.
+        // (included in one test as only one QuantaUpkeepClock thread can be run at a time)
+        let start = c.now();
         for _ in 0..10 {
             thread::sleep(Duration::from_micros(100));
-            let now = clock.now();
+            let now = c.now();
             assert!(now > start, "now={:?} not after start={:?}", now, start);
         }
     }
