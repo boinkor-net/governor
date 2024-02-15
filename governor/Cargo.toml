@@ -37,13 +37,15 @@ all_asserts = "2.2.0"
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]
 quanta = ["dep:quanta"]
-std = ["no-std-compat/std", "nonzero_ext/std", "futures-timer", "futures"]
+std = ["no-std-compat/std", "nonzero_ext/std", "futures-timer", "futures", "dep:parking_lot"]
 jitter = ["rand"]
 no_std = ["no-std-compat/compat_hash"]
 
 [dependencies]
 nonzero_ext = { version = "0.3.0", default-features = false }
-parking_lot = "0.12.0"
+parking_lot = { version = "0.12", optional = true }
+spinning_top = "0.3"
+portable-atomic = { version = "1.6", features = ["require-cas"] }
 futures-timer = { version = "3.0.2", optional = true }
 futures = { version = "0.3.5", optional = true }
 rand = { version = "0.8.0", optional = true }
