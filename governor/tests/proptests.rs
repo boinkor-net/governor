@@ -22,10 +22,10 @@ impl Arbitrary for Count {
 }
 
 fn test_config() -> ProptestConfig {
+    // add timeout if necessary e.g. timeout: 20,
     Config {
         failure_persistence: Some(Box::new(FileFailurePersistence::WithSource("regressions"))),
-        verbose: 0,
-        timeout: 20,
+        verbose: 0, // 2 for extra verbosity
         ..Default::default()
     }
 }

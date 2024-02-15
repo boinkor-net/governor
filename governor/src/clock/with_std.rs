@@ -96,6 +96,7 @@ impl ReasonablyRealtime for SystemClock {}
 /// Some tests to ensure that the code above gets exercised. We don't
 /// rely on them in tests (being nastily tainted by realism), so we
 /// have to get creative.
+#[allow(clippy::default_constructed_unit_structs)]
 #[cfg(test)]
 mod test {
     use super::*;
@@ -103,26 +104,23 @@ mod test {
     use crate::nanos::Nanos;
     use std::time::Duration;
 
-    cfg_if::cfg_if! {
-        // This test is broken on macOS on M1 machines, due to
-        // https://github.com/rust-lang/rust/issues/91417:
-        if #[cfg(not(all(target_arch = "aarch64", target_os = "macos")))] {
-            use crate::clock::MonotonicClock;
-            #[test]
-            fn instant_impls_coverage() {
-                let one_ns = Nanos::new(1);
-                let c = MonotonicClock::default();
-                let now = c.now();
-                let ns_dur = Duration::from(one_ns);
-                assert_ne!(now + ns_dur, now, "{:?} + {:?}", ns_dur, now);
-                assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
-                assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
-                assert_eq!(
-                    Reference::saturating_sub(&(now + Duration::from_nanos(1)), one_ns),
-                    now
-                );
-            }
-        }
+    use crate::clock::MonotonicClock;
+    #[test]
+    fn instant_impls_coverage() {
+        let one_ns = Nanos::new(1);
+
+        let c = MonotonicClock::default();
+        format!("{:?}", c);
+        let n = c;
+        let now = n.now();
+        let ns_dur = Duration::from(one_ns);
+        assert_ne!(now + ns_dur, now, "{:?} + {:?}", ns_dur, now);
+        assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
+        assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
+        assert_eq!(
+            Reference::saturating_sub(&(now + Duration::from_nanos(1)), one_ns),
+            now
+        );
     }
 
     #[test]

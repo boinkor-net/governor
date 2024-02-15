@@ -203,7 +203,7 @@ mod test {
         let low = Duration::from_secs(0);
         let high = Duration::from_secs(20);
         let sampler = UniformJitter::new_inclusive(Nanos::from(low), Nanos::from(high));
-        assert!(format!("{:?}", sampler).len() > 0);
-        assert!(format!("{:?}", sampler.clone()).len() > 0);
+        assert!(!format!("{:?}", sampler).is_empty());
+        assert!(!format!("{:?}", sampler.clone()).is_empty());
     }
 }

@@ -33,6 +33,8 @@ libc = "0.2.70"
 futures = "0.3.5"
 proptest = "1.0.0"
 all_asserts = "2.2.0"
+rand = "0.8.0"
+num_cpus = "1.13.0"
 
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]

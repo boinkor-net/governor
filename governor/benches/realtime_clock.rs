@@ -17,7 +17,7 @@ pub fn bench_all(c: &mut Criterion) {
 macro_rules! with_realtime_clocks {
     {($name:expr, $group:ident) |$b:pat, $clock:pat| $closure:block} => {
         {
-            let clock = clock::MonotonicClock::default();
+            let clock = clock::MonotonicClock;
             $group.bench_with_input(BenchmarkId::new($name, "MonotonicClock"), &clock, |$b, $clock| $closure);
         }
         {

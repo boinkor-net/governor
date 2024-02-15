@@ -37,6 +37,147 @@ fn rejects_too_many() {
 }
 
 #[test]
+fn peek_does_not_change_the_decision() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    // no key is always positive outcome
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
+
+    // use up our burst capacity (2 in the first second):
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
+
+    clock.advance(ms);
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+    clock.advance(ms);
+
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_eq!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
+
+    assert_eq!(Ok(()), lb.check());
+
+    clock.advance(ms);
+    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+
+    for _ in 0..10 {
+        clock.advance(ms);
+        assert_ne!(Ok(()), lb.peek(), "Now: {:?}", clock.now());
+    }
+}
+
+#[test]
+fn rejects_too_many_n() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+    let two = nonzero!(2u32);
+    let three = nonzero!(3u32);
+
+    assert_eq!(
+        lb.check_n(nonzero!(3u32)).unwrap_err().to_string(),
+        "required number of cells 2 exceeds bucket's capacity"
+    );
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+
+    // use up our burst capacity (2 in the first second):
+    assert!(lb.check_n(two).unwrap().is_ok());
+
+    // Additional cells should be rate-limited
+    assert_eq!(
+        lb.check_n(two).unwrap().unwrap_err().to_string(),
+        "rate-limited until Nanos(2s)"
+    );
+
+    // adding not enough time should still reuslt in rate-limiting but with less time ahead
+    clock.advance(ms);
+    assert_eq!(
+        lb.check().unwrap_err().to_string(),
+        "rate-limited until Nanos(1.5s)"
+    );
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert!(lb.check_n(two).unwrap().is_ok());
+
+    // We used the capacity again, so we should be rate-limited again
+    clock.advance(ms);
+    assert_eq!(
+        lb.check().unwrap_err().to_string(),
+        "rate-limited until Nanos(2.5s)"
+    );
+
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+    assert!(lb.check_n(two).unwrap().is_ok());
+
+    // Exceeding the burst capacity should result in InsufficientCapacity
+    let result = lb.check_n(three);
+    assert_eq!(result, Err(InsufficientCapacity(2)));
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "required number of cells 2 exceeds bucket's capacity"
+    );
+}
+
+#[test]
+fn peek_does_not_change_the_decision_n() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let ms = Duration::from_millis(1);
+
+    assert_eq!(lb.peek_n(nonzero!(3u32)), Err(InsufficientCapacity(2)));
+    assert_eq!(lb.peek_n(nonzero!(3u32)), Err(InsufficientCapacity(2)));
+
+    assert!(lb.check_n(nonzero!(2u32)).unwrap().is_ok());
+    assert_eq!(lb.peek_n(nonzero!(3u32)), Err(InsufficientCapacity(2)));
+    // should be ok again in 1s:
+    clock.advance(ms * 1000);
+
+    // use up our burst capacity (2 in the first second):
+    assert!(lb.check_n(nonzero!(2u32)).unwrap().is_ok());
+
+    // Additional cells should be rate-limited
+    assert_eq!(
+        lb.peek_n(nonzero!(2u32)).unwrap().unwrap_err().to_string(),
+        "rate-limited until Nanos(2s)"
+    );
+
+    assert_eq!(
+        lb.peek_n(nonzero!(2u32)).unwrap().unwrap_err().to_string(),
+        "rate-limited until Nanos(2s)"
+    );
+}
+
+#[test]
 fn all_1_identical_to_1() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(2u32)), &clock);

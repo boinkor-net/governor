@@ -40,6 +40,18 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
         let entry = (*map).entry(key.clone()).or_default();
         entry.measure_and_replace_one(f)
     }
+
+    fn measure_and_peek<T, F, E>(&self, key: &Self::Key, f: F) -> Option<Result<T, E>>
+    where
+        F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>,
+    {
+        (*self.lock()).get(key).map(|v| v.measure_and_peek_one(f))
+    }
+
+    fn reset(&self, key: &Self::Key) {
+        let mut map = self.lock();
+        map.remove(key);
+    }
 }
 
 impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for HashMapStateStore<K> {

@@ -135,10 +135,9 @@ mod test {
     #[test]
     fn quanta_upkeep_impls_coverage() {
         let one_ns = Nanos::new(1);
-        // let _c1 =
-        //     QuantaUpkeepClock::from_builder(quanta::Upkeep::new(Duration::from_secs(1))).unwrap();
         let c = QuantaUpkeepClock::from_interval(Duration::from_secs(1)).unwrap();
-        let now = c.now();
+        let n = c;
+        let now = n.now();
         assert_ne!(now + one_ns, now);
         assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
         assert_eq!(Nanos::new(0), Reference::duration_since(&now, now + one_ns));
@@ -146,5 +145,13 @@ mod test {
             Reference::saturating_sub(&(now + Duration::from_nanos(1).into()), one_ns),
             now
         );
+
+        // Test the Clone implementation
+        let c_clone = n.clone();
+        let now_clone = c_clone.now();
+        assert_eq!(now, now_clone);
+        // Check that the debug string is not empty
+        let debug_str = format!("{:?}", c_clone);
+        assert!(!debug_str.is_empty());
     }
 }

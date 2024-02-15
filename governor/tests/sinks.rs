@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 #[cfg(feature = "jitter")]
 use governor::Jitter;
-
+#[allow(clippy::unit_cmp)]
 #[test]
 #[allow(clippy::unit_cmp)]
 fn sink() {
