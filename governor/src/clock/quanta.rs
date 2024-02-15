@@ -100,8 +100,9 @@ impl Clock for QuantaUpkeepClock {
 
     fn now(&self) -> Self::Instant {
         QuantaInstant(Nanos::from(
-            self.reference
-                .saturating_duration_since(self.clock.recent()),
+            self.clock
+                .recent()
+                .saturating_duration_since(self.reference),
         ))
     }
 }
@@ -116,6 +117,7 @@ mod test {
     use super::*;
     use crate::clock::{Clock, QuantaClock, QuantaUpkeepClock, Reference};
     use crate::nanos::Nanos;
+    use std::thread;
     use std::time::Duration;
 
     #[test]
@@ -133,11 +135,11 @@ mod test {
     }
 
     #[test]
-    fn quanta_upkeep_impls_coverage() {
+    fn quanta_upkeep_impls_coverage_and_advances() {
         let one_ns = Nanos::new(1);
         // let _c1 =
         //     QuantaUpkeepClock::from_builder(quanta::Upkeep::new(Duration::from_secs(1))).unwrap();
-        let c = QuantaUpkeepClock::from_interval(Duration::from_secs(1)).unwrap();
+        let c = QuantaUpkeepClock::from_interval(Duration::from_millis(50)).unwrap();
         let now = c.now();
         assert_ne!(now + one_ns, now);
         assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
@@ -146,5 +148,20 @@ mod test {
             Reference::saturating_sub(&(now + Duration::from_nanos(1).into()), one_ns),
             now
         );
+
+        // Test clock advances over time.
+        // (included in one test as only one QuantaUpkeepClock thread can be run at a time)
+        let start = c.now();
+        for i in 0..5 {
+            thread::sleep(Duration::from_millis(250));
+            let now = c.now();
+            assert!(
+                now > start,
+                "now={:?} not after start={:?} on iteration={}",
+                now,
+                start,
+                i
+            );
+        }
     }
 }
