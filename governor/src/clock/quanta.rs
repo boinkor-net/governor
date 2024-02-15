@@ -100,7 +100,9 @@ impl Clock for QuantaUpkeepClock {
 
     fn now(&self) -> Self::Instant {
         QuantaInstant(Nanos::from(
-            self.clock.recent().saturating_duration_since(self.reference),
+            self.clock
+                .recent()
+                .saturating_duration_since(self.reference),
         ))
     }
 }
