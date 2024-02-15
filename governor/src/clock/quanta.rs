@@ -155,7 +155,13 @@ mod test {
         for i in 0..5 {
             thread::sleep(Duration::from_millis(250));
             let now = c.now();
-            assert!(now > start, "now={:?} not after start={:?} on iteration={}", now, start, i);
+            assert!(
+                now > start,
+                "now={:?} not after start={:?} on iteration={}",
+                now,
+                start,
+                i
+            );
         }
     }
 }
