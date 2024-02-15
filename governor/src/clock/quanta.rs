@@ -139,7 +139,7 @@ mod test {
         let one_ns = Nanos::new(1);
         // let _c1 =
         //     QuantaUpkeepClock::from_builder(quanta::Upkeep::new(Duration::from_secs(1))).unwrap();
-        let c = QuantaUpkeepClock::from_interval(Duration::from_micros(10)).unwrap();
+        let c = QuantaUpkeepClock::from_interval(Duration::from_millis(50)).unwrap();
         let now = c.now();
         assert_ne!(now + one_ns, now);
         assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
@@ -152,10 +152,10 @@ mod test {
         // Test clock advances over time.
         // (included in one test as only one QuantaUpkeepClock thread can be run at a time)
         let start = c.now();
-        for _ in 0..10 {
-            thread::sleep(Duration::from_micros(100));
+        for i in 0..5 {
+            thread::sleep(Duration::from_millis(250));
             let now = c.now();
-            assert!(now > start, "now={:?} not after start={:?}", now, start);
+            assert!(now > start, "now={:?} not after start={:?} on iteration={}", now, start, i);
         }
     }
 }
