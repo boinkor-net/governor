@@ -36,6 +36,7 @@ jobs:
           profile: minimal
           toolchain: stable
 
+      - uses: actions/checkout@v4
       - run: cargo publish --token ${CRATES_TOKEN}
         env:
           CRATES_TOKEN: ${{ secrets.CRATESIO_RELEASE_TOKEN }}
