@@ -37,6 +37,6 @@ jobs:
           toolchain: stable
 
       - uses: actions/checkout@v4
-      - run: cargo publish --token ${CRATES_TOKEN}
+      - run: cargo publish --token ${CRATES_TOKEN} -p ${{ steps.version.outputs.group1 }}
         env:
           CRATES_TOKEN: ${{ secrets.CRATESIO_RELEASE_TOKEN }}
