@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.6.2](https://docs.rs/governor/0.6.2/governor/)] - 2024-02-16
+
 ## [[0.6.1](https://docs.rs/governor/0.6.1/governor/)] - 2024-02-16
 
 ### Changed
