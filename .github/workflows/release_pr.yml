@@ -15,15 +15,31 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: chainguard-dev/actions/setup-gitsign@main
       - name: Install cargo-release
-        uses: taiki-e/install-action@v1
+        uses: taiki-e/cache-cargo-install-action@v1
         with:
           tool: cargo-release
+      - name: Install cargo-semver-checks
+        uses: taiki-e/cache-cargo-install-action@v1
+        with:
+          tool: cargo-semver-checks
 
       - uses: cargo-bins/release-pr@v2
+        id: pr
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: ${{ inputs.version }}
           check-semver: true
+          crate-release-all: true # all in workspace
+      - uses: actions-ecosystem/action-regex-match@v2
+        id: pr-id
+        with:
+          text: ${{ steps.pr.outputs.pr-url }}
+          regex: "/pull/([0-9]+)$"
+      - uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: release
+          number: ${{ steps.pr-id.outputs.group1 }}

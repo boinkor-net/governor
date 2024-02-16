@@ -1,0 +1,41 @@
+name: Cut a new release
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  tag_github_release:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
+
+    permissions:
+      id-token: write # Enable OIDC
+      contents: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo merge commit is $GITHUB_SHA, from PR branch ${{ github.event.pull_request.head.ref }}
+      - uses: actions-ecosystem/action-regex-match@v2
+        id: version
+        with:
+          text: ${{ github.event.pull_request.head.ref }}
+          regex: "^release/([^/]+)/(.+)$"
+          # Name of crate is steps.version.outputs.group1, version is steps.version.outputs.group2.
+          # TODO: figure out how this works with workspaces & multiple crates
+
+      - name: Create release v${{steps.version.outputs.group2}}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.group2 }}
+          name: ${{steps.version.outputs.group1}} v${{ steps.version.outputs.group2 }}
+          target_commitish: ${{github.sha}}
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - run: cargo publish --token ${CRATES_TOKEN}
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATESIO_RELEASE_TOKEN }}
