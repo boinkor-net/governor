@@ -17,8 +17,19 @@
   that would incorrectly reject values). Reported in
   [#203](https://github.com/antifuchs/governor/issues/203).
 
+* `QuantaUpkeepInstant` now [properly advances
+  forward](https://github.com/boinkor-net/governor/pull/223).
+
+* `no_std` is now [properly
+  supported](https://github.com/boinkor-net/governor/pull/222):
+  Instead of parking-lot, governor now uses the spinning_top crate in
+  `no_std` mode.
+
 ### Contributors
 * [@rkd-msw](https://github.com/rkd-msw)
+* [@Serene-Arc](https://github.com/Serene-Arc)
+* [@waynerobinson](https://github.com/waynerobinson)
+* [@mammothbane](https://github.com/mammothbane)
 
 ## [[0.6.0](https://docs.rs/governor/0.6.0/governor/)] - 2023-07-12
 
