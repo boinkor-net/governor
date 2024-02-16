@@ -4,6 +4,13 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.6.3](https://docs.rs/governor/0.6.3/governor/)] - 2024-02-16
+
+### Changed
+
+* Just another bug-fixed release process. This time, it should
+  actually release out of github actions.
+
 ## [[0.6.2](https://docs.rs/governor/0.6.2/governor/)] - 2024-02-16
 
 ### Changed
