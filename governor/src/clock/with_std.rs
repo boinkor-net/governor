@@ -128,7 +128,7 @@ mod test {
     #[test]
     fn system_clock_impls_coverage() {
         let one_ns = Nanos::new(1);
-        let c = SystemClock::default();
+        let c = SystemClock;
         let now = c.now();
         assert_ne!(now + one_ns, now);
         // Thankfully, we're not comparing two system clock readings
