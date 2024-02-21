@@ -14,7 +14,9 @@ fn accepts_first_cell() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
     for key in KEYS {
+        assert!(!lb.contains_key(&key));
         assert_eq!(Ok(()), lb.check_key(&key), "key {:?}", key);
+        assert!(lb.contains_key(&key));
     }
 }
 
