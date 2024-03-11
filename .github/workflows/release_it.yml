@@ -24,7 +24,7 @@ jobs:
           # TODO: figure out how this works with workspaces & multiple crates
 
       - name: Create release v${{steps.version.outputs.group2}}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.group2 }}
           name: ${{steps.version.outputs.group1}} v${{ steps.version.outputs.group2 }}
