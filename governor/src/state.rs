@@ -95,6 +95,11 @@ where
     pub fn into_state_store(self) -> S {
         self.state
     }
+
+    /// Returns a reference to the clock.
+    pub fn clock(&self) -> &C {
+        &self.clock
+    }
 }
 
 impl<K, S, C, MW> RateLimiter<K, S, C, MW>
