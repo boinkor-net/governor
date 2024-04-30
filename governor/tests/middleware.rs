@@ -28,7 +28,7 @@ impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for My
 #[test]
 fn changes_allowed_type() {
     let clock = FakeRelativeClock::default();
-    let lim = RateLimiter::direct_with_clock(Quota::per_hour(nonzero!(1_u32)), &clock)
+    let lim = RateLimiter::direct_with_clock(Quota::per_hour(nonzero!(1_u32)), clock.clone())
         .with_middleware::<MyMW>();
     assert_eq!(Ok(666), lim.check());
     assert_eq!(Err(()), lim.check());
@@ -37,7 +37,7 @@ fn changes_allowed_type() {
 #[test]
 fn state_information() {
     let clock = FakeRelativeClock::default();
-    let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), &clock)
+    let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), clock.clone())
         .with_middleware::<StateInformationMiddleware>();
     assert_eq!(
         Ok(3),
@@ -82,7 +82,7 @@ fn state_snapshot_tracks_quota_accurately() {
     let clock = FakeRelativeClock::default();
 
     // First test
-    let lim = RateLimiter::direct_with_clock(quota, &clock)
+    let lim = RateLimiter::direct_with_clock(quota, clock.clone())
         .with_middleware::<StateInformationMiddleware>();
 
     assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 1);
