@@ -62,7 +62,7 @@
 //! # use nonzero_ext::*;
 //! # use governor::{clock::FakeRelativeClock, RateLimiter, Quota};
 //! let clock = FakeRelativeClock::default();
-//! RateLimiter::direct_with_clock(Quota::per_second(nonzero!(50u32)), &clock);
+//! RateLimiter::direct_with_clock(Quota::per_second(nonzero!(50u32)), clock);
 //! ```
 //!
 //! #### Constructing a keyed rate limiter
@@ -144,7 +144,7 @@
 //! # use std::time::Duration;
 //!
 //! let mut clock = FakeRelativeClock::default();
-//! let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+//! let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(20u32)), clock);
 //! let ms = Duration::from_millis(1);
 //!
 //! crossbeam::scope(|scope| {

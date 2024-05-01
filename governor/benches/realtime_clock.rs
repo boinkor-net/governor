@@ -38,7 +38,7 @@ fn bench_mostly_allow(c: &mut Criterion) {
     with_realtime_clocks! {("mostly_allow", group) |b, clock| {
         let rl = RateLimiter::direct_with_clock(
             #[allow(deprecated)] Quota::new(nonzero!(u32::max_value()), Duration::from_nanos(1)).unwrap(),
-            clock
+            clock.clone()
         );
         b.iter(|| {
             black_box(rl.check().is_ok());
@@ -51,7 +51,7 @@ fn bench_mostly_deny(c: &mut Criterion) {
     let mut group = c.benchmark_group("realtime_clock");
     group.throughput(Throughput::Elements(1));
     with_realtime_clocks! {("mostly_deny", group) |b, clock| {
-        let rl = RateLimiter::direct_with_clock(Quota::per_hour(nonzero!(1u32)), clock);
+        let rl = RateLimiter::direct_with_clock(Quota::per_hour(nonzero!(1u32)), clock.clone());
         b.iter(|| {
             black_box(rl.check().is_ok());
         });

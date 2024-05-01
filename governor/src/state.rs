@@ -77,10 +77,9 @@ where
     ///
     /// This is the most generic way to construct a rate-limiter; most users should prefer
     /// [`direct`] or other methods instead.
-    pub fn new(quota: Quota, state: S, clock: &C) -> Self {
+    pub fn new(quota: Quota, state: S, clock: C) -> Self {
         let gcra = Gcra::new(quota);
         let start = clock.now();
-        let clock = clock.clone();
         RateLimiter {
             state,
             clock,
@@ -95,6 +94,11 @@ where
     /// This is mostly useful for debugging and testing.
     pub fn into_state_store(self) -> S {
         self.state
+    }
+
+    /// Returns a reference to the clock.
+    pub fn clock(&self) -> &C {
+        &self.clock
     }
 }
 

@@ -32,7 +32,7 @@ fn bench_direct(c: &mut Criterion) {
         b.iter_custom(|iters| {
             let lim = Arc::new(RateLimiter::direct_with_clock(
                 Quota::per_second(nonzero!(50u32)),
-                &clock,
+                clock.clone(),
             ));
             let mut children = vec![];
             let start = Instant::now();
@@ -68,7 +68,7 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
             let lim: Arc<RateLimiter<_, _, _, NoOpMiddleware>> = Arc::new(RateLimiter::new(
                 Quota::per_second(nonzero!(50u32)),
                 state,
-                &clock,
+                clock.clone(),
             ));
 
             let mut children = vec![];

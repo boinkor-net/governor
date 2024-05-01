@@ -209,7 +209,7 @@ mod test {
 
         let clock = FakeRelativeClock::default();
         let quota = Quota::per_second(nonzero!(1u32));
-        let lb = RateLimiter::direct_with_clock(quota, &clock);
+        let lb = RateLimiter::direct_with_clock(quota, clock);
         assert!(lb.check().is_ok());
         assert!(lb
             .check()
