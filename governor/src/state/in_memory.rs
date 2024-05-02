@@ -60,6 +60,10 @@ impl StateStore for InMemoryState {
     {
         self.measure_and_replace_one(f)
     }
+
+    fn contains_key(&self, _key: &Self::Key) -> bool {
+        true
+    }
 }
 
 impl Debug for InMemoryState {
