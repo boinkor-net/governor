@@ -1,4 +1,5 @@
 #![cfg(feature = "std")]
+#![cfg(unix)]
 
 // This test uses procinfo, so can only be run on Linux.
 extern crate libc;
