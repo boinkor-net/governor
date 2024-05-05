@@ -127,15 +127,32 @@ mod test {
 
     #[test]
     fn system_clock_impls_coverage() {
-        let one_ns = Nanos::new(1);
+        const NS: u64 = {
+            // SystemTime precision is OS-specific.
+            // For Windows it is only precise to 100ns.
+            //
+            // As far as I'm aware unix systems are typically precise to 1ns.
+            //
+            // See: https://doc.rust-lang.org/std/time/struct.SystemTime.html
+            //
+            // -- koshell
+            if cfg!(windows) {
+                100
+            } else {
+                1
+            }
+        };
+
+        let ns = Nanos::new(NS);
         let c = SystemClock::default();
         let now = c.now();
-        assert_ne!(now + one_ns, now);
+
+        assert_ne!(now + ns, now);
         // Thankfully, we're not comparing two system clock readings
         // here so that ought to be safe, I think:
-        assert_eq!(one_ns, Reference::duration_since(&(now + one_ns), now));
+        assert_eq!(ns, Reference::duration_since(&(now + ns), now));
         assert_eq!(
-            Reference::saturating_sub(&(now + Duration::from_nanos(1)), one_ns),
+            Reference::saturating_sub(&(now + Duration::from_nanos(NS)), ns),
             now
         );
     }
