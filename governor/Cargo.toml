@@ -25,17 +25,6 @@ harness = false
 [lib]
 bench = false
 
-[dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
-tynm = "0.1.4"
-crossbeam = "0.8.0"
-futures = "0.3.5"
-proptest = "1.0.0"
-all_asserts = "2.2.0"
-
-[target.'cfg(unix)'.dev-dependencies]
-libc = "0.2.70"
-
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]
 quanta = ["dep:quanta"]
@@ -64,3 +53,27 @@ cfg-if = "1.0"
 
 # To ensure we don't pull in vulnerable smallvec, see https://github.com/antifuchs/governor/issues/60
 smallvec = "1.6.1"
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+tynm = "0.1.4"
+crossbeam = "0.8.0"
+futures = "0.3.5"
+proptest = "1.0.0"
+all_asserts = "2.2.0"
+
+[target.'cfg(unix)'.dev-dependencies]
+libc = "0.2.70"
+
+[target.'cfg(windows)'.dev-dependencies]
+windows = { version = "0.56.0", features = ["System_Diagnostics"] }
+
+# Due to #![deny(warnings)] you can't compile the crate without these lints disabled.
+# These are simple to resolve lints, it's up to Andreas Fuchs if they should be resolved.
+#
+# -- koshell
+[lints.clippy]
+default_constructed_unit_structs = "allow"
+single_char_pattern = "allow"
+len_zero = "allow"
+clone_on_copy = "allow"

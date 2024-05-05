@@ -1,19 +1,37 @@
 #![cfg(feature = "std")]
-#![cfg(unix)]
 
-// This test uses procinfo, so can only be run on Linux.
+#[cfg(unix)]
 extern crate libc;
 
 use all_asserts::*;
 use governor::{Quota, RateLimiter};
 use nonzero_ext::*;
+use std::convert::TryInto;
 use std::sync::Arc;
 use std::thread;
 
 fn resident_memory_size() -> i64 {
-    let mut out: libc::rusage = unsafe { std::mem::zeroed() };
-    assert!(unsafe { libc::getrusage(libc::RUSAGE_SELF, &mut out) } == 0);
-    out.ru_maxrss
+    #[cfg(unix)]
+    {
+        let mut out: libc::rusage = unsafe { std::mem::zeroed() };
+        assert!(unsafe { libc::getrusage(libc::RUSAGE_SELF, &mut out) } == 0);
+        out.ru_maxrss
+    }
+
+    #[cfg(windows)]
+    {
+        (windows::System::Diagnostics::ProcessDiagnosticInfo::GetForCurrentProcess()
+            .unwrap()
+            .MemoryUsage()
+            .unwrap()
+            .GetReport()
+            .unwrap()
+            .WorkingSetSizeInBytes()
+            .unwrap()
+            / 1024) // B => KiB
+            .try_into()
+            .unwrap()
+    }
 }
 
 const LEAK_TOLERANCE: i64 = 1024 * 1024 * 10;
