@@ -25,19 +25,16 @@ harness = false
 [lib]
 bench = false
 
-[dev-dependencies]
-criterion = {version = "0.5.1", features = ["html_reports"]}
-tynm = "0.1.4"
-crossbeam = "0.8.0"
-libc = "0.2.70"
-futures = "0.3.5"
-proptest = "1.0.0"
-all_asserts = "2.2.0"
-
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]
 quanta = ["dep:quanta"]
-std = ["no-std-compat/std", "nonzero_ext/std", "futures-timer", "futures", "dep:parking_lot"]
+std = [
+   "no-std-compat/std",
+   "nonzero_ext/std",
+   "futures-timer",
+   "futures",
+   "dep:parking_lot",
+]
 jitter = ["rand"]
 no_std = ["no-std-compat/compat_hash"]
 
@@ -51,8 +48,32 @@ futures = { version = "0.3.5", optional = true }
 rand = { version = "0.8.0", optional = true }
 dashmap = { version = "5.1.0", optional = true }
 quanta = { version = "0.12.0", optional = true }
-no-std-compat = { version = "0.4.1", features = [ "alloc" ] }
+no-std-compat = { version = "0.4.1", features = ["alloc"] }
 cfg-if = "1.0"
 
 # To ensure we don't pull in vulnerable smallvec, see https://github.com/antifuchs/governor/issues/60
 smallvec = "1.6.1"
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+tynm = "0.1.4"
+crossbeam = "0.8.0"
+futures = "0.3.5"
+proptest = "1.0.0"
+all_asserts = "2.2.0"
+
+[target.'cfg(unix)'.dev-dependencies]
+libc = "0.2.70"
+
+[target.'cfg(windows)'.dev-dependencies]
+windows = { version = "0.56.0", features = ["System_Diagnostics"] }
+
+# Due to #![deny(warnings)] you can't compile the crate without these lints disabled.
+# These are simple to resolve lints, it's up to Andreas Fuchs if they should be resolved.
+#
+# -- koshell
+[lints.clippy]
+default_constructed_unit_structs = "allow"
+single_char_pattern = "allow"
+len_zero = "allow"
+clone_on_copy = "allow"

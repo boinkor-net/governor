@@ -174,6 +174,15 @@ impl Gcra {
             }
         }))
     }
+
+    /// Consumes the `Gcra` and returns `Quota`.
+    pub(crate) fn to_quota(&self) -> Quota {
+        let max_burst = self.tau / self.t;
+        Quota {
+            max_burst: NonZeroU32::new(max_burst as u32).expect("max_burst expect u32 value"),
+            replenish_1_per: Duration::from_nanos(self.t.as_u64()),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -224,6 +233,7 @@ mod test {
 
     #[derive(Debug)]
     struct Count(NonZeroU32);
+
     impl Arbitrary for Count {
         type Parameters = ();
         fn arbitrary_with(_args: ()) -> Self::Strategy {
@@ -252,5 +262,34 @@ mod test {
             let back = Quota::from_gcra_parameters(gcra.t, gcra.tau);
             assert_eq!(quota, back);
         })
+    }
+
+    #[test]
+    fn test_to_quota() {
+        use nonzero_ext::nonzero;
+
+        let quota = Quota {
+            max_burst: nonzero!(32_u32),
+            replenish_1_per: Duration::from_secs(3),
+        };
+        let gcra = Gcra::new(quota);
+        let expect = gcra.to_quota();
+        assert_eq!(quota, expect);
+
+        let quota = Quota {
+            max_burst: nonzero!(94_u32),
+            replenish_1_per: Duration::from_millis(310),
+        };
+        let gcra = Gcra::new(quota);
+        let expect = gcra.to_quota();
+        assert_eq!(quota, expect);
+
+        let quota = Quota {
+            max_burst: nonzero!(1016_u32),
+            replenish_1_per: Duration::from_micros(30310),
+        };
+        let gcra = Gcra::new(quota);
+        let expect = gcra.to_quota();
+        assert_eq!(quota, expect);
     }
 }
