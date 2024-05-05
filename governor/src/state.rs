@@ -100,6 +100,11 @@ where
     pub fn clock(&self) -> &C {
         &self.clock
     }
+
+    /// Consumes the `RateLimiter` and returns `Quota`.
+    pub fn quota(&self) -> Quota {
+        self.gcra.to_quota()
+    }
 }
 
 impl<K, S, C, MW> RateLimiter<K, S, C, MW>
