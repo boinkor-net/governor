@@ -266,6 +266,8 @@ mod test {
 
     #[test]
     fn test_to_quota() {
+        use nonzero_ext::nonzero;
+
         let quota = Quota {
             max_burst: nonzero!(32_u32),
             replenish_1_per: Duration::from_secs(3),
