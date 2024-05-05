@@ -10,7 +10,12 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::state::keyed::ShrinkableKeyedStateStore;
-use parking_lot::Mutex;
+
+#[cfg(feature = "std")]
+type Mutex<T> = parking_lot::Mutex<T>;
+
+#[cfg(not(feature = "std"))]
+type Mutex<T> = spinning_top::Spinlock<T>;
 
 /// A thread-safe (but not very performant) implementation of a keyed rate limiter state
 /// store using [`HashMap`].
@@ -32,9 +37,7 @@ impl<K: Hash + Eq + Clone> StateStore for HashMapStateStore<K> {
             return v.measure_and_replace_one(f);
         }
         // not-so-fast path: make a new entry and measure it.
-        let entry = (*map)
-            .entry(key.clone())
-            .or_insert_with(InMemoryState::default);
+        let entry = (*map).entry(key.clone()).or_default();
         entry.measure_and_replace_one(f)
     }
 }
@@ -67,8 +70,8 @@ where
     C: clock::Clock,
 {
     /// Constructs a new rate limiter with a custom clock, backed by a [`HashMap`].
-    pub fn hashmap_with_clock(quota: Quota, clock: &C) -> Self {
-        let state: HashMapStateStore<K> = Mutex::new(HashMap::new());
+    pub fn hashmap_with_clock(quota: Quota, clock: C) -> Self {
+        let state: HashMapStateStore<K> = HashMapStateStore::new(HashMap::new());
         RateLimiter::new(quota, state, clock)
     }
 }

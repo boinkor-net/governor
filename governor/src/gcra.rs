@@ -85,7 +85,9 @@ pub(crate) struct Gcra {
 
 impl Gcra {
     pub(crate) fn new(quota: Quota) -> Self {
-        let tau: Nanos = (quota.replenish_1_per * quota.max_burst.get()).into();
+        let tau: Nanos = (cmp::max(quota.replenish_1_per, Duration::from_nanos(1))
+            * quota.max_burst.get())
+        .into();
         let t: Nanos = quota.replenish_1_per.into();
         Gcra { t, tau }
     }
@@ -217,7 +219,7 @@ mod test {
 
         let clock = FakeRelativeClock::default();
         let quota = Quota::per_second(nonzero!(1u32));
-        let lb = RateLimiter::direct_with_clock(quota, &clock);
+        let lb = RateLimiter::direct_with_clock(quota, clock);
         assert!(lb.check().is_ok());
         assert!(lb
             .check()

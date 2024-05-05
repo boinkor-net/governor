@@ -36,8 +36,8 @@ where
     C: clock::Clock,
 {
     /// Constructs a new rate limiter with a custom clock, backed by a
-    /// [`DashMap`][dashmap::DashMap].
-    pub fn dashmap_with_clock(quota: Quota, clock: &C) -> Self {
+    /// [`DashMap`].
+    pub fn dashmap_with_clock(quota: Quota, clock: C) -> Self {
         let state: DashMapStateStore<K> = DashMap::default();
         RateLimiter::new(quota, state, clock)
     }

@@ -12,7 +12,7 @@ const KEYS: &[u32] = &[1u32, 2u32];
 #[test]
 fn accepts_first_cell() {
     let clock = FakeRelativeClock::default();
-    let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(5u32)), &clock);
+    let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(5u32)), clock.clone());
     for key in KEYS {
         assert_eq!(Ok(()), lb.check_key(&key), "key {:?}", key);
     }
@@ -21,7 +21,7 @@ fn accepts_first_cell() {
 #[test]
 fn rejects_too_many() {
     let clock = FakeRelativeClock::default();
-    let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(2u32)), &clock);
+    let lb = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(2u32)), clock.clone());
     let ms = Duration::from_millis(1);
 
     for key in KEYS {
@@ -65,7 +65,7 @@ fn expiration() {
     let ms = Duration::from_millis(1);
 
     let make_bucket = || {
-        let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(1u32)), &clock);
+        let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(1u32)), clock.clone());
         lim.check_key(&"foo").unwrap();
         clock.advance(ms * 200);
         lim.check_key(&"bar").unwrap();
@@ -101,7 +101,7 @@ fn actual_threadsafety() {
     use crossbeam;
 
     let clock = FakeRelativeClock::default();
-    let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+    let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(20u32)), clock.clone());
     let ms = Duration::from_millis(1);
 
     for key in KEYS {
@@ -144,7 +144,7 @@ fn hashmap_length() {
 fn hashmap_shrink_to_fit() {
     let clock = FakeRelativeClock::default();
     // a steady rate of 3ms between elements:
-    let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(20u32)), &clock);
+    let lim = RateLimiter::hashmap_with_clock(Quota::per_second(nonzero!(20u32)), clock.clone());
     let ms = Duration::from_millis(1);
 
     assert_eq!(

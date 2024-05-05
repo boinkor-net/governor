@@ -43,7 +43,7 @@ where
     pub fn keyed(quota: Quota) -> Self {
         let state = DefaultKeyedStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, &clock)
+        RateLimiter::new(quota, state, clock)
     }
 
     #[cfg(all(feature = "std", feature = "dashmap"))]
@@ -51,7 +51,7 @@ where
     pub fn dashmap(quota: Quota) -> Self {
         let state = DashMapStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, &clock)
+        RateLimiter::new(quota, state, clock)
     }
 
     #[cfg(any(all(feature = "std", not(feature = "dashmap")), not(feature = "std")))]
@@ -60,7 +60,7 @@ where
     pub fn hashmap(quota: Quota) -> Self {
         let state = HashMapStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, &clock)
+        RateLimiter::new(quota, state, clock)
     }
 }
 
@@ -74,7 +74,7 @@ where
     pub fn hashmap(quota: Quota) -> Self {
         let state = HashMapStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, &clock)
+        RateLimiter::new(quota, state, clock)
     }
 }
 
@@ -281,7 +281,7 @@ mod test {
         > = RateLimiter::new(
             Quota::per_second(nonzero!(1_u32)),
             NaiveKeyedStateStore::default(),
-            &FakeRelativeClock::default(),
+            FakeRelativeClock::default(),
         );
         assert_eq!(lim.check_key(&1u32), Ok(()));
         assert!(lim.is_empty());

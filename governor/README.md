@@ -1,4 +1,4 @@
-![Build status](https://github.com/antifuchs/governor/actions/workflows/ci_push.yml/badge.svg?branch=master) [![codecov](https://codecov.io/gh/antifuchs/governor/branch/master/graph/badge.svg)](https://codecov.io/gh/antifuchs/governor) [![Docs](https://docs.rs/governor/badge.svg)](https://docs.rs/governor/) [![crates.io](https://img.shields.io/crates/v/governor.svg)](https://crates.io/crates/governor)
+![Build status](https://github.com/boinkor-net/governor/actions/workflows/ci_push.yml/badge.svg?branch=master) [![codecov](https://codecov.io/gh/boinkor-net/governor/branch/master/graph/badge.svg)](https://codecov.io/gh/boinkor-net/governor) [![Docs](https://docs.rs/governor/badge.svg)](https://docs.rs/governor/) [![crates.io](https://img.shields.io/crates/v/governor.svg)](https://crates.io/crates/governor)
 
 # governor - a library for regulating the flow of data
 

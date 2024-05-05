@@ -20,7 +20,7 @@ fn bench_direct(c: &mut Criterion) {
     group.bench_function("direct", |b| {
         let clock = clock::FakeRelativeClock::default();
         let step = Duration::from_millis(20);
-        let rl = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(50u32)), &clock);
+        let rl = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(50u32)), clock.clone());
         b.iter_batched(
             || {
                 clock.advance(step);
@@ -48,7 +48,7 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
                 _,
                 _,
                 NoOpMiddleware<<clock::FakeRelativeClock as clock::Clock>::Instant>,
-            > = RateLimiter::new(Quota::per_second(nonzero!(50u32)), state, &clock);
+            > = RateLimiter::new(Quota::per_second(nonzero!(50u32)), state, clock.clone());
             b.iter_batched(
                 || {
                     clock.advance(step);

@@ -24,7 +24,7 @@ pub use direct::*;
 /// do more than N tasks a day). The keyed kind allows one rate limit per key (e.g. an API
 /// call budget per client API key).
 ///
-/// A direct state store is expressed as [`StateStore::Key`] = [`NotKeyed`][direct::NotKeyed].
+/// A direct state store is expressed as [`StateStore::Key`] = [`NotKeyed`].
 /// Keyed state stores have a
 /// type parameter for the key and set their key to that.
 pub trait StateStore {
@@ -77,10 +77,9 @@ where
     ///
     /// This is the most generic way to construct a rate-limiter; most users should prefer
     /// [`direct`] or other methods instead.
-    pub fn new(quota: Quota, state: S, clock: &C) -> Self {
+    pub fn new(quota: Quota, state: S, clock: C) -> Self {
         let gcra = Gcra::new(quota);
         let start = clock.now();
-        let clock = clock.clone();
         RateLimiter {
             state,
             clock,
@@ -95,6 +94,11 @@ where
     /// This is mostly useful for debugging and testing.
     pub fn into_state_store(self) -> S {
         self.state
+    }
+
+    /// Returns a reference to the clock.
+    pub fn clock(&self) -> &C {
+        &self.clock
     }
 
     /// Consumes the `RateLimiter` and returns `Quota`.

@@ -33,7 +33,6 @@
 //!     }
 //! }
 //!
-//! #[derive(Clone)]
 //! struct MyCounter(u64);
 //!
 //! impl Clock for MyCounter {
@@ -50,10 +49,11 @@ use std::prelude::v1::*;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::ops::Add;
-use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
+
+use portable_atomic::AtomicU64;
 
 use crate::nanos::Nanos;
 
@@ -74,7 +74,7 @@ pub trait Reference:
 }
 
 /// A time source used by rate limiters.
-pub trait Clock: Clone {
+pub trait Clock {
     /// A measurement of a monotonically increasing clock.
     type Instant: Reference;
 
