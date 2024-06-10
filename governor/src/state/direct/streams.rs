@@ -24,15 +24,14 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// it will not `poll` the underlying stream.
     fn ratelimit_stream<
         D: DirectStateStore,
-        C: clock::Clock,
+        C: clock::ReasonablyRealtime,
         MW: RateLimitingMiddleware<C::Instant>,
     >(
         self,
         limiter: &'a RateLimiter<NotKeyed, D, C, MW>,
     ) -> RatelimitedStream<'a, Self, D, C, MW>
     where
-        Self: Sized,
-        C: clock::ReasonablyRealtime;
+        Self: Sized;
 
     /// Limits the rate at which the stream produces items, with a randomized wait period.
     ///
@@ -43,7 +42,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
     /// it will not `poll` the underlying stream.
     fn ratelimit_stream_with_jitter<
         D: DirectStateStore,
-        C: clock::Clock,
+        C: clock::ReasonablyRealtime,
         MW: RateLimitingMiddleware<C::Instant>,
     >(
         self,
@@ -51,14 +50,13 @@ pub trait StreamRateLimitExt<'a>: Stream {
         jitter: Jitter,
     ) -> RatelimitedStream<'a, Self, D, C, MW>
     where
-        Self: Sized,
-        C: clock::ReasonablyRealtime;
+        Self: Sized;
 }
 
 impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     fn ratelimit_stream<
         D: DirectStateStore,
-        C: clock::Clock,
+        C: clock::ReasonablyRealtime,
         MW: RateLimitingMiddleware<C::Instant>,
     >(
         self,
@@ -66,14 +64,13 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     ) -> RatelimitedStream<'a, Self, D, C, MW>
     where
         Self: Sized,
-        C: clock::ReasonablyRealtime,
     {
         self.ratelimit_stream_with_jitter(limiter, Jitter::NONE)
     }
 
     fn ratelimit_stream_with_jitter<
         D: DirectStateStore,
-        C: clock::Clock,
+        C: clock::ReasonablyRealtime,
         MW: RateLimitingMiddleware<C::Instant>,
     >(
         self,
@@ -82,7 +79,6 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     ) -> RatelimitedStream<'a, Self, D, C, MW>
     where
         Self: Sized,
-        C: clock::ReasonablyRealtime,
     {
         RatelimitedStream {
             inner: self,
