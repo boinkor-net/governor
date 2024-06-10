@@ -4,6 +4,11 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+* https://docs.rs/governor now lists the features required for
+  feature-gated types and functions.
+
 ## [[0.6.3](https://docs.rs/governor/0.6.3/governor/)] - 2024-02-16
 
 ### Changed

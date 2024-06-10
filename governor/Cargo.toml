@@ -25,6 +25,9 @@ harness = false
 [lib]
 bench = false
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [dev-dependencies]
 criterion = {version = "0.5.1", features = ["html_reports"]}
 tynm = "0.1.4"
