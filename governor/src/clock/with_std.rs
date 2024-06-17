@@ -111,6 +111,7 @@ mod test {
             #[test]
             fn instant_impls_coverage() {
                 let one_ns = Nanos::new(1);
+                #[allow(clippy::default_constructed_unit_structs)]
                 let c = MonotonicClock::default();
                 let now = c.now();
                 let ns_dur = Duration::from(one_ns);
@@ -128,6 +129,7 @@ mod test {
     #[test]
     fn system_clock_impls_coverage() {
         let one_ns = Nanos::new(1);
+        #[allow(clippy::default_constructed_unit_structs)]
         let c = SystemClock::default();
         let now = c.now();
         assert_ne!(now + one_ns, now);
