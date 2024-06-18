@@ -1,3 +1,4 @@
+#![allow(clippy::duplicated_attributes)]
 #![cfg(feature = "std")]
 
 use std::prelude::v1::*;

@@ -106,7 +106,10 @@ mod test {
     #[test]
     fn insufficient_capacity_impl_coverage() {
         let i = InsufficientCapacity(1);
-        assert_eq!(i.0, i.clone().0);
+        #[allow(clippy::clone_on_copy)]
+        {
+            assert_eq!(i.0, i.clone().0);
+        }
         assert_gt!(format!("{}", i).len(), 0);
     }
 }
