@@ -1,5 +1,3 @@
-#![cfg(feature = "std")]
-
 use std::prelude::v1::*;
 
 use crate::{clock, Jitter, NotUntil, RateLimiter};
