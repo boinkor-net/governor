@@ -1,7 +1,7 @@
 #![cfg(feature = "std")]
 
-use futures::executor::block_on;
-use futures::{stream, StreamExt};
+use futures_executor::block_on;
+use futures_util::{stream, StreamExt};
 use governor::{prelude::*, Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;

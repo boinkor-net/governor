@@ -5,13 +5,13 @@ use crate::{
     middleware::RateLimitingMiddleware,
     state::{DirectStateStore, NotKeyed},
 };
-use futures::task::{Context, Poll};
-use futures::{Future, Sink, Stream};
 use futures_timer::Delay;
+use futures_util::task::{Context, Poll};
+use futures_util::{Future, Sink, Stream};
 use std::pin::Pin;
 use std::time::Duration;
 
-/// Allows converting a [`futures::Stream`] combinator into a rate-limited stream.
+/// Allows converting a [`futures_util::Stream`] combinator into a rate-limited stream.
 pub trait StreamRateLimitExt<'a>: Stream {
     /// Limits the rate at which the stream produces items.
     ///
@@ -95,7 +95,7 @@ enum State {
     Wait,
 }
 
-/// A [`Stream`][futures::Stream] combinator which will limit the rate of items being received.
+/// A [`Stream`][futures_util::Stream] combinator which will limit the rate of items being received.
 ///
 /// This is produced by the [`StreamRateLimitExt::ratelimit_stream`] and
 /// [`StreamRateLimitExt::ratelimit_stream_with_jitter`] methods.
@@ -125,7 +125,7 @@ impl<
 {
     /// Acquires a reference to the underlying stream that this combinator is pulling from.
     /// ```rust
-    /// # use futures::{Stream, stream};
+    /// # use futures_util::{Stream, stream};
     /// # use governor::{prelude::*, Quota, RateLimiter};
     /// # use nonzero_ext::nonzero;
     /// let inner = stream::repeat(());
@@ -140,8 +140,8 @@ impl<
 
     /// Acquires a mutable reference to the underlying stream that this combinator is pulling from.
     /// ```rust
-    /// # use futures::{stream, StreamExt};
-    /// # use futures::executor::block_on;
+    /// # use futures_util::{stream, StreamExt};
+    /// # use futures_executor::block_on;
     /// # use governor::{prelude::*, Quota, RateLimiter};
     /// # use nonzero_ext::nonzero;
     /// let inner = stream::repeat(());
@@ -157,8 +157,8 @@ impl<
     /// which it has already produced but which is still being held back
     /// in order to abide by the limiter.
     /// ```rust
-    /// # use futures::{stream, StreamExt};
-    /// # use futures::executor::block_on;
+    /// # use futures_util::{stream, StreamExt};
+    /// # use futures_executor::block_on;
     /// # use governor::{prelude::*, Quota, RateLimiter};
     /// # use nonzero_ext::nonzero;
     /// let inner = stream::repeat(());
@@ -172,7 +172,7 @@ impl<
     }
 }
 
-/// Implements the [`futures::Stream`] combinator.
+/// Implements the [`futures_util::Stream`] combinator.
 impl<'a, S: Stream, D: DirectStateStore, C: clock::Clock, MW> Stream
     for RatelimitedStream<'a, S, D, C, MW>
 where
@@ -239,7 +239,7 @@ where
     }
 }
 
-/// Pass-through implementation for [`futures::Sink`] if the Stream also implements it.
+/// Pass-through implementation for [`futures_util::Sink`] if the Stream also implements it.
 impl<
         'a,
         Item,

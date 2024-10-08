@@ -1,8 +1,8 @@
 #![cfg(feature = "std")]
 
 use all_asserts::*;
-use futures::executor::block_on;
-use futures::SinkExt;
+use futures_executor::block_on;
+use futures_util::sink::SinkExt;
 use governor::{prelude::*, Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;
