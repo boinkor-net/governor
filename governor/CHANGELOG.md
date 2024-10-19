@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.6.4](https://docs.rs/governor/0.6.4/governor/)] - 2024-10-19
+
 ### Added
 
 * https://docs.rs/governor now lists the features required for
