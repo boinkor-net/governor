@@ -26,6 +26,13 @@
   [@max-heller](https://github.com/max-heller) in
   [#232](https://github.com/boinkor-net/governor/pull/232).
 
+* governor now depends only on
+  [`futures-util`](https://crates.io/crates/futures-util) and
+  [`futures-executor`](https://crates.io/crates/futures-executor) instead of
+  the much larger `futures` crate. Fixed by
+  [@negezor](https://github.com/negezor) in
+  [#239](https://github.com/boinkor-net/governor/pull/239).
+
 ## [[0.6.3](https://docs.rs/governor/0.6.3/governor/)] - 2024-02-16
 
 ### Changed
