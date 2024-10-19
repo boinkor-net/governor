@@ -11,6 +11,21 @@
 * https://docs.rs/governor now lists the features required for
   feature-gated types and functions.
 
+* A
+  [`RateLimiter`](https://docs.rs/governor/0.6.4/governor/struct.RateLimiter.html)
+  now has a
+  [`clock`](https://docs.rs/governor/0.6.4/governor/struct.RateLimiter.html#method.clock)
+  method to retrieve the clock providing its timestamps. Added by
+  [@max-heller](https://github.com/max-heller) in
+  [#232](https://github.com/boinkor-net/governor/pull/232).
+
+### Changed
+
+* [`Clock`](https://docs.rs/governor/0.6.4/governor/clock/trait.Clock.html)s
+  no longer need to be `Clone`. Changed by
+  [@max-heller](https://github.com/max-heller) in
+  [#232](https://github.com/boinkor-net/governor/pull/232).
+
 ## [[0.6.3](https://docs.rs/governor/0.6.3/governor/)] - 2024-02-16
 
 ### Changed
