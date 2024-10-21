@@ -6,7 +6,21 @@
 
 ## [[0.7.0](https://docs.rs/governor/0.7.0/governor/)] - 2024-10-21
 
+This is a quick bug-fix release to address the semver incompatibility
+in 0.6.4. It is functionally identical to 0.6.4, with the exception of
+the dashmap version upgrade.
+
+### Changed
+
+* Upgraded dashmap to 6.1.0.
+
 ## [[0.6.4](https://docs.rs/governor/0.6.4/governor/)] - 2024-10-19
+
+This release has been yanked because it violates Semantic Versioning
+ideals: The Clock argument type in functions like `direct_with_clock`
+changed, which breaks existing code.
+
+Instead of 0.6.4, please use 0.7.0.
 
 ### Added
 
