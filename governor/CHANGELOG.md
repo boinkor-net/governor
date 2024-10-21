@@ -4,6 +4,17 @@
 
 ## [Unreleased] - ReleaseDate
 
+This is a quick bugfix release for the 0.6 version series: A
+non-semver-compatible change snuck in, so 0.6.5 will back that change
+out, and 0.7.0 will add it back.
+
+### Changed
+
+* The
+  [`Clock`](https://docs.rs/governor/0.6.5/governor/clock/trait.Clock.html)
+  trait needs to be Clone for the 0.6.5 release, as removing that
+  trait in 0.6.3 was not semver-compatible.
+
 ## [[0.6.4](https://docs.rs/governor/0.6.4/governor/)] - 2024-10-19
 
 ### Added
