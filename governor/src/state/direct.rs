@@ -46,7 +46,7 @@ impl RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware> {
         quota: Quota,
     ) -> RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware> {
         let clock = clock::DefaultClock::default();
-        Self::direct_with_clock(quota, &clock)
+        Self::direct_with_clock(quota, clock)
     }
 }
 
@@ -55,7 +55,7 @@ where
     C: clock::Clock,
 {
     /// Constructs a new direct rate limiter for a quota with a custom clock.
-    pub fn direct_with_clock(quota: Quota, clock: &C) -> Self {
+    pub fn direct_with_clock(quota: Quota, clock: C) -> Self {
         let state: InMemoryState = Default::default();
         RateLimiter::new(quota, state, clock)
     }

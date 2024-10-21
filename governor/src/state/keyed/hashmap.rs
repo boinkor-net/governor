@@ -70,7 +70,7 @@ where
     C: clock::Clock,
 {
     /// Constructs a new rate limiter with a custom clock, backed by a [`HashMap`].
-    pub fn hashmap_with_clock(quota: Quota, clock: &C) -> Self {
+    pub fn hashmap_with_clock(quota: Quota, clock: C) -> Self {
         let state: HashMapStateStore<K> = HashMapStateStore::new(HashMap::new());
         RateLimiter::new(quota, state, clock)
     }
