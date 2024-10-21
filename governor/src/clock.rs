@@ -33,6 +33,7 @@
 //!     }
 //! }
 //!
+//! #[derive(Clone)]
 //! struct MyCounter(u64);
 //!
 //! impl Clock for MyCounter {
@@ -74,7 +75,7 @@ pub trait Reference:
 }
 
 /// A time source used by rate limiters.
-pub trait Clock {
+pub trait Clock: Clone {
     /// A measurement of a monotonically increasing clock.
     type Instant: Reference;
 
