@@ -182,7 +182,7 @@ where
         // arrival time is larger than a starting state for the bucket gets to stay, everything
         // else (that's indistinguishable from a starting state) goes.
         let now = self.clock.now();
-        let drop_below = now.duration_since(self.start);
+        let drop_below = now.duration_since(self.start).saturating_sub(self.gcra.t());
 
         self.state.retain_recent(drop_below);
     }

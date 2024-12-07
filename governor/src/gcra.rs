@@ -79,22 +79,21 @@ pub(crate) struct Gcra {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
 
-    /// The "burst capacity" of the bucket.
+    /// The "tolerance" of the bucket in units of time.
+    ///
+    /// The total "burst capacity" of the bucket is `t + tau`.
     tau: Nanos,
 }
 
 impl Gcra {
     pub(crate) fn new(quota: Quota) -> Self {
-        let tau: Nanos = (cmp::max(quota.replenish_1_per, Duration::from_nanos(1))
-            * quota.max_burst.get())
-        .into();
-        let t: Nanos = quota.replenish_1_per.into();
+        let t: Nanos = cmp::max(quota.replenish_1_per, Duration::from_nanos(1)).into();
+        let tau: Nanos = t * (quota.max_burst.get() - 1).into();
         Gcra { t, tau }
     }
 
-    /// Computes and returns a new ratelimiter state if none exists yet.
-    fn starting_state(&self, t0: Nanos) -> Nanos {
-        t0 + self.t
+    pub(crate) fn t(&self) -> Nanos {
+        self.t
     }
 
     /// Tests a single cell against the rate limiter state and updates it at the given key.
@@ -114,7 +113,7 @@ impl Gcra {
         let tau = self.tau;
         let t = self.t;
         state.measure_and_replace(key, |tat| {
-            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+            let tat = tat.unwrap_or(t0);
             let earliest_time = tat.saturating_sub(tau);
             if t0 < earliest_time {
                 Err(MW::disallow(
@@ -154,10 +153,12 @@ impl Gcra {
         // check that we can allow enough cells through. Note that `additional_weight` is the
         // value of the cells *in addition* to the first cell - so add that first cell back.
         if additional_weight + t > tau {
-            return Err(InsufficientCapacity((tau.as_u64() / t.as_u64()) as u32));
+            return Err(InsufficientCapacity(
+                1 + (self.tau.as_u64() / t.as_u64()) as u32,
+            ));
         }
         Ok(state.measure_and_replace(key, |tat| {
-            let tat = tat.unwrap_or_else(|| self.starting_state(t0));
+            let tat = tat.unwrap_or(t0);
             let earliest_time = (tat + additional_weight).saturating_sub(tau);
             if t0 < earliest_time {
                 Err(MW::disallow(
