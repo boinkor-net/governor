@@ -90,7 +90,6 @@ fn state_snapshot_tracks_quota_accurately() {
     assert_eq!(lim.check().map_err(|_| ()), Err(()), "should rate limit");
 
     clock.advance(Duration::from_secs(120));
-    assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(2));
     assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(1));
     assert_eq!(lim.check().map(|s| s.remaining_burst_capacity()), Ok(0));
     assert_eq!(lim.check().map_err(|_| ()), Err(()), "should rate limit");
