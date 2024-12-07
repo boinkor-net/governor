@@ -36,6 +36,29 @@ fn rejects_too_many() {
     assert_ne!(Ok(()), lb.check(), "{:?}", lb);
 }
 
+// Reproducer for:
+// - https://github.com/boinkor-net/governor/issues/107
+// - https://github.com/boinkor-net/governor/issues/249
+#[test]
+fn does_not_allow_one_extra_cell_after_longer_interval() {
+    let clock = FakeRelativeClock::default();
+    let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), clock.clone());
+
+    for _ in 1..=5 {
+        assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+    }
+    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+
+    // Advance the clock substantially longer than necessary (or at least `(max_burst + 1) *
+    // replenish_1_per`).
+    clock.advance(Duration::from_secs(2));
+
+    for _ in 1..=5 {
+        assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
+    }
+    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+}
+
 #[test]
 fn all_1_identical_to_1() {
     let clock = FakeRelativeClock::default();
