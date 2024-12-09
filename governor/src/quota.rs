@@ -190,14 +190,14 @@ impl Quota {
     /// This is useful mainly for [`crate::middleware::RateLimitingMiddleware`]
     /// where custom code may want to construct information based on
     /// the amount of burst balance remaining.
-    pub(crate) fn from_gcra_parameters(t: Nanos, capacity: Nanos) -> Quota {
+    pub(crate) fn from_gcra_parameters(t: Nanos, tau: Nanos) -> Quota {
         // Safety assurance: by construction, the computed value is bounded by
         // one at the lower.
         //
         // The casts may look a little sketch, but they're constructed from
         // parameters that came from the crate exactly like that.
         let max_burst =
-            unsafe { NonZeroU32::new_unchecked(1 + (capacity.as_u64() / t.as_u64()) as u32) };
+            unsafe { NonZeroU32::new_unchecked(1 + (tau.as_u64() / t.as_u64()) as u32) };
         let replenish_1_per = t.into();
         Quota {
             max_burst,
