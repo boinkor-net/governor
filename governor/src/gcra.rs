@@ -150,9 +150,9 @@ impl Gcra {
         let t = self.t;
         let additional_weight = t * (n.get() - 1) as u64;
 
-        // check that we can allow enough cells through. Note that `additional_weight` is the
-        // value of the cells *in addition* to the first cell - so add that first cell back.
-        if additional_weight + t > tau {
+        // Check that we can allow enough cells through. Note that both `additional_weight` and
+        // `tau` represent the value of the cells *in addition* to the first cell.
+        if additional_weight > tau {
             return Err(InsufficientCapacity(
                 1 + (self.tau.as_u64() / t.as_u64()) as u32,
             ));

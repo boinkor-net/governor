@@ -127,8 +127,10 @@ fn all_capacity_check_rejects_excess() {
     let lb = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(5u32)), clock);
 
     assert_eq!(Err(InsufficientCapacity(5)), lb.check_n(nonzero!(15u32)));
-    assert_eq!(Err(InsufficientCapacity(5)), lb.check_n(nonzero!(6u32)));
     assert_eq!(Err(InsufficientCapacity(5)), lb.check_n(nonzero!(7u32)));
+    assert_eq!(Err(InsufficientCapacity(5)), lb.check_n(nonzero!(6u32)));
+
+    assert_eq!(Ok(Ok(())), lb.check_n(nonzero!(5u32)));
 }
 
 #[test]
