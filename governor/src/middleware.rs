@@ -74,7 +74,9 @@ pub struct StateSnapshot {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
 
-    /// The "burst capacity" of the bucket.
+    /// The "tolerance" of the bucket.
+    ///
+    /// The total "burst capacity" of the bucket is `t + tau`.
     tau: Nanos,
 
     /// The time at which the measurement was taken.
@@ -106,10 +108,10 @@ impl StateSnapshot {
     /// If this state snapshot is based on a negative rate limiting
     /// outcome, this method returns 0.
     pub fn remaining_burst_capacity(&self) -> u32 {
-        let t0 = self.time_of_measurement + self.t;
+        let t0 = self.time_of_measurement;
         (cmp::min(
-            (t0 + self.tau).saturating_sub(self.tat).as_u64(),
-            self.tau.as_u64(),
+            (t0 + self.tau + self.t).saturating_sub(self.tat).as_u64(),
+            (self.tau + self.t).as_u64(),
         ) / self.t.as_u64()) as u32
     }
 }

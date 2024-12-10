@@ -152,13 +152,12 @@ impl<
 }
 
 impl<
-        'a,
         Item,
         S: Sink<Item>,
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
         MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
-    > Sink<Item> for RatelimitedSink<'a, Item, S, D, C, MW>
+    > Sink<Item> for RatelimitedSink<'_, Item, S, D, C, MW>
 where
     S: Unpin,
     Item: Unpin,
@@ -230,13 +229,12 @@ where
 
 /// Pass-through implementation for [`futures_util::Stream`] if the Sink also implements it.
 impl<
-        'a,
         Item,
         S: Stream + Sink<Item>,
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
         MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
-    > Stream for RatelimitedSink<'a, Item, S, D, C, MW>
+    > Stream for RatelimitedSink<'_, Item, S, D, C, MW>
 where
     S::Item: Unpin,
     S: Unpin,

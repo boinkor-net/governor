@@ -115,13 +115,8 @@ pub struct RatelimitedStream<
 }
 
 /// Conversion methods for the stream combinator.
-impl<
-        'a,
-        S: Stream,
-        D: DirectStateStore,
-        C: clock::Clock,
-        MW: RateLimitingMiddleware<C::Instant>,
-    > RatelimitedStream<'a, S, D, C, MW>
+impl<S: Stream, D: DirectStateStore, C: clock::Clock, MW: RateLimitingMiddleware<C::Instant>>
+    RatelimitedStream<'_, S, D, C, MW>
 {
     /// Acquires a reference to the underlying stream that this combinator is pulling from.
     /// ```rust
@@ -173,8 +168,8 @@ impl<
 }
 
 /// Implements the [`futures_util::Stream`] combinator.
-impl<'a, S: Stream, D: DirectStateStore, C: clock::Clock, MW> Stream
-    for RatelimitedStream<'a, S, D, C, MW>
+impl<S: Stream, D: DirectStateStore, C: clock::Clock, MW> Stream
+    for RatelimitedStream<'_, S, D, C, MW>
 where
     S: Unpin,
     S::Item: Unpin,
@@ -241,13 +236,12 @@ where
 
 /// Pass-through implementation for [`futures_util::Sink`] if the Stream also implements it.
 impl<
-        'a,
         Item,
         S: Stream + Sink<Item>,
         D: DirectStateStore,
         C: clock::Clock,
         MW: RateLimitingMiddleware<C::Instant>,
-    > Sink<Item> for RatelimitedStream<'a, S, D, C, MW>
+    > Sink<Item> for RatelimitedStream<'_, S, D, C, MW>
 where
     S: Unpin,
     S::Item: Unpin,
