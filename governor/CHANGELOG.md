@@ -4,6 +4,27 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.8.0](https://docs.rs/governor/0.8.0/governor/)] - 2024-12-10
+
+### Changed
+
+* Fixed the long-standing confusion of rate-limiting "tolerance"
+  vs. "burst capacity": Tolerance is indicated with one cell less than
+  burst capacity would be. The code treated the two as the same thing,
+  leading to spurious single cells being allowed through when the
+  clock advanced.
+  ([#107](https://github.com/boinkor-net/governor/issues/107),
+  [#249](https://github.com/boinkor-net/governor/issues/249)). This
+  confusion has finally been identified and fixed by @jonasmalacofilho
+  in [#251](https://github.com/boinkor-net/governor/pull/251).
+
+  This should not affect the public API, but any clients subject to
+  rate-limiting may see a slightly fairer treatment.
+
+### Contributors
+
+* [@jonasmalacofilho](https://github.com/jonasmalacofilho)
+
 ## [[0.7.0](https://docs.rs/governor/0.7.0/governor/)] - 2024-10-21
 
 This is a quick bug-fix release to address the semver incompatibility
