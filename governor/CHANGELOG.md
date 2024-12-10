@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.8.0](https://docs.rs/governor/0.8.0/governor/)] - 2024-12-10
+
 ## [[0.7.0](https://docs.rs/governor/0.7.0/governor/)] - 2024-10-21
 
 This is a quick bug-fix release to address the semver incompatibility
