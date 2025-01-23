@@ -3,7 +3,7 @@
 // This test uses procinfo, so can only be run on Linux.
 extern crate libc;
 
-use all_asserts::*;
+use assertables::*;
 use governor::{Quota, RateLimiter};
 use nonzero_ext::*;
 use std::sync::Arc;

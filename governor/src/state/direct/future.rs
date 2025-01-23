@@ -99,7 +99,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use all_asserts::assert_gt;
+    use assertables::assert_gt;
 
     use super::*;
 

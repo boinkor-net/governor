@@ -138,7 +138,7 @@ where
 mod test {
     use super::*;
     use crate::Quota;
-    use all_asserts::assert_gt;
+    use assertables::assert_gt;
     use nonzero_ext::nonzero;
 
     #[test]

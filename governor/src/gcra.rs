@@ -189,7 +189,7 @@ mod test {
     #[cfg(feature = "std")]
     #[test]
     fn gcra_derives() {
-        use all_asserts::assert_gt;
+        use assertables::assert_gt;
         use nonzero_ext::nonzero;
 
         let g = Gcra::new(Quota::per_second(nonzero!(1u32)));
@@ -204,7 +204,7 @@ mod test {
     #[test]
     fn notuntil_impls() {
         use crate::RateLimiter;
-        use all_asserts::assert_gt;
+        use assertables::assert_gt;
         use clock::FakeRelativeClock;
         use nonzero_ext::nonzero;
 
