@@ -35,7 +35,7 @@ crossbeam = "0.8.0"
 libc = "0.2.70"
 futures-executor = "0.3.31"
 proptest = "1.0.0"
-all_asserts = "2.2.0"
+assertables = "9.5.0"
 
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]

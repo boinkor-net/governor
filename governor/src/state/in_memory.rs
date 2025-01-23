@@ -73,7 +73,7 @@ impl Debug for InMemoryState {
 #[allow(clippy::needless_collect)]
 mod test {
 
-    use all_asserts::assert_gt;
+    use assertables::assert_gt;
 
     use super::*;
 
@@ -115,7 +115,7 @@ mod test {
     /// Checks that many threads running simultaneously will collide,
     /// but result in the correct number being recorded in the state.
     fn stresstest_collisions() {
-        use all_asserts::assert_gt;
+        use assertables::assert_gt;
 
         const THREADS: u64 = 8;
         const MAX_TRIES: u64 = 20_000_000;
