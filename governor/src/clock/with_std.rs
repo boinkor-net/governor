@@ -7,7 +7,6 @@ use std::ops::Add;
 use std::time::{Duration, SystemTime};
 use web_time::Instant;
 
-
 /// The monotonic clock implemented by [`Instant`].
 #[derive(Clone, Debug, Default)]
 pub struct MonotonicClock;
