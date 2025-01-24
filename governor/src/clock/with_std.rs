@@ -4,7 +4,8 @@ use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
 use std::ops::Add;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
+use web_time::Instant;
 
 /// The monotonic clock implemented by [`Instant`].
 #[derive(Clone, Debug, Default)]
