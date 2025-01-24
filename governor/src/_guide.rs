@@ -50,7 +50,7 @@
 //! # } #[cfg(not(feature = "std"))] fn main() {}
 //! ```
 //!
-//! In `no_std` mode, there are is no default monotonic (or system)
+//! In `no_std` mode, there is no default monotonic (or system)
 //! clock available. To effectively limit rates, you will have to
 //! either use the provided "fake" clock (which must be manually
 //! advanced, and is mainly useful for tests), or implement the
