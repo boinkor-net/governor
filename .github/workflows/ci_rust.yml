@@ -3,21 +3,44 @@ on:
   workflow_call:
 
 jobs:
-  rust_lints:
-    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_lints.yml@main"
-    with:
-      manifest_dir: .
-      apt_install_packages: ""
-
-  rust_tests:
-    uses: "boinkor-net/ci-baseline-rust/.github/workflows/ci_baseline_rust_tests.yml@main"
+  tests:
     strategy:
       fail-fast: false
       matrix:
         rust_toolchain: ["nightly","stable"]
         cargo_test_args: ["--no-default-features --features no_std","--no-default-features --features 'jitter no_std'","--no-default-features --features std",""]
-    with:
-      rust_toolchain: ${{matrix.rust_toolchain}}
-      cargo_test_args: ${{matrix.cargo_test_args}}
-      manifest_dir: .
-      apt_install_packages: ""
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: boinkor-net/ci-baseline-rust/actions/test@main
+        with:
+          rust_toolchain: ${{matrix.rust_toolchain}}
+          cargo_test_args: ${{matrix.cargo_test_args}}
+          manifest_dir: .
+          apt_install_packages: ""
+
+  rust_fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: boinkor-net/ci-baseline-rust/actions/fmt@main
+        with:
+          rust_toolchain: stable
+          manifest_dir: .
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: boinkor-net/ci-baseline-rust/actions/clippy@main
+        with:
+          manifest_dir: .
+          apt_install_packages: ""
+
+  cargo_deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: boinkor-net/ci-baseline-rust/actions/cargo_deny@main
+        with:
+          manifest_dir: .
