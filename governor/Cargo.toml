@@ -52,8 +52,8 @@ portable-atomic = { version = "1.6", features = ["require-cas"] }
 futures-timer = { version = "3.0.3", optional = true }
 futures-util = { version = "0.3.31", optional = true, default-features = false, features = ["std", "sink"] }
 futures-sink = { version = "0.3.31", optional = true }
-rand = { version = "0.8.0", optional = true }
-getrandom = { version = "0.2", features = ["js"] }
+rand = { version = "0.9.0", optional = true }
+getrandom = { version = "0.3", features = ["wasm_js"] }
 dashmap = { version = "6.1.0", optional = true }
 quanta = { version = "0.12.0", optional = true }
 no-std-compat = { version = "0.4.1", features = [ "alloc" ] }
