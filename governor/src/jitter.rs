@@ -2,11 +2,11 @@ use std::prelude::v1::*;
 
 use crate::nanos::Nanos;
 #[cfg(feature = "jitter")]
-use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformInt, UniformSampler};
+use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformInt, UniformSampler};
 #[cfg(feature = "jitter")]
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 #[cfg(feature = "jitter")]
-use rand::{thread_rng, Rng};
+use rand::{rng, Rng};
 use std::ops::Add;
 use std::time::Duration;
 
@@ -107,8 +107,9 @@ impl Jitter {
         if self.min == self.max {
             return self.min;
         }
-        let uniform = Uniform::new(self.min, self.max);
-        uniform.sample(&mut thread_rng())
+        let uniform =
+            Uniform::new(self.min, self.max).expect("range is large enough for a distribution");
+        uniform.sample(&mut rng())
     }
 
     /// Returns a random amount of jitter within the configured interval.
@@ -127,26 +128,26 @@ pub struct UniformJitter(UniformInt<u64>);
 impl UniformSampler for UniformJitter {
     type X = Nanos;
 
-    fn new<B1, B2>(low: B1, high: B2) -> Self
+    fn new<B1, B2>(low: B1, high: B2) -> Result<Self, rand::distr::uniform::Error>
     where
         B1: SampleBorrow<Self::X> + Sized,
         B2: SampleBorrow<Self::X> + Sized,
     {
-        UniformJitter(UniformInt::new(
+        Ok(UniformJitter(UniformInt::new(
             low.borrow().as_u64(),
             high.borrow().as_u64(),
-        ))
+        )?))
     }
 
-    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Self
+    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Result<Self, rand::distr::uniform::Error>
     where
         B1: SampleBorrow<Self::X> + Sized,
         B2: SampleBorrow<Self::X> + Sized,
     {
-        UniformJitter(UniformInt::new_inclusive(
+        Ok(UniformJitter(UniformInt::new(
             low.borrow().as_u64(),
             high.borrow().as_u64(),
-        ))
+        )?))
     }
 
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
