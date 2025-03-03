@@ -1,6 +1,9 @@
 #![cfg(all(feature = "std", feature = "dashmap"))]
 
+use std::prelude::v1::*;
+
 use crate::nanos::Nanos;
+use crate::state::keyed::DefaultHasher;
 use crate::state::{InMemoryState, StateStore};
 use crate::{clock, Quota, RateLimiter};
 use crate::{middleware::NoOpMiddleware, state::keyed::ShrinkableKeyedStateStore};
@@ -8,9 +11,11 @@ use core::hash::Hash;
 use dashmap::DashMap;
 
 /// A concurrent, thread-safe and fairly performant hashmap based on [`DashMap`].
-pub type DashMapStateStore<K> = DashMap<K, InMemoryState>;
+pub type DashMapStateStore<K, S = DefaultHasher> = DashMap<K, InMemoryState, S>;
 
-impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
+impl<K: Hash + Eq + Clone, S: core::hash::BuildHasher + Clone> StateStore
+    for DashMapStateStore<K, S>
+{
     type Key = K;
 
     fn measure_and_replace<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
@@ -27,21 +32,38 @@ impl<K: Hash + Eq + Clone> StateStore for DashMapStateStore<K> {
     }
 }
 
-/// # Keyed rate limiters - [`DashMap`]-backed
+/// # Keyed rate limiters - [`DashMap`]-backed with a default hasher
 impl<K, C> RateLimiter<K, DashMapStateStore<K>, C, NoOpMiddleware<C::Instant>>
 where
     K: Hash + Eq + Clone,
     C: clock::Clock,
 {
     /// Constructs a new rate limiter with a custom clock, backed by a
-    /// [`DashMap`].
+    /// [`DashMap`] with the default hasher.
     pub fn dashmap_with_clock(quota: Quota, clock: C) -> Self {
         let state: DashMapStateStore<K> = DashMap::default();
         RateLimiter::new(quota, state, clock)
     }
 }
 
-impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for DashMapStateStore<K> {
+/// # Keyed rate limiters - [`DashMap`]-backed with a custom hasher
+impl<K, S, C> RateLimiter<K, DashMapStateStore<K, S>, C, NoOpMiddleware<C::Instant>>
+where
+    K: Hash + Eq + Clone,
+    S: core::hash::BuildHasher + Default + Clone,
+    C: clock::Clock,
+{
+    /// Constructs a new rate limiter with a custom clock and hasher, backed by a
+    /// [`DashMap`].
+    pub fn dashmap_with_clock_and_hasher(quota: Quota, clock: C, hasher: S) -> Self {
+        let state: DashMapStateStore<K, S> = DashMap::with_hasher(hasher);
+        RateLimiter::new(quota, state, clock)
+    }
+}
+
+impl<K: Hash + Eq + Clone, S: core::hash::BuildHasher + Clone> ShrinkableKeyedStateStore<K>
+    for DashMapStateStore<K, S>
+{
     fn retain_recent(&self, drop_below: Nanos) {
         self.retain(|_, v| !v.is_older_than(drop_below));
     }
