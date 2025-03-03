@@ -83,4 +83,5 @@ pub type DefaultDirectRateLimiter<
 pub type DefaultKeyedRateLimiter<
     K,
     MW = middleware::NoOpMiddleware<<clock::DefaultClock as clock::Clock>::Instant>,
-> = RateLimiter<K, state::keyed::DefaultKeyedStateStore<K>, clock::DefaultClock, MW>;
+    S = state::keyed::DefaultHasher,
+> = RateLimiter<K, state::keyed::DefaultKeyedStateStore<K, S>, clock::DefaultClock, MW>;
