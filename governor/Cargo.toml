@@ -30,7 +30,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dev-dependencies]
 criterion = {version = "0.5.1", features = ["html_reports"]}
-tynm = "0.1.4"
+tynm = "0.2.0"
 crossbeam = "0.8.0"
 libc = "0.2.70"
 futures-executor = "0.3.31"
