@@ -1,12 +1,10 @@
-use std::prelude::v1::*;
-
 use crate::nanos::Nanos;
 use crate::state::{NotKeyed, StateStore};
-use std::fmt;
-use std::fmt::Debug;
-use std::num::NonZeroU64;
-use std::sync::atomic::Ordering;
-use std::time::Duration;
+use core::fmt;
+use core::fmt::Debug;
+use core::num::NonZeroU64;
+use core::sync::atomic::Ordering;
+use core::time::Duration;
 
 use portable_atomic::AtomicU64;
 
@@ -135,6 +133,7 @@ mod test {
 
     #[test]
     fn in_memory_state_impls() {
+        use alloc::format;
         let state = InMemoryState(AtomicU64::new(0));
         assert_gt!(format!("{:?}", state).len(), 0);
     }

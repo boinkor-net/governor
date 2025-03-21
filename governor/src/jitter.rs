@@ -1,14 +1,12 @@
-use std::prelude::v1::*;
-
 use crate::nanos::Nanos;
+use core::ops::Add;
+use core::time::Duration;
 #[cfg(feature = "jitter")]
 use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformInt, UniformSampler};
 #[cfg(feature = "jitter")]
 use rand::distr::{Distribution, Uniform};
 #[cfg(feature = "jitter")]
 use rand::{rng, Rng};
-use std::ops::Add;
-use std::time::Duration;
 
 #[cfg(feature = "std")]
 use std::time::Instant;

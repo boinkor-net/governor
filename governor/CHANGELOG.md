@@ -4,6 +4,13 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Changed
+
+- Governor no longer uses the
+  [`no_std_compat` crate](https://crates.io/crates/no-std-compat),
+  eliminating a very outdated transitive dependency (on `hashbrown`
+  version 0.8).
+
 ## [[0.8.1](https://docs.rs/governor/0.8.1/governor/)] - 2025-02-25
 
 ## Changed

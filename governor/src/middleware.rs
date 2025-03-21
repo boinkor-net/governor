@@ -64,7 +64,7 @@
 //!
 //! You can define your own middleware by `impl`ing [`RateLimitingMiddleware`].
 use core::fmt;
-use std::{cmp, marker::PhantomData};
+use core::{cmp, marker::PhantomData};
 
 use crate::{clock, nanos::Nanos, NotUntil, Quota};
 
@@ -219,7 +219,7 @@ pub struct NoOpMiddleware<P: clock::Reference = <clock::DefaultClock as clock::C
     phantom: PhantomData<P>,
 }
 
-impl<P: clock::Reference> std::fmt::Debug for NoOpMiddleware<P> {
+impl<P: clock::Reference> core::fmt::Debug for NoOpMiddleware<P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "NoOpMiddleware")
     }

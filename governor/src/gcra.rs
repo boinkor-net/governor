@@ -2,9 +2,9 @@ use crate::state::StateStore;
 use crate::InsufficientCapacity;
 use crate::{clock, middleware::StateSnapshot, Quota};
 use crate::{middleware::RateLimitingMiddleware, nanos::Nanos};
-use std::num::NonZeroU32;
-use std::time::Duration;
-use std::{cmp, fmt};
+use core::num::NonZeroU32;
+use core::time::Duration;
+use core::{cmp, fmt};
 
 #[cfg(feature = "std")]
 use crate::Jitter;
@@ -181,7 +181,7 @@ impl Gcra {
 mod test {
     use super::*;
     use crate::Quota;
-    use std::num::NonZeroU32;
+    use core::num::NonZeroU32;
 
     use proptest::prelude::*;
 

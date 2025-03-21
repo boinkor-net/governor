@@ -44,14 +44,14 @@
 //! }
 //! ```
 
-use std::prelude::v1::*;
+use core::prelude::v1::*;
 
-use std::convert::TryInto;
-use std::fmt::Debug;
-use std::ops::Add;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::time::Duration;
+use alloc::sync::Arc;
+use core::convert::TryInto;
+use core::fmt::Debug;
+use core::ops::Add;
+use core::sync::atomic::Ordering;
+use core::time::Duration;
 
 use portable_atomic::AtomicU64;
 

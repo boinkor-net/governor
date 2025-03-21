@@ -7,9 +7,9 @@
 //! Rate limiters based on these types are constructed with
 //! [the `RateLimiter` constructors](../struct.RateLimiter.html#keyed-rate-limiters---default-constructors)
 
-use std::hash::Hash;
-use std::num::NonZeroU32;
-use std::prelude::v1::*;
+use core::hash::Hash;
+use core::num::NonZeroU32;
+use core::prelude::v1::*;
 
 use crate::state::StateStore;
 use crate::{
@@ -233,7 +233,7 @@ pub type DefaultKeyedStateStore<K> = DashMapStateStore<K>;
 
 #[cfg(test)]
 mod test {
-    use std::marker::PhantomData;
+    use core::marker::PhantomData;
 
     use nonzero_ext::nonzero;
 

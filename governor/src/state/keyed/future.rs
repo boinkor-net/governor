@@ -1,11 +1,9 @@
-use std::prelude::v1::*;
-
 use crate::{
     clock, errors::InsufficientCapacity, middleware::RateLimitingMiddleware,
     state::keyed::KeyedStateStore, Jitter, NotUntil, RateLimiter,
 };
+use core::{hash::Hash, num::NonZeroU32};
 use futures_timer::Delay;
-use std::{hash::Hash, num::NonZeroU32};
 
 #[cfg(feature = "std")]
 /// # Keyed rate limiters - `async`/`await`

@@ -35,7 +35,7 @@
 // Unfortunately necessary, otherwise features aren't supported in doctests:
 #![allow(clippy::needless_doctest_main)]
 
-extern crate no_std_compat as std;
+extern crate alloc;
 
 pub mod r#_guide;
 pub mod clock;

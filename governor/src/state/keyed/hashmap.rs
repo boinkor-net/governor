@@ -1,13 +1,11 @@
-use std::prelude::v1::*;
-
 use crate::nanos::Nanos;
 use crate::{clock, Quota, RateLimiter};
 use crate::{
     middleware::NoOpMiddleware,
     state::{InMemoryState, StateStore},
 };
-use std::collections::HashMap;
-use std::hash::Hash;
+use core::hash::Hash;
+use hashbrown::HashMap;
 
 use crate::state::keyed::ShrinkableKeyedStateStore;
 
