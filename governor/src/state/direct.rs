@@ -3,9 +3,7 @@
 //! Rate limiters based on these types are constructed with
 //! [the `RateLimiter` constructors](../struct.RateLimiter.html#direct-in-memory-rate-limiters---constructors)
 
-use std::prelude::v1::*;
-
-use std::num::NonZeroU32;
+use core::num::NonZeroU32;
 
 use crate::{
     clock,

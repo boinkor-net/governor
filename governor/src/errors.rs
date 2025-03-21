@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 /// Error indicating that the number of cells tested (the first
 /// argument) is larger than the bucket's capacity.

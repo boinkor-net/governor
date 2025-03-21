@@ -1,6 +1,6 @@
 //! State stores for rate limiters
 
-use std::{marker::PhantomData, prelude::v1::*};
+use core::marker::PhantomData;
 
 pub mod direct;
 mod in_memory;

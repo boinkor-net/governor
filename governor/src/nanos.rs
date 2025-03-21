@@ -2,11 +2,10 @@
 
 use crate::clock;
 
-use std::convert::TryInto;
-use std::fmt;
-use std::ops::{Add, Div, Mul};
-use std::prelude::v1::*;
-use std::time::Duration;
+use core::convert::TryInto;
+use core::fmt;
+use core::ops::{Add, Div, Mul};
+use core::time::Duration;
 
 /// A number of nanoseconds from a reference point.
 ///
