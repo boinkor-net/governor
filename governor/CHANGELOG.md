@@ -13,6 +13,10 @@
   eliminating a very outdated transitive dependency (on `hashbrown`
   version 0.8).
 
+- Keyed state stores now allow specifying the hasher.
+  ([#262](https://github.com/boinkor-net/governor/pull/262) -
+  thanks, @0xdeafbeef!)
+
 ## [[0.8.1](https://docs.rs/governor/0.8.1/governor/)] - 2025-02-25
 
 ## Changed
