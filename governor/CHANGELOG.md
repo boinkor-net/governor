@@ -4,6 +4,15 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.10.0](https://docs.rs/governor/0.10.0/governor/)] - 2025-03-27
+
+## Changed
+
+- Opting out of the `jitter` feature now disables the `getrandom`
+  dependency as well as the `rand` dependency.
+  ([#266](https://github.com/boinkor-net/governor/pull/266),
+  thanks @sandhose!).
+
 ## [[0.9.0](https://docs.rs/governor/0.9.0/governor/)] - 2025-03-24
 
 ## Changed
