@@ -1,6 +1,10 @@
+use core::convert::TryFrom;
 use core::num::NonZeroU32;
 use core::time::Duration;
+
 use nonzero_ext::nonzero;
+use once_cell::sync::Lazy;
+use regex::Regex;
 
 use crate::nanos::Nanos;
 
@@ -56,6 +60,26 @@ use crate::nanos::Nanos;
 /// assert_eq!(q.burst_size().get(), 90);
 /// // The entire maximum burst size will be restored if no cells are let through for 45 hours:
 /// assert_eq!(q.burst_size_replenished_in(), Duration::from_secs(60 * 60 * (90 / 2)));
+/// ```
+///
+/// You can also use a human readable string to build a [Quota]. The format is
+/// `<max_burst> ('per'|/) <duration> <unit>`. The string itself is case-insensitive. Acceptable
+/// `unit`s are: `second(s)`, `minute(s)`, `hour(s)`.
+/// ```rust
+/// # use core::time::Duration;
+/// # use core::convert::TryFrom;
+/// # use governor::Quota;
+/// # use nonzero_ext::nonzero;
+/// assert_eq!(Quota::try_from("5 per second").unwrap(), Quota::per_second(nonzero!(5u32)));
+/// assert_eq!(Quota::try_from("15 / Minute").unwrap(), Quota::per_minute(nonzero!(15u32)));
+/// assert_eq!(
+///     Quota::try_from("30 per 3 hours").unwrap(),
+///     Quota::with_period(Duration::from_nanos(
+///         (Duration::from_secs(3 * 60 * 60).as_nanos() / 30u128) as u64
+///     ))
+///     .unwrap()
+///     .allow_burst(nonzero!(30u32))
+/// );
 /// ```
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Quota {
@@ -204,6 +228,57 @@ impl Quota {
     }
 }
 
+static HUMAN_READABLE_QUOTA_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?ix)
+(?<max_burst>[0-9]+)              # max burst
+\s*(?:/|\s*per\s*)                # separators: '/' or 'per'
+\s*(?<duration>[0-9]+)*           # duration
+\s*(?<unit>second|minute|hour)s?  # duration unit
+",
+    )
+    .unwrap()
+});
+
+impl TryFrom<&str> for Quota {
+    type Error = Box<dyn core::error::Error>;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if let Some(captures) = HUMAN_READABLE_QUOTA_REGEX.captures(value) {
+            let max_burst = captures
+                .name("max_burst")
+                .ok_or(format!("Invalid rate limit string: '{value}'"))?
+                .as_str()
+                .parse::<NonZeroU32>()?;
+            let duration = captures
+                .name("duration")
+                .map(|m| m.as_str())
+                .unwrap_or("1")
+                .parse::<u64>()?;
+            let unit = captures
+                .name("unit")
+                .ok_or(format!("Invalid rate limit string: '{value}'"))?
+                .as_str();
+            let duration = match unit.to_lowercase().as_str() {
+                "second" => duration,
+                "minute" => duration * 60,
+                "hour" => duration * 60 * 60,
+                _ => {
+                    return Err(format!("Unknown duration unit '{unit}'. Acceptable values are second(s)/minute(s)/hour(s)").into());
+                }
+            };
+            let replenish_1_per =
+                Duration::from_secs(duration).as_nanos() / (max_burst.get() as u128);
+            match Quota::with_period(Duration::from_nanos(replenish_1_per as u64)) {
+                Some(quota) => Ok(quota.allow_burst(max_burst)),
+                None => Err(format!("Invalid period '{duration}'").into()),
+            }
+        } else {
+            Err(format!("Unable to parse quota: '{value}'").into())
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -233,5 +308,37 @@ mod test {
         {
             assert!(Quota::new(nonzero!(1u32), Duration::from_secs(0)).is_none());
         }
+    }
+
+    #[test]
+    fn test_parse() {
+        assert_eq!(
+            Quota::per_second(nonzero!(1u32)),
+            Quota::try_from("1 per second").unwrap()
+        );
+        assert_eq!(
+            Quota::per_second(nonzero!(15u32)),
+            Quota::try_from("15 / Second").unwrap()
+        );
+        assert_eq!(
+            Quota::per_minute(nonzero!(3u32)),
+            Quota::try_from("3/MINUTE").unwrap()
+        );
+        assert_eq!(
+            Quota::per_hour(nonzero!(17u32)),
+            Quota::try_from("17/Hour").unwrap()
+        );
+        assert_eq!(
+            Quota::with_period(Duration::from_secs(3 * 60 * 60))
+                .unwrap()
+                .allow_burst(nonzero!(1u32)),
+            Quota::try_from("1 per 3 hours").unwrap()
+        );
+        assert_eq!(
+            Quota::with_period(Duration::from_secs(15 * 60))
+                .unwrap()
+                .allow_burst(nonzero!(5u32)),
+            Quota::try_from("5 per 15 mInUtEs").unwrap()
+        );
     }
 }

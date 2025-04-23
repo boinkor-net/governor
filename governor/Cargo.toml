@@ -62,3 +62,5 @@ cfg-if = "1.0"
 smallvec = "1.6.1"
 web-time = "1.1.0"
 hashbrown = "0.15.2"
+once_cell = { version = "1.21.3", default-features = false, features = ["alloc"] }
+regex = { version = "1.11.1", default-features = false, features = ["perf", "unicode"] }
