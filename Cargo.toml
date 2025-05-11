@@ -1,6 +1,7 @@
 [workspace]
+resolver = "3"
 
 members = [
   # Ordering here apparently defines release order:
-  "governor",
+  "governor", "governor-tracing",
 ]

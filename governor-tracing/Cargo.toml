@@ -1,0 +1,8 @@
+[package]
+name = "governor-tracing"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+governor = { version = "0.10.0", path = "../governor" }
+tracing = "0.1.41"
