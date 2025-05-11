@@ -101,7 +101,7 @@ impl Gcra {
         K,
         P: clock::Reference,
         S: StateStore<Key = K>,
-        MW: RateLimitingMiddleware<P>,
+        MW: RateLimitingMiddleware<P, Key = K>,
     >(
         &self,
         start: P,
@@ -136,7 +136,7 @@ impl Gcra {
         K,
         P: clock::Reference,
         S: StateStore<Key = K>,
-        MW: RateLimitingMiddleware<P>,
+        MW: RateLimitingMiddleware<P, Key = K>,
     >(
         &self,
         start: P,

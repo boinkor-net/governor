@@ -4,6 +4,17 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- The `RateLimitingMiddleware` type now requires an associated type, `Key`,
+  and its `allow` and `disallow` associated functions have lost their
+  generic `<K>` argument.
+
+  This is a breaking change, meaning that the explicit type signatures
+  in code that doesn't use the `DefaultDirectRateLimiter` or
+  `DefaultKeyedRateLimiter` now need to change, but it allows implementors
+  of middleware to restrict key types, e.g. to ensure they are `Debug`.
+
 ## [[0.10.0](https://docs.rs/governor/0.10.0/governor/)] - 2025-03-27
 
 ## Changed

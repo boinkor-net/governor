@@ -16,7 +16,7 @@ impl<S, C, MW> RateLimiter<NotKeyed, S, C, MW>
 where
     S: DirectStateStore,
     C: clock::ReasonablyRealtime,
-    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>, Key = NotKeyed>,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///

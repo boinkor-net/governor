@@ -68,7 +68,7 @@ impl<K: Hash + Eq + Clone, S: core::hash::BuildHasher> ShrinkableKeyedStateStore
 }
 
 /// # Keyed rate limiters - [`HashMap`]-backed with a default hasher
-impl<K, C> RateLimiter<K, HashMapStateStore<K>, C, NoOpMiddleware<C::Instant>>
+impl<K, C> RateLimiter<K, HashMapStateStore<K>, C, NoOpMiddleware<K, C::Instant>>
 where
     K: Hash + Eq + Clone,
     C: clock::Clock,
@@ -81,7 +81,7 @@ where
 }
 
 /// # Keyed rate limiters - [`HashMap`]-backed with a custom hasher
-impl<K, S, C> RateLimiter<K, HashMapStateStore<K, S>, C, NoOpMiddleware<C::Instant>>
+impl<K, S, C> RateLimiter<K, HashMapStateStore<K, S>, C, NoOpMiddleware<K, C::Instant>>
 where
     K: Hash + Eq + Clone,
     S: core::hash::BuildHasher,

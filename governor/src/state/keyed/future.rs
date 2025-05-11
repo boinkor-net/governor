@@ -12,7 +12,7 @@ where
     K: Hash + Eq + Clone,
     S: KeyedStateStore<K>,
     C: clock::ReasonablyRealtime,
-    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>, Key = K>,
 {
     /// Asynchronously resolves as soon as the rate limiter allows it.
     ///

@@ -1,6 +1,7 @@
 use governor::{
     clock::{self, FakeRelativeClock},
     middleware::{RateLimitingMiddleware, StateInformationMiddleware, StateSnapshot},
+    state::NotKeyed,
     Quota, RateLimiter,
 };
 use nonzero_ext::nonzero;
@@ -9,16 +10,17 @@ use nonzero_ext::nonzero;
 struct MyMW;
 
 impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for MyMW {
+    type Key = NotKeyed;
     type PositiveOutcome = u16;
 
-    fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
+    fn allow(_key: &Self::Key, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
         666
     }
 
     type NegativeOutcome = ();
 
-    fn disallow<K>(
-        _key: &K,
+    fn disallow(
+        _key: &Self::Key,
         _limiter: impl Into<StateSnapshot>,
         _start_time: <FakeRelativeClock as clock::Clock>::Instant,
     ) -> Self::NegativeOutcome {
@@ -38,7 +40,7 @@ fn changes_allowed_type() {
 fn state_information() {
     let clock = FakeRelativeClock::default();
     let lim = RateLimiter::direct_with_clock(Quota::per_second(nonzero!(4u32)), clock.clone())
-        .with_middleware::<StateInformationMiddleware>();
+        .with_middleware::<StateInformationMiddleware<_>>();
     assert_eq!(
         Ok(3),
         lim.check()
@@ -83,7 +85,7 @@ fn state_snapshot_tracks_quota_accurately() {
 
     // First test
     let lim = RateLimiter::direct_with_clock(quota, clock.clone())
-        .with_middleware::<StateInformationMiddleware>();
+        .with_middleware::<StateInformationMiddleware<NotKeyed>>();
 
     assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 1);
     assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 0);
@@ -106,7 +108,7 @@ fn state_snapshot_tracks_quota_accurately_with_real_clock() {
     let burst_size = NonZeroU32::new(2).unwrap();
     let period = Duration::from_millis(90);
     let quota = Quota::with_period(period).unwrap().allow_burst(burst_size);
-    let lim = RateLimiter::direct(quota).with_middleware::<StateInformationMiddleware>();
+    let lim = RateLimiter::direct(quota).with_middleware::<StateInformationMiddleware<_>>();
 
     assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 1);
     assert_eq!(lim.check().unwrap().remaining_burst_capacity(), 0);
