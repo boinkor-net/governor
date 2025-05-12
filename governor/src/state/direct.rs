@@ -38,17 +38,17 @@ impl<T> DirectStateStore for T where T: StateStore<Key = NotKeyed> {}
 /// or to ensure that an API client stays within a service's rate
 /// limit.
 #[cfg(feature = "std")]
-impl RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware> {
+impl RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware<NotKeyed>> {
     /// Constructs a new in-memory direct rate limiter for a quota with the default real-time clock.
     pub fn direct(
         quota: Quota,
-    ) -> RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware> {
+    ) -> RateLimiter<NotKeyed, InMemoryState, clock::DefaultClock, NoOpMiddleware<NotKeyed>> {
         let clock = clock::DefaultClock::default();
         Self::direct_with_clock(quota, clock)
     }
 }
 
-impl<C> RateLimiter<NotKeyed, InMemoryState, C, NoOpMiddleware<C::Instant>>
+impl<C> RateLimiter<NotKeyed, InMemoryState, C, NoOpMiddleware<NotKeyed, C::Instant>>
 where
     C: clock::Clock,
 {
@@ -64,7 +64,7 @@ impl<S, C, MW> RateLimiter<NotKeyed, S, C, MW>
 where
     S: DirectStateStore,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<C::Instant, Key = NotKeyed>,
 {
     /// Allow a single cell through the rate limiter.
     ///

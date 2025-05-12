@@ -65,7 +65,7 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
 
         b.iter_custom(|iters| {
             let state: M = Default::default();
-            let lim: Arc<RateLimiter<_, _, _, NoOpMiddleware>> = Arc::new(RateLimiter::new(
+            let lim: Arc<RateLimiter<_, _, _, NoOpMiddleware<u32>>> = Arc::new(RateLimiter::new(
                 Quota::per_second(nonzero!(50u32)),
                 state,
                 clock.clone(),

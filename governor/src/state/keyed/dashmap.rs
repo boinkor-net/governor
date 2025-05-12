@@ -33,7 +33,7 @@ impl<K: Hash + Eq + Clone, S: core::hash::BuildHasher + Clone> StateStore
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed with a default hasher
-impl<K, C> RateLimiter<K, DashMapStateStore<K>, C, NoOpMiddleware<C::Instant>>
+impl<K, C> RateLimiter<K, DashMapStateStore<K>, C, NoOpMiddleware<K, C::Instant>>
 where
     K: Hash + Eq + Clone,
     C: clock::Clock,
@@ -47,7 +47,7 @@ where
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed with a custom hasher
-impl<K, S, C> RateLimiter<K, DashMapStateStore<K, S>, C, NoOpMiddleware<C::Instant>>
+impl<K, S, C> RateLimiter<K, DashMapStateStore<K, S>, C, NoOpMiddleware<K, C::Instant>>
 where
     K: Hash + Eq + Clone,
     S: core::hash::BuildHasher + Default + Clone,

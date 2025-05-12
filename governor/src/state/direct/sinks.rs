@@ -156,7 +156,7 @@ impl<
         S: Sink<Item>,
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>, Key = NotKeyed>,
     > Sink<Item> for RatelimitedSink<'_, Item, S, D, C, MW>
 where
     S: Unpin,

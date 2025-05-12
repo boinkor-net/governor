@@ -74,7 +74,10 @@ pub mod prelude {
 ///
 /// See the [`RateLimiter`] documentation for details.
 pub type DefaultDirectRateLimiter<
-    MW = middleware::NoOpMiddleware<<clock::DefaultClock as clock::Clock>::Instant>,
+    MW = middleware::NoOpMiddleware<
+        state::direct::NotKeyed,
+        <clock::DefaultClock as clock::Clock>::Instant,
+    >,
 > = RateLimiter<state::direct::NotKeyed, state::InMemoryState, clock::DefaultClock, MW>;
 
 /// A rate limiter with one state per key, running on the default clock.
@@ -82,6 +85,6 @@ pub type DefaultDirectRateLimiter<
 /// See the [`RateLimiter`] documentation for details.
 pub type DefaultKeyedRateLimiter<
     K,
-    MW = middleware::NoOpMiddleware<<clock::DefaultClock as clock::Clock>::Instant>,
+    MW = middleware::NoOpMiddleware<K, <clock::DefaultClock as clock::Clock>::Instant>,
     S = state::keyed::DefaultHasher,
 > = RateLimiter<K, state::keyed::DefaultKeyedStateStore<K, S>, clock::DefaultClock, MW>;

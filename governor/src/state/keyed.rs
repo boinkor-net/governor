@@ -136,7 +136,7 @@ where
     S: KeyedStateStore<K>,
     K: Hash,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<C::Instant, Key = K>,
 {
     /// Allow a single cell through the rate limiter for the given key.
     ///
@@ -329,7 +329,7 @@ mod test {
             u32,
             NaiveKeyedStateStore<u32>,
             FakeRelativeClock,
-            NoOpMiddleware<<FakeRelativeClock as Clock>::Instant>,
+            NoOpMiddleware<u32, <FakeRelativeClock as Clock>::Instant>,
         > = RateLimiter::new(
             Quota::per_second(nonzero!(1_u32)),
             NaiveKeyedStateStore::default(),

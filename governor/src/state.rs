@@ -54,7 +54,7 @@ pub trait StateStore {
 /// period) and the concrete state of rate limiting decisions. This crate ships in-memory state
 /// stores, but it's possible (by implementing the [`StateStore`] trait) to make others.
 #[derive(Debug)]
-pub struct RateLimiter<K, S, C, MW = NoOpMiddleware>
+pub struct RateLimiter<K, S, C, MW = NoOpMiddleware<K>>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,

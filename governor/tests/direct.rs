@@ -193,13 +193,14 @@ fn default_direct() {
 fn stresstest_large_quotas() {
     use std::{sync::Arc, thread};
 
-    use governor::middleware::StateInformationMiddleware;
+    use governor::{middleware::StateInformationMiddleware, state::NotKeyed};
 
     let quota = Quota::per_second(nonzero!(1_000_000_001u32));
-    let rate_limiter =
-        Arc::new(RateLimiter::direct(quota).with_middleware::<StateInformationMiddleware>());
+    let rate_limiter = Arc::new(
+        RateLimiter::direct(quota).with_middleware::<StateInformationMiddleware<NotKeyed>>(),
+    );
 
-    fn rlspin(rl: Arc<DefaultDirectRateLimiter<StateInformationMiddleware>>) {
+    fn rlspin(rl: Arc<DefaultDirectRateLimiter<StateInformationMiddleware<NotKeyed>>>) {
         for _ in 0..1_000_000 {
             rl.check().map_err(|e| dbg!(e)).unwrap();
         }

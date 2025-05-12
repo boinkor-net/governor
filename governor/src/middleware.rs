@@ -40,7 +40,7 @@
 //! # use nonzero_ext::nonzero;
 //! use governor::{RateLimiter, Quota, middleware::StateInformationMiddleware};
 //! let lim = RateLimiter::direct(Quota::per_hour(nonzero!(1_u32)))
-//!     .with_middleware::<StateInformationMiddleware>();
+//!     .with_middleware::<StateInformationMiddleware<_>>();
 //!
 //! // A positive outcome with additional information:
 //! assert!(
@@ -146,7 +146,7 @@ impl StateSnapshot {
 /// # use std::num::NonZeroU32;
 /// # use nonzero_ext::*;
 /// use governor::{middleware::{RateLimitingMiddleware, StateSnapshot},
-///                Quota, RateLimiter, clock::Reference};
+///                Quota, RateLimiter, clock::Reference, state::direct::NotKeyed};
 /// # #[cfg(feature = "std")]
 /// # fn main () {
 /// #[derive(Debug)]
@@ -155,9 +155,10 @@ impl StateSnapshot {
 /// impl<P: Reference> RateLimitingMiddleware<P> for NullMiddleware {
 ///     type PositiveOutcome = ();
 ///     type NegativeOutcome = ();
+///     type Key = NotKeyed;
 ///
-///     fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
-///     fn disallow<K>(_: &K, _: impl Into<StateSnapshot>, _: P) -> Self::NegativeOutcome {}
+///     fn allow(_key: &Self::Key, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
+///     fn disallow(_: &Self::Key, _: impl Into<StateSnapshot>, _: P) -> Self::NegativeOutcome {}
 /// }
 ///
 /// let lim = RateLimiter::direct(Quota::per_hour(nonzero!(1_u32)))
@@ -187,6 +188,9 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// a client can expect to have a cell allowed again.
     type NegativeOutcome: Sized;
 
+    /// The type of key used by the rate limiter.
+    type Key: Sized;
+
     /// Called when a positive rate-limiting decision is made.
     ///
     /// This function is able to affect the return type of
@@ -199,7 +203,7 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// was one cell left in the burst capacity before the decision
     /// was reached, the [`StateSnapshot::remaining_burst_capacity`]
     /// method will return 0.
-    fn allow<K>(key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome;
+    fn allow(key: &Self::Key, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome;
 
     /// Called when a negative rate-limiting decision is made (the
     /// "not allowed but OK" case).
@@ -207,67 +211,79 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// This method returns whatever value is returned inside the
     /// `Err` variant a [`RateLimiter`][crate::RateLimiter]'s check
     /// method returns.
-    fn disallow<K>(
-        key: &K,
+    fn disallow(
+        key: &Self::Key,
         limiter: impl Into<StateSnapshot>,
         start_time: P,
     ) -> Self::NegativeOutcome;
 }
 
 /// A middleware that does nothing and returns `()` in the positive outcome.
-pub struct NoOpMiddleware<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
-    phantom: PhantomData<P>,
+pub struct NoOpMiddleware<K, P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
+    phantom: PhantomData<(K, P)>,
 }
 
-impl<P: clock::Reference> core::fmt::Debug for NoOpMiddleware<P> {
+impl<K, P: clock::Reference> core::fmt::Debug for NoOpMiddleware<K, P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "NoOpMiddleware")
     }
 }
 
-impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
+impl<K, P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<K, P> {
     /// By default, rate limiters return nothing other than an
     /// indicator that the element should be let through.
     type PositiveOutcome = ();
 
     type NegativeOutcome = NotUntil<P>;
 
+    type Key = K;
+
     #[inline]
     /// Returns `()` and has no side-effects.
-    fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
+    fn allow(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
 
     #[inline]
     /// Returns the error indicating what
-    fn disallow<K>(
-        _key: &K,
-        state: impl Into<StateSnapshot>,
-        start_time: P,
-    ) -> Self::NegativeOutcome {
+    fn disallow(_key: &K, state: impl Into<StateSnapshot>, start_time: P) -> Self::NegativeOutcome {
         NotUntil::new(state.into(), start_time)
     }
 }
 
 /// Middleware that returns the state of the rate limiter if a
 /// positive decision is reached.
-#[derive(Debug)]
-pub struct StateInformationMiddleware;
+pub struct StateInformationMiddleware<K> {
+    phantom: PhantomData<K>,
+}
 
-impl<P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddleware {
+impl<K> StateInformationMiddleware<K> {
+    #[allow(dead_code)]
+    pub(self) fn new() -> Self {
+        Self {
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<K, P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddleware<K> {
     /// The state snapshot returned from the limiter.
     type PositiveOutcome = StateSnapshot;
 
     type NegativeOutcome = NotUntil<P>;
 
-    fn allow<K>(_key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
+    type Key = K;
+
+    fn allow(_key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
         state.into()
     }
 
-    fn disallow<K>(
-        _key: &K,
-        state: impl Into<StateSnapshot>,
-        start_time: P,
-    ) -> Self::NegativeOutcome {
+    fn disallow(_key: &K, state: impl Into<StateSnapshot>, start_time: P) -> Self::NegativeOutcome {
         NotUntil::new(state.into(), start_time)
+    }
+}
+
+impl<K> core::fmt::Debug for StateInformationMiddleware<K> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "StateInformationMiddleware")
     }
 }
 
@@ -280,14 +296,14 @@ mod test {
     #[test]
     fn middleware_impl_derives() {
         assert_eq!(
-            format!("{:?}", StateInformationMiddleware),
+            format!("{:?}", StateInformationMiddleware::<()>::new()),
             "StateInformationMiddleware"
         );
         assert_eq!(
             format!(
                 "{:?}",
                 NoOpMiddleware {
-                    phantom: PhantomData::<Duration>,
+                    phantom: PhantomData::<((), Duration)>,
                 }
             ),
             "NoOpMiddleware"

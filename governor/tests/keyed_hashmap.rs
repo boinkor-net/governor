@@ -49,7 +49,7 @@ fn retained_keys<T: Clone + Hash + Eq + Copy + Ord>(
         T,
         HashMapStateStore<T>,
         FakeRelativeClock,
-        NoOpMiddleware<<FakeRelativeClock as Clock>::Instant>,
+        NoOpMiddleware<T, <FakeRelativeClock as Clock>::Instant>,
     >,
 ) -> Vec<T> {
     let state = limiter.into_state_store();
