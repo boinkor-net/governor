@@ -53,7 +53,7 @@ impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
     >(
         self,
         limiter: &RateLimiter<NotKeyed, D, C, MW>,
-    ) -> RatelimitedSink<Item, S, D, C, MW>
+    ) -> RatelimitedSink<'_, Item, S, D, C, MW>
     where
         Self: Sized,
     {
@@ -69,7 +69,7 @@ impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
         self,
         limiter: &RateLimiter<NotKeyed, D, C, MW>,
         jitter: Jitter,
-    ) -> RatelimitedSink<Item, S, D, C, MW>
+    ) -> RatelimitedSink<'_, Item, S, D, C, MW>
     where
         Self: Sized,
     {
