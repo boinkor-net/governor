@@ -26,6 +26,12 @@ jobs:
         with:
           tool: cargo-semver-checks
 
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+        if: "" != ''
+        with:
+          packages: ""
+          version: 1.0
+
       - uses: cargo-bins/release-pr@v2
         id: pr
         with:
