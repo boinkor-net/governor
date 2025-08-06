@@ -1,4 +1,4 @@
-name: Open a release PR
+name: Prepare for a new release to crates.io
 on:
   workflow_dispatch:
     inputs:
