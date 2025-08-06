@@ -65,7 +65,7 @@ fn state_information() {
 #[test]
 #[cfg(feature = "std")]
 fn mymw_derives() {
-    assert_eq!(format!("{:?}", MyMW), "MyMW");
+    assert_eq!(format!("{MyMW:?}"), "MyMW");
 }
 
 #[test]

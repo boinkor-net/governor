@@ -16,7 +16,7 @@ fn accepts_first_cell() {
     let clock = FakeRelativeClock::default();
     let lb = RateLimiter::dashmap_with_clock(Quota::per_second(nonzero!(5u32)), clock.clone());
     for key in KEYS {
-        assert_eq!(Ok(()), lb.check_key(&key), "key {:?}", key);
+        assert_eq!(Ok(()), lb.check_key(&key), "key {key:?}");
     }
 }
 
@@ -42,7 +42,7 @@ fn rejects_too_many() {
         assert_eq!(Ok(()), lb.check_key(key));
 
         clock.advance(ms);
-        assert_ne!(Ok(()), lb.check_key(key), "{:?}", lb);
+        assert_ne!(Ok(()), lb.check_key(key), "{lb:?}");
     }
 }
 

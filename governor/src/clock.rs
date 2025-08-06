@@ -192,7 +192,7 @@ pub use default::*;
 mod test {
     use super::*;
     use crate::nanos::Nanos;
-    use std::iter::repeat;
+
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
@@ -200,8 +200,7 @@ mod test {
     #[test]
     fn fake_clock_parallel_advances() {
         let clock = Arc::new(FakeRelativeClock::default());
-        let threads = repeat(())
-            .take(10)
+        let threads = std::iter::repeat_n((), 10)
             .map(move |_| {
                 let clock = Arc::clone(&clock);
                 thread::spawn(move || {

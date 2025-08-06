@@ -144,6 +144,6 @@ mod test {
     #[test]
     fn ratelimiter_impl_coverage() {
         let lim = RateLimiter::direct(Quota::per_second(nonzero!(3u32)));
-        assert_gt!(format!("{:?}", lim).len(), 0);
+        assert_gt!(format!("{lim:?}").len(), 0);
     }
 }

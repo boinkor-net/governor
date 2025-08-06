@@ -35,7 +35,7 @@ fn test_config() -> ProptestConfig {
 fn cover_count_derives() {
     use nonzero_ext::nonzero;
     let count = Count(nonzero!(1u32));
-    assert_eq!(format!("{:?}", count), "Count(1)");
+    assert_eq!(format!("{count:?}"), "Count(1)");
 }
 
 #[test]

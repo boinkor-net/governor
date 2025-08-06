@@ -21,7 +21,7 @@ impl BuildHasher for BadHasherBuilder {
     type Hasher = BadHasher;
 
     fn build_hasher(&self) -> Self::Hasher {
-        BadHasher::default()
+        BadHasher
     }
 }
 
