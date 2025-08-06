@@ -4,6 +4,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.10.1](https://docs.rs/governor/0.10.1/governor/)] - 2025-08-06
+
+- Updated code and tests to pass on nightly rust.
+
 ## [[0.10.0](https://docs.rs/governor/0.10.0/governor/)] - 2025-03-27
 
 ## Changed
