@@ -42,6 +42,11 @@ jobs:
         id: auth
 
       - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+        if: "" != ''
+        with:
+          packages: ""
+          version: 1.0
       - run: cargo publish -p ${{ steps.version.outputs.group1 }}
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
