@@ -41,6 +41,7 @@ pub mod r#_guide;
 pub mod clock;
 mod errors;
 mod gcra;
+#[cfg(any(feature = "std", feature = "jitter"))]
 mod jitter;
 pub mod middleware;
 pub mod nanos;
@@ -49,7 +50,7 @@ pub mod state;
 
 pub use errors::*;
 pub use gcra::NotUntil;
-#[cfg(all(feature = "std", feature = "jitter"))]
+#[cfg(feature = "jitter")]
 pub use jitter::Jitter;
 #[cfg(all(feature = "std", not(feature = "jitter")))]
 pub(crate) use jitter::Jitter;
