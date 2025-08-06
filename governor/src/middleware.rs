@@ -280,7 +280,7 @@ mod test {
     #[test]
     fn middleware_impl_derives() {
         assert_eq!(
-            format!("{:?}", StateInformationMiddleware),
+            format!("{StateInformationMiddleware:?}"),
             "StateInformationMiddleware"
         );
         assert_eq!(

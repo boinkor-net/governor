@@ -33,7 +33,7 @@ fn rejects_too_many() {
     assert_eq!(Ok(()), lb.check());
 
     clock.advance(ms);
-    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+    assert_ne!(Ok(()), lb.check(), "{lb:?}");
 }
 
 // Reproducer for:
@@ -47,7 +47,7 @@ fn does_not_allow_one_extra_cell_after_longer_interval() {
     for _ in 1..=5 {
         assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
     }
-    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+    assert_ne!(Ok(()), lb.check(), "{lb:?}");
 
     // Advance the clock substantially longer than necessary (or at least `(max_burst + 1) *
     // replenish_1_per`).
@@ -56,7 +56,7 @@ fn does_not_allow_one_extra_cell_after_longer_interval() {
     for _ in 1..=5 {
         assert_eq!(Ok(()), lb.check(), "Now: {:?}", clock.now());
     }
-    assert_ne!(Ok(()), lb.check(), "{:?}", lb);
+    assert_ne!(Ok(()), lb.check(), "{lb:?}");
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn all_1_identical_to_1() {
     assert_eq!(Ok(Ok(())), lb.check_n(one));
 
     clock.advance(ms);
-    assert_ne!(Ok(Ok(())), lb.check_n(one), "{:?}", lb);
+    assert_ne!(Ok(Ok(())), lb.check_n(one), "{lb:?}");
 }
 
 #[test]
@@ -104,7 +104,7 @@ fn never_allows_more_than_capacity_all() {
     assert_eq!(Ok(Ok(())), lb.check_n(nonzero!(2u32)));
 
     clock.advance(ms);
-    assert_ne!(Ok(Ok(())), lb.check_n(nonzero!(2u32)), "{:?}", lb);
+    assert_ne!(Ok(Ok(())), lb.check_n(nonzero!(2u32)), "{lb:?}");
 }
 
 #[test]
