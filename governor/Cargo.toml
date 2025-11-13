@@ -61,4 +61,4 @@ cfg-if = "1.0"
 # To ensure we don't pull in vulnerable smallvec, see https://github.com/antifuchs/governor/issues/60
 smallvec = "1.6.1"
 web-time = "1.1.0"
-hashbrown = "0.15.2"
+hashbrown = "0.16.0"
