@@ -1,6 +1,6 @@
 [package]
 name = "governor"
-version = "0.10.1"
+version = "0.10.2"
 authors = ["Andreas Fuchs <asf@boinkor.net>"]
 edition = "2018"
 license = "MIT"
