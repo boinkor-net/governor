@@ -46,6 +46,11 @@ pub trait StateStore {
     fn measure_and_replace<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
     where
         F: Fn(Option<Nanos>) -> Result<(T, Nanos), E>;
+
+    /// Same as [`measure_and_replace`](`StateStore::measure_and_replace`), but it would not replace the value at the key
+    fn measure<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
+    where
+        F: Fn(Option<Nanos>) -> Result<T, E>;
 }
 
 /// A rate limiter.

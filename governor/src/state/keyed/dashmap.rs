@@ -30,6 +30,19 @@ impl<K: Hash + Eq + Clone, S: core::hash::BuildHasher + Clone> StateStore
         let entry = self.entry(key.clone()).or_default();
         (*entry).measure_and_replace_one(f)
     }
+
+    fn measure<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
+    where
+        F: Fn(Option<Nanos>) -> Result<T, E>,
+    {
+        if let Some(v) = self.get(key) {
+            // fast path: measure existing entry
+            return v.measure(f);
+        }
+        // make an entry and measure that:
+        let entry = self.entry(key.clone()).or_default();
+        (*entry).measure(f)
+    }
 }
 
 /// # Keyed rate limiters - [`DashMap`]-backed with a default hasher

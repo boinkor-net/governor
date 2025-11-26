@@ -106,6 +106,57 @@ where
                 self.clock.now(),
             )
     }
+
+    /// same as `check`, but will not update internal state.
+    /// It would only query if the rate limit is reached.
+    pub fn check_only(&self) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
+        self.gcra
+            .test_without_update::<NotKeyed, C::Instant, S, MW>(
+                self.start,
+                &NotKeyed::NonKey,
+                &self.state,
+                self.clock.now(),
+            )
+    }
+
+    /// same as `check_n`, but will not update internal state.
+    /// It would only query if all `n` cells can be accommodated.
+    pub fn check_n_only(
+        &self,
+        n: NonZeroU32,
+    ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
+        self.gcra
+            .test_n_all_without_update::<NotKeyed, C::Instant, S, MW>(
+                self.start,
+                &NotKeyed::NonKey,
+                n,
+                &self.state,
+                self.clock.now(),
+            )
+    }
+
+    /// Consume a cell through the rate limiter.
+    /// If no cell is available, it would "borrow" from future cells.
+    pub fn consume(&self) {
+        self.gcra.update::<NotKeyed, C::Instant, S>(
+            self.start,
+            &NotKeyed::NonKey,
+            &self.state,
+            self.clock.now(),
+        )
+    }
+
+    /// Consume n cells through the rate limiter.
+    /// If no cell is available, it would "borrow" from future cells.
+    pub fn consume_n(&self, n: NonZeroU32) {
+        self.gcra.update_n::<NotKeyed, C::Instant, S>(
+            self.start,
+            &NotKeyed::NonKey,
+            n,
+            &self.state,
+            self.clock.now(),
+        )
+    }
 }
 
 #[cfg(feature = "std")]

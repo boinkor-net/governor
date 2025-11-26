@@ -42,6 +42,20 @@ impl<K: Hash + Eq + Clone, S: core::hash::BuildHasher> StateStore for HashMapSta
         let entry = (*map).entry(key.clone()).or_default();
         entry.measure_and_replace_one(f)
     }
+
+    fn measure<T, F, E>(&self, key: &Self::Key, f: F) -> Result<T, E>
+    where
+        F: Fn(Option<Nanos>) -> Result<T, E>,
+    {
+        let mut map = self.lock();
+        if let Some(v) = (*map).get(key) {
+            // fast path: a rate limiter is already present for the key.
+            return v.measure(f);
+        }
+        // not-so-fast path: make a new entry and measure it.
+        let entry = (*map).entry(key.clone()).or_default();
+        entry.measure(f)
+    }
 }
 
 impl<K: Hash + Eq + Clone, S: core::hash::BuildHasher> ShrinkableKeyedStateStore<K>
