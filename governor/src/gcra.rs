@@ -175,6 +175,83 @@ impl Gcra {
             }
         }))
     }
+
+    /// Tests how many of `n` cells can be accommodated and updates the rate limiter
+    /// to admit that many.
+    ///
+    /// Unlike `test_n_all_and_update`, this never fails. It always returns the number
+    /// of cells that could be admitted, which may be 0 if none are available.
+    ///
+    /// Returns a tuple of:
+    /// * The number of cells actually admitted, in the range of [0, n], inclusive
+    /// * The middleware's positive outcome
+    ///
+    /// This method allows for "partial token vending" scenarios where you want to
+    /// acquire as many tokens as possible.
+    pub(crate) fn test_any_n_and_update<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        n: NonZeroU32,
+        state: &S,
+        t0: P,
+    ) -> (u32, MW::PositiveOutcome) {
+        let t0_nanos = t0.duration_since(start);
+        let tau = self.tau;
+        let t = self.t;
+
+        state
+            .measure_and_replace(key, |tat| {
+                let tat = tat.unwrap_or(t0_nanos);
+
+                // Calculate available capacity
+                // The GCRA condition for admitting n tokens is: t0 + tau >= tat + t * (n - 1)
+                // Solving for max n: n <= (t0 + tau - tat) / t + 1
+                let max_cells_available = if tat > t0_nanos + tau {
+                    // Rate limited: tat is in the future beyond our burst capacity
+                    0
+                } else {
+                    // Calculate available time budget
+                    // Since tat <= t0_nanos + tau, this subtraction won't saturate to zero incorrectly
+                    let available_time = (t0_nanos + tau).saturating_sub(tat);
+
+                    // max_n = floor(available_time / t) + 1
+                    (available_time.as_u64() / t.as_u64()) as u32 + 1
+                };
+
+                // Calculate the burst capacity limit
+                let burst_capacity = 1 + (tau.as_u64() / t.as_u64()) as u32;
+
+                // Take the minimum of:
+                // * n: What was requested
+                // * max_cells_available: What's available based on time
+                // * burst_capacity: The burst capacity limit
+                let n_to_admit = n.get().min(max_cells_available).min(burst_capacity);
+
+                // Update state if we allowed (n_to_admit > 0) cells
+                let next = if n_to_admit > 0 {
+                    let additional_weight = t * (n_to_admit - 1) as u64;
+                    cmp::max(tat, t0_nanos) + t + additional_weight
+                } else {
+                    tat
+                };
+
+                Ok::<((u32, MW::PositiveOutcome), Nanos), core::convert::Infallible>((
+                    (
+                        n_to_admit,
+                        MW::allow(key, StateSnapshot::new(self.t, self.tau, t0_nanos, next)),
+                    ),
+                    next,
+                ))
+            })
+            // TODO(gtr): Kinda hacky, couldn't find a way around it
+            .expect("test_any_n_and_update: measure_and_replace should never return Err, only u32")
+    }
 }
 
 #[cfg(test)]

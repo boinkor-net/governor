@@ -106,6 +106,43 @@ where
                 self.clock.now(),
             )
     }
+
+    /// Allow **up to** `n` cells through the rate limiter.
+    ///
+    /// This method attempts to allow `n` cells, but will allow fewer if the rate limit cannot
+    /// accommodate allow of them. It returns a tuple of:
+    /// * The number of cells actually allowed in the range [0, n], inclusive
+    /// * The middleware's positive outcome
+    ///
+    /// Unlike `check_n`, this method never fails. It always returns a result indicating how many
+    /// cells were allowed. This essentially means that 0 would be the equivalent of being rate
+    /// limited.
+    ///
+    /// ### Example
+    /// ```rust
+    /// use governor::{RateLimiter, Quota};
+    /// use nonzero_ext::nonzero;
+    ///
+    /// let limiter = RateLimiter::direct(Quota::per_second(nonzero!(100u32)));
+    ///
+    /// // Try to get 50 tokens
+    /// let (actual, _outcome) = limiter.check_any_n(nonzero!(50u32));
+    /// println!("Got {actual:?} tokens");
+    /// ```
+    ///
+    /// ### Performance
+    /// Similar to `check_n`, this method uses multiplication to determine the
+    /// theoretical arrival time and is not as fast as checking a single cell.
+    pub fn check_any_n(&self, n: NonZeroU32) -> (u32, MW::PositiveOutcome) {
+        self.gcra
+            .test_any_n_and_update::<NotKeyed, C::Instant, S, MW>(
+                self.start,
+                &NotKeyed::NonKey,
+                n,
+                &self.state,
+                self.clock.now(),
+            )
+    }
 }
 
 #[cfg(feature = "std")]
