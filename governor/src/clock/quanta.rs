@@ -8,7 +8,7 @@ use std::time::Duration;
 
 /// A clock using the default [`quanta::Clock`] structure.
 ///
-/// This clock uses [`quanta::Clock.now`], which does retrieve the time synchronously. To use a
+/// This clock uses [`quanta::Clock::now`], which does retrieve the time synchronously. To use a
 /// clock that uses a quanta background upkeep thread (which allows retrieving the time with an
 /// atomic read, but requires a background thread that wakes up continually),
 /// see [`QuantaUpkeepClock`].
