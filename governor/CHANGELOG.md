@@ -6,6 +6,10 @@
 
 ## [[0.10.4](https://docs.rs/governor/0.10.4/governor/)] - 2025-12-16
 
+Another bug-fix release to repair the documentation build on 
+docs.rs for good:  The `doc_auto_cfg` feature was deprecated, 
+this version switches to the feature `doc_cfg`.
+
 ## [[0.10.3](https://docs.rs/governor/0.10.3/governor/)] - 2025-12-16
 
 - Fixed a typo that prevented docs for 0.10.2 from building on docs.rs
