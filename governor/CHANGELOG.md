@@ -4,6 +4,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.10.3](https://docs.rs/governor/0.10.3/governor/)] - 2025-12-16
+
 ## [[0.10.2](https://docs.rs/governor/0.10.2/governor/)] - 2025-11-13
 
 - Updated the `hashbrown` dependency to require version 0.16.
