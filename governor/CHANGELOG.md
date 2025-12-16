@@ -4,6 +4,12 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [[0.10.3](https://docs.rs/governor/0.10.3/governor/)] - 2025-12-16
+
+- Fixed a typo that prevented docs for 0.10.2 from building on docs.rs
+  ([#288](https://github.com/boinkor-net/governor/pull/288)).
+  Thanks, [@sp1ff](https://github.com/sp1ff)!
+
 ## [[0.10.2](https://docs.rs/governor/0.10.2/governor/)] - 2025-11-13
 
 - Updated the `hashbrown` dependency to require version 0.16.
