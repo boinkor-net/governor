@@ -11,7 +11,7 @@ jobs:
         cargo_test_args: ["--no-default-features --features no_std","--no-default-features --features 'jitter no_std'","--no-default-features --features std",""]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.1
       - uses: boinkor-net/ci-baseline-rust/actions/test@main
         with:
           rust_toolchain: ${{matrix.rust_toolchain}}
@@ -22,7 +22,7 @@ jobs:
   rust_fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.1
       - uses: boinkor-net/ci-baseline-rust/actions/fmt@main
         with:
           rust_toolchain: stable
@@ -31,7 +31,7 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.1
       - uses: boinkor-net/ci-baseline-rust/actions/clippy@main
         with:
           manifest_dir: .
@@ -40,7 +40,7 @@ jobs:
   cargo_deny:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.1
       - uses: boinkor-net/ci-baseline-rust/actions/cargo_deny@main
         with:
           manifest_dir: .
