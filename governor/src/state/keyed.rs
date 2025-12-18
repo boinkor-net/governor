@@ -11,6 +11,7 @@ use core::hash::Hash;
 use core::num::NonZeroU32;
 use core::prelude::v1::*;
 
+use crate::middleware::NoOpMiddleware;
 use crate::state::StateStore;
 use crate::{
     clock::{self, Reference},
@@ -48,7 +49,7 @@ where
     pub fn keyed(quota: Quota) -> Self {
         let state = DefaultKeyedStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 
     #[cfg(all(feature = "std", feature = "dashmap"))]
@@ -56,7 +57,7 @@ where
     pub fn dashmap(quota: Quota) -> Self {
         let state = DashMapStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 
     #[cfg(any(all(feature = "std", not(feature = "dashmap")), not(feature = "std")))]
@@ -97,7 +98,7 @@ where
     pub fn dashmap_with_hasher(quota: Quota, hasher: S) -> Self {
         let state = DashMapStateStore::with_hasher(hasher);
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 
@@ -111,7 +112,7 @@ where
     pub fn hashmap(quota: Quota) -> Self {
         let state = HashMapStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 
@@ -126,7 +127,7 @@ where
     pub fn hashmap_with_hasher(quota: Quota, hasher: S) -> Self {
         let state = HashMapStateStore::new(hashmap::HashMap::with_hasher(hasher));
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 
@@ -136,19 +137,17 @@ where
     S: KeyedStateStore<K>,
     K: Hash,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<K, C::Instant>,
 {
     /// Allow a single cell through the rate limiter for the given key.
     ///
     /// If the rate limit is reached, `check_key` returns information about the earliest
     /// time that a cell might be allowed through again under that key.
     pub fn check_key(&self, key: &K) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
-        self.gcra.test_and_update::<K, C::Instant, S, MW>(
-            self.start,
-            key,
-            &self.state,
-            self.clock.now(),
-        )
+        self.middleware
+            .get_quota(key)
+            .unwrap_or(&self.gcra)
+            .test_and_update::<K, C::Instant, S, MW>(self.start, key, &self.state, self.clock.now())
     }
 
     /// Allow *only all* `n` cells through the rate limiter for the given key.
@@ -223,7 +222,7 @@ where
     S: ShrinkableKeyedStateStore<K>,
     K: Hash,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<K, C::Instant>,
 {
     /// Retains all keys in the rate limiter that were used recently enough.
     ///
@@ -334,6 +333,7 @@ mod test {
             Quota::per_second(nonzero!(1_u32)),
             NaiveKeyedStateStore::default(),
             FakeRelativeClock::default(),
+            NoOpMiddleware::default(),
         );
         assert_eq!(lim.check_key(&1u32), Ok(()));
         assert!(lim.is_empty());

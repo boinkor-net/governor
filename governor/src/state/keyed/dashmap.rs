@@ -42,7 +42,7 @@ where
     /// [`DashMap`] with the default hasher.
     pub fn dashmap_with_clock(quota: Quota, clock: C) -> Self {
         let state: DashMapStateStore<K> = DashMap::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 
@@ -57,7 +57,7 @@ where
     /// [`DashMap`].
     pub fn dashmap_with_clock_and_hasher(quota: Quota, clock: C, hasher: S) -> Self {
         let state: DashMapStateStore<K, S> = DashMap::with_hasher(hasher);
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 

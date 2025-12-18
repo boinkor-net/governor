@@ -55,7 +55,7 @@ where
     /// Constructs a new direct rate limiter for a quota with a custom clock.
     pub fn direct_with_clock(quota: Quota, clock: C) -> Self {
         let state: InMemoryState = Default::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::<C::Instant>::default())
     }
 }
 
@@ -64,7 +64,7 @@ impl<S, C, MW> RateLimiter<NotKeyed, S, C, MW>
 where
     S: DirectStateStore,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
 {
     /// Allow a single cell through the rate limiter.
     ///
