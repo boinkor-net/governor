@@ -70,7 +70,7 @@ pub struct NotUntil<P: clock::Reference> {
 impl<P: clock::Reference> NotUntil<P> {
     /// Create a `NotUntil` as a negative rate-limiting result.
     #[inline]
-    pub(crate) fn new(state: StateSnapshot, start: P) -> Self {
+    pub fn new(state: StateSnapshot, start: P) -> Self {
         Self { state, start }
     }
 

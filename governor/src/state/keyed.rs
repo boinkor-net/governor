@@ -144,10 +144,24 @@ where
     /// If the rate limit is reached, `check_key` returns information about the earliest
     /// time that a cell might be allowed through again under that key.
     pub fn check_key(&self, key: &K) -> Result<MW::PositiveOutcome, MW::NegativeOutcome> {
-        self.middleware
-            .get_quota(key)
-            .unwrap_or(&self.gcra)
-            .test_and_update::<K, C::Instant, S, MW>(self.start, key, &self.state, self.clock.now())
+        match self
+            .middleware
+            .check_quota(key, &|gcra: &crate::gcra::Gcra| {
+                gcra.test_and_update::<K, C::Instant, S, MW>(
+                    self.start,
+                    key,
+                    &self.state,
+                    self.clock.now(),
+                )
+            }) {
+            Some(res) => res,
+            None => self.gcra.test_and_update::<K, C::Instant, S, MW>(
+                self.start,
+                key,
+                &self.state,
+                self.clock.now(),
+            ),
+        }
     }
 
     /// Allow *only all* `n` cells through the rate limiter for the given key.
@@ -169,13 +183,26 @@ where
         key: &K,
         n: NonZeroU32,
     ) -> Result<Result<MW::PositiveOutcome, MW::NegativeOutcome>, InsufficientCapacity> {
-        self.gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
-            self.start,
-            key,
-            n,
-            &self.state,
-            self.clock.now(),
-        )
+        match self
+            .middleware
+            .check_quota_n(key, &|gcra: &crate::gcra::Gcra| {
+                gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
+                    self.start,
+                    key,
+                    n,
+                    &self.state,
+                    self.clock.now(),
+                )
+            }) {
+            Some(res) => res,
+            None => self.gcra.test_n_all_and_update::<K, C::Instant, S, MW>(
+                self.start,
+                key,
+                n,
+                &self.state,
+                self.clock.now(),
+            ),
+        }
     }
 }
 

@@ -64,13 +64,10 @@
 //!
 //! You can define your own middleware by `impl`ing [`RateLimitingMiddleware`].
 use crate::gcra::Gcra;
+use crate::InsufficientCapacity;
 use crate::{clock, gcra::StateSnapshot, NotUntil};
 use core::fmt;
 use core::marker::PhantomData;
-// #[cfg(all(feature = "std", feature = "dashmap"))]
-// use core::time::Duration;
-// #[cfg(all(feature = "std", feature = "dashmap"))]
-// use std::collections::HashMap;
 
 /// Defines the behavior and return values of rate limiting decisions.
 ///
@@ -172,7 +169,29 @@ pub trait RateLimitingMiddleware<K, P: clock::Reference>: fmt::Debug {
     /// This function is designed to allow per-key quotas.
     ///
     /// Since it makes no sense for a direct RateLimiter, it is ignored in that case.
-    fn get_quota(&self, _key: &K) -> Option<&Gcra> {
+    fn check_quota(
+        &self,
+        _key: &K,
+        _f: &dyn Fn(&Gcra) -> Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+    ) -> Option<Result<Self::PositiveOutcome, Self::NegativeOutcome>> {
+        None
+    }
+
+    /// Tests whether multiple cells could be accomodated
+    ///
+    /// This function is designed to allow per-key quotas. Since it makes no sense for a direct
+    /// RateLimiter, it is ignored in that case.
+    fn check_quota_n(
+        &self,
+        _key: &K,
+        _f: &dyn Fn(
+            &Gcra,
+        ) -> Result<
+            Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+            InsufficientCapacity,
+        >,
+    ) -> Option<Result<Result<Self::PositiveOutcome, Self::NegativeOutcome>, InsufficientCapacity>>
+    {
         None
     }
 }
@@ -236,7 +255,7 @@ impl<K, P: clock::Reference> RateLimitingMiddleware<K, P> for StateInformationMi
 
 #[cfg(all(feature = "std", test))]
 mod test {
-    #[cfg(all(feature = "std", feature = "dashmap"))]
+    #[cfg(all(feature = "std"))]
     use std::collections::HashMap;
     use std::time::Duration;
 
@@ -265,23 +284,23 @@ mod test {
             NoOpMiddleware {
                 phantom: PhantomData::<Duration>,
             }
-            .get_quota(&111),
+            .check_quota(&111, &|_| unimplemented!()),
             None
         );
         let simw = StateInformationMiddleware;
         assert_eq!(
-            <StateInformationMiddleware as RateLimitingMiddleware<i32, Duration>>::get_quota(
-                &simw, &111
+            <StateInformationMiddleware as RateLimitingMiddleware<i32, Duration>>::check_quota(
+                &simw,
+                &111,
+                &|_| unimplemented!()
             ),
             None
         );
-        // assert_eq!(simw.get_quota(&111), None);
     }
 
     #[cfg(all(feature = "std", feature = "dashmap"))]
     #[derive(Debug)]
     pub struct KeyedMw<K: Eq + core::hash::Hash> {
-        // keys: dashmap::DashMap<K, Gcra>,
         keys: HashMap<K, Gcra>,
     }
 
@@ -297,7 +316,6 @@ mod test {
             use std::iter::FromIterator;
 
             Self {
-                // keys: dashmap::DashMap::from_iter(quotas.map(|(k, q)| (k, Gcra::new(q)))),
                 keys: HashMap::from_iter(quotas.map(|(k, q)| (k, Gcra::new(q)))),
             }
         }
@@ -314,7 +332,7 @@ mod test {
     }
 
     #[cfg(all(feature = "std", feature = "dashmap"))]
-    impl<K /*P: clock::Reference*/> RateLimitingMiddleware<K, Duration> for KeyedMw<K>
+    impl<K> RateLimitingMiddleware<K, Duration> for KeyedMw<K>
     where
         K: std::fmt::Debug + Eq + core::hash::Hash,
     {
@@ -334,9 +352,27 @@ mod test {
             NotUntil::new(state.into(), start_time)
         }
 
-        fn get_quota(&self, key: &K) -> Option<&Gcra> {
-            // self.keys.get(key).as_deref()
-            self.keys.get(key)
+        fn check_quota(
+            &self,
+            key: &K,
+            f: &dyn Fn(&Gcra) -> Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+        ) -> Option<Result<Self::PositiveOutcome, Self::NegativeOutcome>> {
+            self.keys.get(key).map(f)
+        }
+
+        fn check_quota_n(
+            &self,
+            key: &K,
+            f: &dyn Fn(
+                &Gcra,
+            ) -> Result<
+                Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+                InsufficientCapacity,
+            >,
+        ) -> Option<
+            Result<Result<Self::PositiveOutcome, Self::NegativeOutcome>, InsufficientCapacity>,
+        > {
+            self.keys.get(key).map(f)
         }
     }
 
@@ -356,7 +392,7 @@ mod test {
 
         let mw: KeyedMw<u32> = [(1, quota_1)].into();
 
-        assert!(mw.get_quota(&1).is_some());
-        assert!(mw.get_quota(&2).is_none());
+        assert!(mw.check_quota(&1, &|_| Ok(())).is_some());
+        assert!(mw.check_quota(&2, &|_| unimplemented!()).is_none());
     }
 }
