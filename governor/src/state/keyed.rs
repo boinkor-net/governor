@@ -66,7 +66,7 @@ where
     pub fn hashmap(quota: Quota) -> Self {
         let state = HashMapStateStore::default();
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 
@@ -82,7 +82,7 @@ where
     pub fn hashmap_with_hasher(quota: Quota, hasher: S) -> Self {
         let state = HashMapStateStore::new(hashmap::HashMap::with_hasher(hasher));
         let clock = clock::DefaultClock::default();
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 
@@ -367,5 +367,23 @@ mod test {
         assert_eq!(lim.len(), 0);
         lim.retain_recent();
         lim.shrink_to_fit();
+    }
+}
+
+#[cfg(all(feature = "std", test))]
+mod check_key_code_cov {
+    use crate::{middleware::test_keyed_mw::KeyedMw, Quota, RateLimiter};
+    use nonzero::nonzero;
+
+    #[test]
+    fn test_check_key() {
+        let mw: KeyedMw<u32> = [(1, Quota::per_second(nonzero!(10u32)))].into();
+        let lim = RateLimiter::keyed(Quota::per_second(nonzero!(1u32))).use_middleware(mw);
+        assert!(lim.check_key(&1).is_ok());
+        let res = lim.check_key_n(&1, nonzero!(9u32));
+        assert!(res.is_ok());
+        assert!(res.unwrap().is_ok());
+        assert!(lim.check_key(&0).is_ok());
+        assert!(lim.check_key(&0).is_err());
     }
 }

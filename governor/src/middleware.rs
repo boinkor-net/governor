@@ -169,6 +169,7 @@ pub trait RateLimitingMiddleware<K, P: clock::Reference>: fmt::Debug {
     /// This function is designed to allow per-key quotas.
     ///
     /// Since it makes no sense for a direct RateLimiter, it is ignored in that case.
+    #[allow(clippy::type_complexity)]
     fn check_quota(
         &self,
         _key: &K,
@@ -181,6 +182,7 @@ pub trait RateLimitingMiddleware<K, P: clock::Reference>: fmt::Debug {
     ///
     /// This function is designed to allow per-key quotas. Since it makes no sense for a direct
     /// RateLimiter, it is ignored in that case.
+    #[allow(clippy::type_complexity)]
     fn check_quota_n(
         &self,
         _key: &K,
@@ -254,9 +256,95 @@ impl<K, P: clock::Reference> RateLimitingMiddleware<K, P> for StateInformationMi
 }
 
 #[cfg(all(feature = "std", test))]
-mod test {
-    #[cfg(all(feature = "std"))]
+pub mod test_keyed_mw {
     use std::collections::HashMap;
+
+    use crate::{
+        clock::Reference,
+        gcra::{Gcra, StateSnapshot},
+        middleware::RateLimitingMiddleware,
+        InsufficientCapacity, NotUntil,
+    };
+
+    #[derive(Debug)]
+    pub struct KeyedMw<K: Eq + core::hash::Hash> {
+        keys: HashMap<K, Gcra>,
+    }
+
+    impl<K> KeyedMw<K>
+    where
+        K: Eq + core::hash::Hash,
+    {
+        pub fn new<I>(quotas: I) -> Self
+        where
+            I: Iterator<Item = (K, crate::Quota)>,
+        {
+            use std::iter::FromIterator;
+
+            Self {
+                keys: HashMap::from_iter(quotas.map(|(k, q)| (k, Gcra::new(q)))),
+            }
+        }
+    }
+
+    impl<K, const N: usize> From<[(K, crate::Quota); N]> for KeyedMw<K>
+    where
+        K: Clone + Eq + core::hash::Hash,
+    {
+        fn from(value: [(K, crate::Quota); N]) -> Self {
+            KeyedMw::<K>::new(value.iter().cloned())
+        }
+    }
+
+    impl<K, P> RateLimitingMiddleware<K, P> for KeyedMw<K>
+    where
+        K: std::fmt::Debug + Eq + core::hash::Hash,
+        P: Reference,
+    {
+        type PositiveOutcome = ();
+
+        type NegativeOutcome = NotUntil<P>;
+
+        fn allow(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
+            {}
+        }
+
+        fn disallow(
+            _key: &K,
+            state: impl Into<StateSnapshot>,
+            start_time: P,
+        ) -> Self::NegativeOutcome {
+            NotUntil::new(state.into(), start_time)
+        }
+
+        fn check_quota(
+            &self,
+            key: &K,
+            f: &dyn Fn(&Gcra) -> Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+        ) -> Option<Result<Self::PositiveOutcome, Self::NegativeOutcome>> {
+            self.keys.get(key).map(f)
+        }
+
+        fn check_quota_n(
+            &self,
+            key: &K,
+            f: &dyn Fn(
+                &Gcra,
+            ) -> Result<
+                Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+                InsufficientCapacity,
+            >,
+        ) -> Option<
+            Result<Result<Self::PositiveOutcome, Self::NegativeOutcome>, InsufficientCapacity>,
+        > {
+            self.keys.get(key).map(f)
+        }
+    }
+}
+
+#[cfg(all(feature = "std", test))]
+mod test {
+    #[cfg(feature = "std")]
     use std::time::Duration;
 
     use super::*;
@@ -298,92 +386,14 @@ mod test {
         );
     }
 
-    #[cfg(all(feature = "std", feature = "dashmap"))]
-    #[derive(Debug)]
-    pub struct KeyedMw<K: Eq + core::hash::Hash> {
-        keys: HashMap<K, Gcra>,
-    }
-
-    #[cfg(all(feature = "std", feature = "dashmap"))]
-    impl<K> KeyedMw<K>
-    where
-        K: Eq + core::hash::Hash,
-    {
-        pub fn new<I>(quotas: I) -> Self
-        where
-            I: Iterator<Item = (K, crate::Quota)>,
-        {
-            use std::iter::FromIterator;
-
-            Self {
-                keys: HashMap::from_iter(quotas.map(|(k, q)| (k, Gcra::new(q)))),
-            }
-        }
-    }
-
-    #[cfg(all(feature = "std", feature = "dashmap"))]
-    impl<K, const N: usize> From<[(K, crate::Quota); N]> for KeyedMw<K>
-    where
-        K: Clone + Eq + core::hash::Hash,
-    {
-        fn from(value: [(K, crate::Quota); N]) -> Self {
-            KeyedMw::<K>::new(value.iter().cloned())
-        }
-    }
-
-    #[cfg(all(feature = "std", feature = "dashmap"))]
-    impl<K> RateLimitingMiddleware<K, Duration> for KeyedMw<K>
-    where
-        K: std::fmt::Debug + Eq + core::hash::Hash,
-    {
-        type PositiveOutcome = ();
-
-        type NegativeOutcome = NotUntil<Duration>;
-
-        fn allow(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
-            {}
-        }
-
-        fn disallow(
-            _key: &K,
-            state: impl Into<StateSnapshot>,
-            start_time: Duration,
-        ) -> Self::NegativeOutcome {
-            NotUntil::new(state.into(), start_time)
-        }
-
-        fn check_quota(
-            &self,
-            key: &K,
-            f: &dyn Fn(&Gcra) -> Result<Self::PositiveOutcome, Self::NegativeOutcome>,
-        ) -> Option<Result<Self::PositiveOutcome, Self::NegativeOutcome>> {
-            self.keys.get(key).map(f)
-        }
-
-        fn check_quota_n(
-            &self,
-            key: &K,
-            f: &dyn Fn(
-                &Gcra,
-            ) -> Result<
-                Result<Self::PositiveOutcome, Self::NegativeOutcome>,
-                InsufficientCapacity,
-            >,
-        ) -> Option<
-            Result<Result<Self::PositiveOutcome, Self::NegativeOutcome>, InsufficientCapacity>,
-        > {
-            self.keys.get(key).map(f)
-        }
-    }
-
     #[test]
-    #[cfg(all(feature = "std", feature = "dashmap"))]
+    #[cfg(feature = "std")]
     fn trivial_keyed_middleware() {
         use std::time::Duration;
 
         use nonzero_ext::nonzero;
 
-        use crate::Quota;
+        use crate::{middleware::test_keyed_mw::KeyedMw, Quota};
 
         let quota_1 = Quota {
             max_burst: nonzero!(3u32),
@@ -392,7 +402,11 @@ mod test {
 
         let mw: KeyedMw<u32> = [(1, quota_1)].into();
 
-        assert!(mw.check_quota(&1, &|_| Ok(())).is_some());
-        assert!(mw.check_quota(&2, &|_| unimplemented!()).is_none());
+        assert!(mw
+            .check_quota(&1, &|_| Ok::<(), NotUntil<Duration>>(()))
+            .is_some());
+        assert!(mw
+            .check_quota(&2, &|_| Ok::<(), NotUntil<Duration>>(()))
+            .is_none());
     }
 }
