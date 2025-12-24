@@ -40,7 +40,7 @@ extern crate alloc;
 pub mod r#_guide;
 pub mod clock;
 mod errors;
-mod gcra;
+pub mod gcra;
 #[cfg(any(feature = "std", feature = "jitter"))]
 mod jitter;
 pub mod middleware;

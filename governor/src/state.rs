@@ -1,7 +1,5 @@
 //! State stores for rate limiters
 
-use core::marker::PhantomData;
-
 pub mod direct;
 mod in_memory;
 pub mod keyed;
@@ -58,26 +56,26 @@ pub struct RateLimiter<K, S, C, MW = NoOpMiddleware>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<K, C::Instant>,
 {
     state: S,
     gcra: Gcra,
     clock: C,
     start: C::Instant,
-    middleware: PhantomData<MW>,
+    middleware: MW,
 }
 
 impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<K, C::Instant>,
 {
     /// Creates a new rate limiter from components.
     ///
     /// This is the most generic way to construct a rate-limiter; most users should prefer
     /// [`direct`] or other methods instead.
-    pub fn new(quota: Quota, state: S, clock: C) -> Self {
+    pub fn new(quota: Quota, state: S, clock: C, middleware: MW) -> Self {
         let gcra = Gcra::new(quota);
         let start = clock.now();
         RateLimiter {
@@ -85,7 +83,7 @@ where
             clock,
             gcra,
             start,
-            middleware: PhantomData,
+            middleware,
         }
     }
 
@@ -106,14 +104,28 @@ impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<K, C::Instant>,
 {
     /// Convert the given rate limiter into one that uses a different middleware.
-    pub fn with_middleware<Outer: RateLimitingMiddleware<C::Instant>>(
-        self,
-    ) -> RateLimiter<K, S, C, Outer> {
+    pub fn with_middleware<Outer>(self) -> RateLimiter<K, S, C, Outer>
+    where
+        Outer: RateLimitingMiddleware<K, C::Instant> + Default,
+    {
         RateLimiter {
-            middleware: PhantomData,
+            middleware: <Outer as Default>::default(),
+            state: self.state,
+            gcra: self.gcra,
+            clock: self.clock,
+            start: self.start,
+        }
+    }
+
+    pub fn use_middleware<MW2: RateLimitingMiddleware<K, C::Instant>>(
+        self,
+        mw: MW2,
+    ) -> RateLimiter<K, S, C, MW2> {
+        RateLimiter {
+            middleware: mw,
             state: self.state,
             gcra: self.gcra,
             clock: self.clock,
@@ -127,7 +139,7 @@ impl<K, S, C, MW> RateLimiter<K, S, C, MW>
 where
     S: StateStore<Key = K>,
     C: clock::ReasonablyRealtime,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<K, C::Instant>,
 {
     pub(crate) fn reference_reading(&self) -> C::Instant {
         self.clock.reference_point()
@@ -144,6 +156,9 @@ mod test {
     #[test]
     fn ratelimiter_impl_coverage() {
         let lim = RateLimiter::direct(Quota::per_second(nonzero!(3u32)));
+        assert_gt!(format!("{lim:?}").len(), 0);
+
+        let lim = lim.use_middleware(NoOpMiddleware::default());
         assert_gt!(format!("{lim:?}").len(), 0);
     }
 }

@@ -63,58 +63,11 @@
 //! ```
 //!
 //! You can define your own middleware by `impl`ing [`RateLimitingMiddleware`].
+use crate::gcra::Gcra;
+use crate::InsufficientCapacity;
+use crate::{clock, gcra::StateSnapshot, NotUntil};
 use core::fmt;
-use core::{cmp, marker::PhantomData};
-
-use crate::{clock, nanos::Nanos, NotUntil, Quota};
-
-/// Information about the rate-limiting state used to reach a decision.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct StateSnapshot {
-    /// The "weight" of a single packet in units of time.
-    t: Nanos,
-
-    /// The "tolerance" of the bucket.
-    ///
-    /// The total "burst capacity" of the bucket is `t + tau`.
-    tau: Nanos,
-
-    /// The time at which the measurement was taken.
-    pub(crate) time_of_measurement: Nanos,
-
-    /// The next time a cell is expected to arrive
-    pub(crate) tat: Nanos,
-}
-
-impl StateSnapshot {
-    #[inline]
-    pub(crate) fn new(t: Nanos, tau: Nanos, time_of_measurement: Nanos, tat: Nanos) -> Self {
-        Self {
-            t,
-            tau,
-            time_of_measurement,
-            tat,
-        }
-    }
-
-    /// Returns the quota used to make the rate limiting decision.
-    pub fn quota(&self) -> Quota {
-        Quota::from_gcra_parameters(self.t, self.tau)
-    }
-
-    /// Returns the number of cells that can be let through in
-    /// addition to a (possible) positive outcome.
-    ///
-    /// If this state snapshot is based on a negative rate limiting
-    /// outcome, this method returns 0.
-    pub fn remaining_burst_capacity(&self) -> u32 {
-        let t0 = self.time_of_measurement;
-        (cmp::min(
-            (t0 + self.tau + self.t).saturating_sub(self.tat).as_u64(),
-            (self.tau + self.t).as_u64(),
-        ) / self.t.as_u64()) as u32
-    }
-}
+use core::marker::PhantomData;
 
 /// Defines the behavior and return values of rate limiting decisions.
 ///
@@ -145,19 +98,20 @@ impl StateSnapshot {
 /// ```rust
 /// # use std::num::NonZeroU32;
 /// # use nonzero_ext::*;
-/// use governor::{middleware::{RateLimitingMiddleware, StateSnapshot},
+/// use governor::{middleware::{RateLimitingMiddleware},
+///                gcra::StateSnapshot,
 ///                Quota, RateLimiter, clock::Reference};
 /// # #[cfg(feature = "std")]
 /// # fn main () {
-/// #[derive(Debug)]
+/// #[derive(Debug, Default)]
 /// struct NullMiddleware;
 ///
-/// impl<P: Reference> RateLimitingMiddleware<P> for NullMiddleware {
+/// impl<K, P: Reference> RateLimitingMiddleware<K, P> for NullMiddleware {
 ///     type PositiveOutcome = ();
 ///     type NegativeOutcome = ();
 ///
-///     fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
-///     fn disallow<K>(_: &K, _: impl Into<StateSnapshot>, _: P) -> Self::NegativeOutcome {}
+///     fn allow(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
+///     fn disallow(_: &K, _: impl Into<StateSnapshot>, _: P) -> Self::NegativeOutcome {}
 /// }
 ///
 /// let lim = RateLimiter::direct(Quota::per_hour(nonzero!(1_u32)))
@@ -169,7 +123,7 @@ impl StateSnapshot {
 /// # #[cfg(not(feature = "std"))]
 /// # fn main() {}
 /// ```
-pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
+pub trait RateLimitingMiddleware<K, P: clock::Reference>: fmt::Debug {
     /// The type that's returned by the rate limiter when a cell is allowed.
     ///
     /// By default, rate limiters return `Ok(())`, which does not give
@@ -199,7 +153,7 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// was one cell left in the burst capacity before the decision
     /// was reached, the [`StateSnapshot::remaining_burst_capacity`]
     /// method will return 0.
-    fn allow<K>(key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome;
+    fn allow(key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome;
 
     /// Called when a negative rate-limiting decision is made (the
     /// "not allowed but OK" case).
@@ -207,16 +161,54 @@ pub trait RateLimitingMiddleware<P: clock::Reference>: fmt::Debug {
     /// This method returns whatever value is returned inside the
     /// `Err` variant a [`RateLimiter`][crate::RateLimiter]'s check
     /// method returns.
-    fn disallow<K>(
-        key: &K,
-        limiter: impl Into<StateSnapshot>,
-        start_time: P,
-    ) -> Self::NegativeOutcome;
+    fn disallow(key: &K, limiter: impl Into<StateSnapshot>, start_time: P)
+        -> Self::NegativeOutcome;
+
+    /// Called before a rate-limiting decision is made for a given key
+    ///
+    /// This function is designed to allow per-key quotas.
+    ///
+    /// Since it makes no sense for a direct RateLimiter, it is ignored in that case.
+    #[allow(clippy::type_complexity)]
+    fn check_quota(
+        &self,
+        _key: &K,
+        _f: &dyn Fn(&Gcra) -> Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+    ) -> Option<Result<Self::PositiveOutcome, Self::NegativeOutcome>> {
+        None
+    }
+
+    /// Tests whether multiple cells could be accomodated
+    ///
+    /// This function is designed to allow per-key quotas. Since it makes no sense for a direct
+    /// RateLimiter, it is ignored in that case.
+    #[allow(clippy::type_complexity)]
+    fn check_quota_n(
+        &self,
+        _key: &K,
+        _f: &dyn Fn(
+            &Gcra,
+        ) -> Result<
+            Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+            InsufficientCapacity,
+        >,
+    ) -> Option<Result<Result<Self::PositiveOutcome, Self::NegativeOutcome>, InsufficientCapacity>>
+    {
+        None
+    }
 }
 
 /// A middleware that does nothing and returns `()` in the positive outcome.
 pub struct NoOpMiddleware<P: clock::Reference = <clock::DefaultClock as clock::Clock>::Instant> {
     phantom: PhantomData<P>,
+}
+
+impl<P: clock::Reference> core::default::Default for NoOpMiddleware<P> {
+    fn default() -> Self {
+        Self {
+            phantom: PhantomData,
+        }
+    }
 }
 
 impl<P: clock::Reference> core::fmt::Debug for NoOpMiddleware<P> {
@@ -225,7 +217,7 @@ impl<P: clock::Reference> core::fmt::Debug for NoOpMiddleware<P> {
     }
 }
 
-impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
+impl<K, P: clock::Reference> RateLimitingMiddleware<K, P> for NoOpMiddleware<P> {
     /// By default, rate limiters return nothing other than an
     /// indicator that the element should be let through.
     type PositiveOutcome = ();
@@ -234,45 +226,125 @@ impl<P: clock::Reference> RateLimitingMiddleware<P> for NoOpMiddleware<P> {
 
     #[inline]
     /// Returns `()` and has no side-effects.
-    fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
+    fn allow(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {}
 
     #[inline]
     /// Returns the error indicating what
-    fn disallow<K>(
-        _key: &K,
-        state: impl Into<StateSnapshot>,
-        start_time: P,
-    ) -> Self::NegativeOutcome {
+    fn disallow(_key: &K, state: impl Into<StateSnapshot>, start_time: P) -> Self::NegativeOutcome {
         NotUntil::new(state.into(), start_time)
     }
 }
 
 /// Middleware that returns the state of the rate limiter if a
 /// positive decision is reached.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct StateInformationMiddleware;
 
-impl<P: clock::Reference> RateLimitingMiddleware<P> for StateInformationMiddleware {
+impl<K, P: clock::Reference> RateLimitingMiddleware<K, P> for StateInformationMiddleware {
     /// The state snapshot returned from the limiter.
     type PositiveOutcome = StateSnapshot;
 
     type NegativeOutcome = NotUntil<P>;
 
-    fn allow<K>(_key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
+    fn allow(_key: &K, state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
         state.into()
     }
 
-    fn disallow<K>(
-        _key: &K,
-        state: impl Into<StateSnapshot>,
-        start_time: P,
-    ) -> Self::NegativeOutcome {
+    fn disallow(_key: &K, state: impl Into<StateSnapshot>, start_time: P) -> Self::NegativeOutcome {
         NotUntil::new(state.into(), start_time)
     }
 }
 
 #[cfg(all(feature = "std", test))]
+pub mod test_keyed_mw {
+    use std::collections::HashMap;
+
+    use crate::{
+        clock::Reference,
+        gcra::{Gcra, StateSnapshot},
+        middleware::RateLimitingMiddleware,
+        InsufficientCapacity, NotUntil,
+    };
+
+    #[derive(Debug)]
+    pub struct KeyedMw<K: Eq + core::hash::Hash> {
+        keys: HashMap<K, Gcra>,
+    }
+
+    impl<K> KeyedMw<K>
+    where
+        K: Eq + core::hash::Hash,
+    {
+        pub fn new<I>(quotas: I) -> Self
+        where
+            I: Iterator<Item = (K, crate::Quota)>,
+        {
+            use std::iter::FromIterator;
+
+            Self {
+                keys: HashMap::from_iter(quotas.map(|(k, q)| (k, Gcra::new(q)))),
+            }
+        }
+    }
+
+    impl<K, const N: usize> From<[(K, crate::Quota); N]> for KeyedMw<K>
+    where
+        K: Clone + Eq + core::hash::Hash,
+    {
+        fn from(value: [(K, crate::Quota); N]) -> Self {
+            KeyedMw::<K>::new(value.iter().cloned())
+        }
+    }
+
+    impl<K, P> RateLimitingMiddleware<K, P> for KeyedMw<K>
+    where
+        K: std::fmt::Debug + Eq + core::hash::Hash,
+        P: Reference,
+    {
+        type PositiveOutcome = ();
+
+        type NegativeOutcome = NotUntil<P>;
+
+        fn allow(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
+            {}
+        }
+
+        fn disallow(
+            _key: &K,
+            state: impl Into<StateSnapshot>,
+            start_time: P,
+        ) -> Self::NegativeOutcome {
+            NotUntil::new(state.into(), start_time)
+        }
+
+        fn check_quota(
+            &self,
+            key: &K,
+            f: &dyn Fn(&Gcra) -> Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+        ) -> Option<Result<Self::PositiveOutcome, Self::NegativeOutcome>> {
+            self.keys.get(key).map(f)
+        }
+
+        fn check_quota_n(
+            &self,
+            key: &K,
+            f: &dyn Fn(
+                &Gcra,
+            ) -> Result<
+                Result<Self::PositiveOutcome, Self::NegativeOutcome>,
+                InsufficientCapacity,
+            >,
+        ) -> Option<
+            Result<Result<Self::PositiveOutcome, Self::NegativeOutcome>, InsufficientCapacity>,
+        > {
+            self.keys.get(key).map(f)
+        }
+    }
+}
+
+#[cfg(all(feature = "std", test))]
 mod test {
+    #[cfg(feature = "std")]
     use std::time::Duration;
 
     use super::*;
@@ -292,5 +364,49 @@ mod test {
             ),
             "NoOpMiddleware"
         );
+    }
+
+    #[test]
+    fn ensure_extant_middleware_gives_no_quota() {
+        assert_eq!(
+            NoOpMiddleware {
+                phantom: PhantomData::<Duration>,
+            }
+            .check_quota(&111, &|_| unimplemented!()),
+            None
+        );
+        let simw = StateInformationMiddleware;
+        assert_eq!(
+            <StateInformationMiddleware as RateLimitingMiddleware<i32, Duration>>::check_quota(
+                &simw,
+                &111,
+                &|_| unimplemented!()
+            ),
+            None
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn trivial_keyed_middleware() {
+        use std::time::Duration;
+
+        use nonzero_ext::nonzero;
+
+        use crate::{middleware::test_keyed_mw::KeyedMw, Quota};
+
+        let quota_1 = Quota {
+            max_burst: nonzero!(3u32),
+            replenish_1_per: Duration::from_millis(250),
+        };
+
+        let mw: KeyedMw<u32> = [(1, quota_1)].into();
+
+        assert!(mw
+            .check_quota(&1, &|_| Ok::<(), NotUntil<Duration>>(()))
+            .is_some());
+        assert!(mw
+            .check_quota(&2, &|_| Ok::<(), NotUntil<Duration>>(()))
+            .is_none());
     }
 }

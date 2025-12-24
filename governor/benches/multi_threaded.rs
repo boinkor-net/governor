@@ -69,6 +69,7 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
                 Quota::per_second(nonzero!(50u32)),
                 state,
                 clock.clone(),
+                NoOpMiddleware::default(),
             ));
 
             let mut children = vec![];

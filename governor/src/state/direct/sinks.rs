@@ -21,7 +21,7 @@ where
     fn ratelimit_sink<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
     >(
         self,
         limiter: &'_ RateLimiter<NotKeyed, D, C, MW>,
@@ -35,7 +35,7 @@ where
     fn ratelimit_sink_with_jitter<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
     >(
         self,
         limiter: &'_ RateLimiter<NotKeyed, D, C, MW>,
@@ -49,7 +49,7 @@ impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
     fn ratelimit_sink<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
     >(
         self,
         limiter: &RateLimiter<NotKeyed, D, C, MW>,
@@ -64,7 +64,7 @@ impl<Item, S: Sink<Item>> SinkRateLimitExt<Item, S> for S {
     fn ratelimit_sink_with_jitter<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
     >(
         self,
         limiter: &RateLimiter<NotKeyed, D, C, MW>,
@@ -92,7 +92,7 @@ pub struct RatelimitedSink<
     S: Sink<Item>,
     D: DirectStateStore,
     C: clock::ReasonablyRealtime,
-    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
 > {
     inner: S,
     state: State,
@@ -109,7 +109,7 @@ impl<
         S: Sink<Item>,
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
     > RatelimitedSink<'a, Item, S, D, C, MW>
 {
     fn new(inner: S, limiter: &'a RateLimiter<NotKeyed, D, C, MW>, jitter: Jitter) -> Self {
@@ -156,7 +156,7 @@ impl<
         S: Sink<Item>,
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
     > Sink<Item> for RatelimitedSink<'_, Item, S, D, C, MW>
 where
     S: Unpin,
@@ -233,7 +233,7 @@ impl<
         S: Stream + Sink<Item>,
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
     > Stream for RatelimitedSink<'_, Item, S, D, C, MW>
 where
     S::Item: Unpin,

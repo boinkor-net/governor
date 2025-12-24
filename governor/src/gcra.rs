@@ -1,6 +1,6 @@
 use crate::state::StateStore;
 use crate::InsufficientCapacity;
-use crate::{clock, middleware::StateSnapshot, Quota};
+use crate::{clock, Quota};
 use crate::{middleware::RateLimitingMiddleware, nanos::Nanos};
 use core::num::NonZeroU32;
 use core::time::Duration;
@@ -8,6 +8,54 @@ use core::{cmp, fmt};
 
 #[cfg(feature = "std")]
 use crate::Jitter;
+
+/// Information about the rate-limiting state used to reach a decision.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct StateSnapshot {
+    /// The "weight" of a single packet in units of time.
+    t: Nanos,
+
+    /// The "tolerance" of the bucket.
+    ///
+    /// The total "burst capacity" of the bucket is `t + tau`.
+    tau: Nanos,
+
+    /// The time at which the measurement was taken.
+    pub(crate) time_of_measurement: Nanos,
+
+    /// The next time a cell is expected to arrive
+    pub(crate) tat: Nanos,
+}
+
+impl StateSnapshot {
+    #[inline]
+    pub(crate) fn new(t: Nanos, tau: Nanos, time_of_measurement: Nanos, tat: Nanos) -> Self {
+        Self {
+            t,
+            tau,
+            time_of_measurement,
+            tat,
+        }
+    }
+
+    /// Returns the quota used to make the rate limiting decision.
+    pub fn quota(&self) -> Quota {
+        Quota::from_gcra_parameters(self.t, self.tau)
+    }
+
+    /// Returns the number of cells that can be let through in
+    /// addition to a (possible) positive outcome.
+    ///
+    /// If this state snapshot is based on a negative rate limiting
+    /// outcome, this method returns 0.
+    pub fn remaining_burst_capacity(&self) -> u32 {
+        let t0 = self.time_of_measurement;
+        (cmp::min(
+            (t0 + self.tau + self.t).saturating_sub(self.tat).as_u64(),
+            (self.tau + self.t).as_u64(),
+        ) / self.t.as_u64()) as u32
+    }
+}
 
 /// A negative rate-limiting outcome.
 ///
@@ -22,7 +70,7 @@ pub struct NotUntil<P: clock::Reference> {
 impl<P: clock::Reference> NotUntil<P> {
     /// Create a `NotUntil` as a negative rate-limiting result.
     #[inline]
-    pub(crate) fn new(state: StateSnapshot, start: P) -> Self {
+    pub fn new(state: StateSnapshot, start: P) -> Self {
         Self { state, start }
     }
 
@@ -75,7 +123,7 @@ impl<P: clock::Reference> fmt::Display for NotUntil<P> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Gcra {
+pub struct Gcra {
     /// The "weight" of a single packet in units of time.
     t: Nanos,
 
@@ -86,7 +134,7 @@ pub(crate) struct Gcra {
 }
 
 impl Gcra {
-    pub(crate) fn new(quota: Quota) -> Self {
+    pub fn new(quota: Quota) -> Self {
         let t: Nanos = cmp::max(quota.replenish_1_per, Duration::from_nanos(1)).into();
         let tau: Nanos = t * (quota.max_burst.get() - 1).into();
         Gcra { t, tau }
@@ -101,7 +149,7 @@ impl Gcra {
         K,
         P: clock::Reference,
         S: StateStore<Key = K>,
-        MW: RateLimitingMiddleware<P>,
+        MW: RateLimitingMiddleware<K, P>,
     >(
         &self,
         start: P,
@@ -136,7 +184,7 @@ impl Gcra {
         K,
         P: clock::Reference,
         S: StateStore<Key = K>,
-        MW: RateLimitingMiddleware<P>,
+        MW: RateLimitingMiddleware<K, P>,
     >(
         &self,
         start: P,
