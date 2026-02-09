@@ -29,7 +29,7 @@ bench = false
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dev-dependencies]
-criterion = {version = "0.5.1", features = ["html_reports"]}
+criterion = {version = "0.8.2", features = ["html_reports"]}
 tynm = "0.2.0"
 crossbeam = "0.8.0"
 libc = "0.2.70"
@@ -52,8 +52,8 @@ portable-atomic = { version = "1.6", features = ["require-cas"] }
 futures-timer = { version = "3.0.3", optional = true }
 futures-util = { version = "0.3.31", optional = true, default-features = false, features = ["std", "sink"] }
 futures-sink = { version = "0.3.31", optional = true }
-rand = { version = "0.9.0", optional = true }
-getrandom = { version = "0.3", features = ["wasm_js"], optional = true }
+rand = { version = "0.10.0", optional = true }
+getrandom = { version = "0.4", features = ["wasm_js"], optional = true }
 dashmap = { version = "6.1.0", optional = true }
 quanta = { version = "0.12.0", optional = true }
 cfg-if = "1.0"
