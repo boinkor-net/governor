@@ -96,6 +96,22 @@ impl Quota {
         }
     }
 
+    /// Construct a quota for a number of cells per period. The given number of cells is also
+    /// assumed to be the maximum burst size.
+    pub const fn per_period(max_burst: NonZeroU32, period: Duration) -> Option<Quota> {
+        let replenish_interval_ns = period.as_nanos() / (max_burst.get() as u128);
+        let replenish_1_per = Duration::from_nanos(replenish_interval_ns as u64);
+
+        if replenish_1_per.as_nanos() == 0 {
+            None
+        } else {
+            Some(Quota {
+                max_burst,
+                replenish_1_per,
+            })
+        }
+    }
+
     /// Construct a quota that replenishes one cell in a given
     /// interval.
     ///
