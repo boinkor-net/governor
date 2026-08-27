@@ -48,7 +48,12 @@ fn bench_keyed<M: KeyedStateStore<u32> + Default + Send + Sync + 'static>(c: &mu
                 _,
                 _,
                 NoOpMiddleware<<clock::FakeRelativeClock as clock::Clock>::Instant>,
-            > = RateLimiter::new(Quota::per_second(nonzero!(50u32)), state, clock.clone());
+            > = RateLimiter::new(
+                Quota::per_second(nonzero!(50u32)),
+                state,
+                clock.clone(),
+                NoOpMiddleware::default(),
+            );
             b.iter_batched(
                 || {
                     clock.advance(step);

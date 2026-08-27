@@ -36,6 +36,7 @@ libc = "0.2.70"
 futures-executor = "0.3.31"
 proptest = "1.0.0"
 assertables = "9.5.0"
+nonzero = "0.2.0"
 
 [features]
 default = ["std", "dashmap", "jitter", "quanta"]

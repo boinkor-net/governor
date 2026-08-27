@@ -23,7 +23,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
     fn ratelimit_stream<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
     >(
         self,
         limiter: &'a RateLimiter<NotKeyed, D, C, MW>,
@@ -41,7 +41,7 @@ pub trait StreamRateLimitExt<'a>: Stream {
     fn ratelimit_stream_with_jitter<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
     >(
         self,
         limiter: &'a RateLimiter<NotKeyed, D, C, MW>,
@@ -55,7 +55,7 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     fn ratelimit_stream<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
     >(
         self,
         limiter: &'a RateLimiter<NotKeyed, D, C, MW>,
@@ -69,7 +69,7 @@ impl<'a, S: Stream> StreamRateLimitExt<'a> for S {
     fn ratelimit_stream_with_jitter<
         D: DirectStateStore,
         C: clock::ReasonablyRealtime,
-        MW: RateLimitingMiddleware<C::Instant>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
     >(
         self,
         limiter: &'a RateLimiter<NotKeyed, D, C, MW>,
@@ -104,7 +104,7 @@ pub struct RatelimitedStream<
     S: Stream,
     D: DirectStateStore,
     C: clock::Clock,
-    MW: RateLimitingMiddleware<C::Instant>,
+    MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
 > {
     inner: S,
     limiter: &'a RateLimiter<NotKeyed, D, C, MW>,
@@ -115,8 +115,12 @@ pub struct RatelimitedStream<
 }
 
 /// Conversion methods for the stream combinator.
-impl<S: Stream, D: DirectStateStore, C: clock::Clock, MW: RateLimitingMiddleware<C::Instant>>
-    RatelimitedStream<'_, S, D, C, MW>
+impl<
+        S: Stream,
+        D: DirectStateStore,
+        C: clock::Clock,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
+    > RatelimitedStream<'_, S, D, C, MW>
 {
     /// Acquires a reference to the underlying stream that this combinator is pulling from.
     /// ```rust
@@ -175,7 +179,7 @@ where
     S::Item: Unpin,
     Self: Unpin,
     C: clock::ReasonablyRealtime,
-    MW: RateLimitingMiddleware<C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
+    MW: RateLimitingMiddleware<NotKeyed, C::Instant, NegativeOutcome = NotUntil<C::Instant>>,
 {
     type Item = S::Item;
 
@@ -240,7 +244,7 @@ impl<
         S: Stream + Sink<Item>,
         D: DirectStateStore,
         C: clock::Clock,
-        MW: RateLimitingMiddleware<C::Instant>,
+        MW: RateLimitingMiddleware<NotKeyed, C::Instant>,
     > Sink<Item> for RatelimitedStream<'_, S, D, C, MW>
 where
     S: Unpin,

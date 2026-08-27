@@ -76,7 +76,7 @@ where
     /// Constructs a new rate limiter with a custom clock, backed by a [`HashMap`] with the default hasher.
     pub fn hashmap_with_clock(quota: Quota, clock: C) -> Self {
         let state: HashMapStateStore<K> = HashMapStateStore::new(HashMap::default());
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }
 
@@ -90,6 +90,6 @@ where
     /// Constructs a new rate limiter with a custom clock and hasher, backed by a [`HashMap`].
     pub fn hashmap_with_clock_and_hasher(quota: Quota, clock: C, hasher: S) -> Self {
         let state: HashMapStateStore<K, S> = HashMapStateStore::new(HashMap::with_hasher(hasher));
-        RateLimiter::new(quota, state, clock)
+        RateLimiter::new(quota, state, clock, NoOpMiddleware::default())
     }
 }

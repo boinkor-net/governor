@@ -59,8 +59,8 @@ use crate::nanos::Nanos;
 /// ```
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Quota {
-    pub(crate) max_burst: NonZeroU32,
-    pub(crate) replenish_1_per: Duration,
+    pub max_burst: NonZeroU32,
+    pub replenish_1_per: Duration,
 }
 
 /// Constructors for Quotas

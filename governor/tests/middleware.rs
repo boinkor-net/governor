@@ -1,24 +1,26 @@
 use governor::{
     clock::{self, FakeRelativeClock},
-    middleware::{RateLimitingMiddleware, StateInformationMiddleware, StateSnapshot},
+    gcra::StateSnapshot,
+    middleware::{RateLimitingMiddleware, StateInformationMiddleware},
+    state::NotKeyed,
     Quota, RateLimiter,
 };
 use nonzero_ext::nonzero;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct MyMW;
 
-impl RateLimitingMiddleware<<FakeRelativeClock as clock::Clock>::Instant> for MyMW {
+impl RateLimitingMiddleware<NotKeyed, <FakeRelativeClock as clock::Clock>::Instant> for MyMW {
     type PositiveOutcome = u16;
 
-    fn allow<K>(_key: &K, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
+    fn allow(_key: &NotKeyed, _state: impl Into<StateSnapshot>) -> Self::PositiveOutcome {
         666
     }
 
     type NegativeOutcome = ();
 
-    fn disallow<K>(
-        _key: &K,
+    fn disallow(
+        _key: &NotKeyed,
         _limiter: impl Into<StateSnapshot>,
         _start_time: <FakeRelativeClock as clock::Clock>::Instant,
     ) -> Self::NegativeOutcome {
