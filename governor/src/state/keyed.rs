@@ -310,6 +310,13 @@ mod test {
             {
                 f(None).map(|(res, _)| res)
             }
+
+            fn measure<T, F, E>(&self, _key: &Self::Key, f: F) -> Result<T, E>
+            where
+                F: Fn(Option<Nanos>) -> Result<T, E>,
+            {
+                f(None)
+            }
         }
 
         impl<K: Hash + Eq + Clone> ShrinkableKeyedStateStore<K> for NaiveKeyedStateStore<K> {
