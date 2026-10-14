@@ -4,6 +4,13 @@
 
 ## [Unreleased] - ReleaseDate
 
+## Added
+
+- New methods `RateLimiter::check_any_n` and `RateLimiter::check_key_any_n`
+  that admit as many of `n` cells as the current capacity allows, instead of
+  all-or-nothing like `check_n`. They return the number of cells admitted, or
+  `NotUntil` when none can be.
+
 ## [[0.10.4](https://docs.rs/governor/0.10.4/governor/)] - 2025-12-16
 
 Another bug-fix release to repair the documentation build on 

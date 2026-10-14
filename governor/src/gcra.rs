@@ -175,6 +175,54 @@ impl Gcra {
             }
         }))
     }
+
+    /// Admits as many of `n` cells as the rate limiter can accommodate, up to `n`, and updates
+    /// the state at the given key.
+    ///
+    /// Returns the number of admitted cells (between 1 and `n`), or the negative outcome if no
+    /// cell can be admitted.
+    pub(crate) fn test_any_n_and_update<
+        K,
+        P: clock::Reference,
+        S: StateStore<Key = K>,
+        MW: RateLimitingMiddleware<P>,
+    >(
+        &self,
+        start: P,
+        key: &K,
+        n: NonZeroU32,
+        state: &S,
+        t0: P,
+    ) -> Result<(u32, MW::PositiveOutcome), MW::NegativeOutcome> {
+        let t0 = t0.duration_since(start);
+        let tau = self.tau;
+        let t = self.t;
+        state.measure_and_replace(key, |tat| {
+            // Credit accrued while idle is capped at the burst size, so a `tat` in the past
+            // behaves like `t0`. This also bounds `available` by `tau`.
+            let tat = cmp::max(tat.unwrap_or(t0), t0);
+            let earliest_time = tat.saturating_sub(tau);
+            if t0 < earliest_time {
+                Err(MW::disallow(
+                    key,
+                    StateSnapshot::new(self.t, self.tau, earliest_time, earliest_time),
+                    start,
+                ))
+            } else {
+                // Admitting `k` cells requires `t0 >= tat + t * (k - 1) - tau`.
+                let available = (t0 + tau).saturating_sub(tat);
+                let admitted = cmp::min(n.get() as u64, available.as_u64() / t.as_u64() + 1) as u32;
+                let next = tat + t * admitted as u64;
+                Ok((
+                    (
+                        admitted,
+                        MW::allow(key, StateSnapshot::new(self.t, self.tau, t0, next)),
+                    ),
+                    next,
+                ))
+            }
+        })
+    }
 }
 
 #[cfg(test)]

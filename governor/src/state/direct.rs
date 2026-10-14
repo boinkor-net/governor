@@ -106,6 +106,48 @@ where
                 self.clock.now(),
             )
     }
+
+    /// Allow **up to** `n` cells through the rate limiter.
+    ///
+    /// This method attempts to allow `n` cells, but will allow fewer if the rate limit cannot
+    /// accommodate all of them.
+    ///
+    /// Returns `Ok((count, outcome))` if at least one cell was allowed, where `count` is the
+    /// number of cells actually allowed (1 to n).
+    ///
+    /// Returns `Err(NotUntil)` if no cells could be allowed (rate limited). The `NotUntil` value
+    /// indicates when at least one cell may be available.
+    ///
+    /// ### Example
+    /// ```rust
+    /// use governor::{RateLimiter, Quota};
+    /// use nonzero_ext::nonzero;
+    ///
+    /// let limiter = RateLimiter::direct(Quota::per_second(nonzero!(100u32)));
+    ///
+    /// // Try to get 50 tokens
+    /// match limiter.check_any_n(nonzero!(50u32)) {
+    ///     Ok((actual, _outcome)) => println!("Got {actual} tokens"),
+    ///     Err(_not_until) => println!("Rate limited, no tokens available"),
+    /// }
+    /// ```
+    ///
+    /// ### Performance
+    /// Similar to `check_n`, this method uses multiplication to determine the
+    /// theoretical arrival time and is not as fast as checking a single cell.
+    pub fn check_any_n(
+        &self,
+        n: NonZeroU32,
+    ) -> Result<(u32, MW::PositiveOutcome), MW::NegativeOutcome> {
+        self.gcra
+            .test_any_n_and_update::<NotKeyed, C::Instant, S, MW>(
+                self.start,
+                &NotKeyed::NonKey,
+                n,
+                &self.state,
+                self.clock.now(),
+            )
+    }
 }
 
 #[cfg(feature = "std")]
